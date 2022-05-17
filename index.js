@@ -10,23 +10,23 @@ const { informationLog, errorLog } = require('./log/log');
 
 const { PORT, NODE_ENV } = process.env;
 
-// process.on('uncaughtException', (ex) => {
-//   errorLog.error({
-//     message: 'uncaughtException',
-//     exception: ex,
-//     time: Date.now(),
-//   });
-//   process.exit(1);
-// });
+process.on('uncaughtException', (ex) => {
+  errorLog.error({
+    message: 'uncaughtException',
+    exception: ex,
+    time: Date.now(),
+  });
+  process.exit(1);
+});
 
-// process.on('unhandledRejection', (ex) => {
-//   errorLog.error({
-//     message: 'unhandledRejection',
-//     exception: ex,
-//     time: Date.now(),
-//   });
-//   process.exit(1);
-// });
+process.on('unhandledRejection', (ex) => {
+  errorLog.error({
+    message: 'unhandledRejection',
+    exception: ex,
+    time: Date.now(),
+  });
+  process.exit(1);
+});
 
 const app = express();
 app.use(express.static(`${__dirname}/public`));
