@@ -17,7 +17,7 @@ Important action should be logged. Reference file : log/log.js All instructions 
 Code convention:
 PascalCase
 snake_case
-camelCase :: Recommended
+camelCase :: Recommended // we will use it.
 
 
 
