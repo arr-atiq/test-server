@@ -1,0 +1,12 @@
+version: "3"
+services:
+  app:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    container_name: ipdc-dana-platform
+    restart: always
+    ports:
+      - 5000:5000
+    command: bash -c /usr/src/app/start.sh
+    env_file: .env
