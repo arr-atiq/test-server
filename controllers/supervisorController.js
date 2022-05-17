@@ -1,6 +1,10 @@
+const fs = require('fs');
+const express = require('express');
+const readXlsxFile = require('read-excel-file/node');
 const xlsx = require('xlsx');
-const { sendApiResult } = require('./helperController');
-const manuFacModel = require('../Models/SupervisorModel');
+const moment = require('moment');
+const { sendApiResult, uploaddir } = require('./helperController');
+const superModel = require('../Models/SupervisorModel');
 
 exports.uploadSupervisorOnboardingFile = async (req, res) => {
   const upload = await importExcelData2DB(req.file.filename, req.body);
@@ -21,10 +25,21 @@ const importExcelData2DB = async function (filename, req) {
       const sheetname = sheetnames[i];
       arrayName = sheetname.toString();
       resData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetname]);
-      var insert = await manuFacModel.insertExcelData(resData, filename, req);
+      var insert = await superModel.insertExcelData(resData, filename, req);
     }
     return insert;
   } catch (error) {
     return sendApiResult(false, 'File not uploaded');
+  }
+};
+
+// @ Arfin
+
+exports.getSupervisorList = async (req, res) => {
+  try {
+    const result = await superModel.getSupervisorList(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
   }
 };

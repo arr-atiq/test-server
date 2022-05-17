@@ -1,5 +1,3 @@
-const express = require('express');
-const md5 = require('md5');
 const { sendApiResult } = require('../controllers/helperController');
 const knex = require('../config/database');
 
@@ -8,10 +6,6 @@ const Menu = function () {};
 Menu.menuList = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
-      // console.log(req)
-      const user_id = 1; // req.user_id;
-      const role_id = 1; // req.role_id;
-
       const menu_list = await knex
         .select(
           'cr_menu.menu_id',
@@ -30,8 +24,8 @@ Menu.menuList = function (req) {
         .where('APSISIPDC.cr_menu_access.status', 'Active')
         .where(function () {
           this.orWhere({
-            'APSISIPDC.cr_menu_access.user_role_id': role_id,
-          }).orWhere({ 'APSISIPDC.cr_menu_access.user_id': user_id });
+            'APSISIPDC.cr_menu_access.user_role_id': req.role_id,
+          }).orWhere({ 'APSISIPDC.cr_menu_access.user_id': req.user_id });
         })
         .orderBy('APSISIPDC.cr_menu.menu_order', 'asc');
 

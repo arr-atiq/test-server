@@ -159,4 +159,46 @@ FileUpload.insertExcelData = function (rows, filename, req) {
   });
 };
 
+// @Arfin
+
+FileUpload.getSupervisorList = function (req) {
+  // var query = req;
+  // var per_page = parseInt(req.per_page);
+  // var page = 2;
+
+  const { page, per_page } = req;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex('APSISIPDC.cr_supervisor')
+        .where('activation_status', 'Active')
+        .select(
+          'supervisor_name',
+          'supervisor_nid',
+          'phone',
+          'manufacturer_id',
+          'supervisor_employee_code',
+          'region_of_operation',
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (data == 0) reject(sendApiResult(false, 'Not found.'));
+
+      // var total_amount = 0;
+      // for (let i = 0; i < data.length; i++) {
+      //     total_amount += parseFloat(data[i].credit_amount)
+      // }
+
+      // data.total_amount = total_amount.toFixed(2);
+
+      resolve(sendApiResult(true, 'Data fetched successfully', data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 module.exports = FileUpload;

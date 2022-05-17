@@ -1,5 +1,9 @@
+const fs = require('fs');
+const express = require('express');
+const readXlsxFile = require('read-excel-file/node');
 const xlsx = require('xlsx');
-const { sendApiResult } = require('./helperController');
+const moment = require('moment');
+const { sendApiResult, uploaddir } = require('./helperController');
 const model = require('../Models/SalesAgentModel');
 
 exports.uploadSalesAgentOnboardingFile = async (req, res) => {
@@ -26,5 +30,16 @@ const importExcelData2DB = async function (filename, req) {
     return insert;
   } catch (error) {
     return sendApiResult(false, 'File not uploaded');
+  }
+};
+
+// @ Arfin
+
+exports.getSalesAgentList = async (req, res) => {
+  try {
+    const result = await model.getSalesAgentList(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
   }
 };

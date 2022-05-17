@@ -7,6 +7,7 @@ const {
 const knex = require('../config/database');
 
 const FileUpload = function () {};
+require('dotenv').config();
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -209,6 +210,90 @@ FileUpload.insertExcelData = function (rows, filename, req) {
     }
   }).catch((error) => {
     console.log(error, 'Promise error');
+  });
+};
+
+FileUpload.getManufacturerList = function (req) {
+  // var query = req;
+  // var per_page = parseInt(req.per_page);
+  // var page = 2;
+
+  const { page, per_page } = req;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex('APSISIPDC.cr_manufacturer')
+        // .leftJoin("retailers", "retailers.id", "cr_credit_disbursements.id_outlet")
+        // .leftJoin("cr_retail_limit", "cr_retail_limit.id_outlet", "cr_credit_disbursements.id_outlet")
+        // .leftJoin("distributorspoint", "cr_retail_limit.id_point", "distributorspoint.id")
+        // .where("distributorspoint.dsid", req.dh_id)
+        // .where("cr_credit_disbursements.sys_date", req.date)
+        // .where(function() {
+        //     if (req.search_param) {
+        //         this.where('cr_retail_limit.acc_no', req.search_param).orWhere('retailers.retailer_code', req.search_param)
+        //     }
+        // })
+        // .modify(function(queryBuilder) {
+        //     if (req.acc_no) {
+        //         queryBuilder.where('cr_retail_limit.acc_no', req.acc_no);
+        //     }
+        //     if (req.outlet_code) {
+        //         queryBuilder.where('retailers.retailer_code', req.outlet_code);
+        //     }
+        // })
+        .where('activation_status', 'Active')
+        .select(
+          'manufacturer_name',
+          'type_of_entity',
+          'name_of_scheme',
+          'registration_no',
+          'manufacturer_tin',
+          'manufacturer_bin',
+          'website_link',
+          'corporate_ofc_address',
+          'corporate_ofc_address_1',
+          'corporate_ofc_address_2',
+          'corporate_ofc_postal_code',
+          'corporate_ofc_post_office',
+          'corporate_ofc_thana',
+          'corporate_ofc_district',
+          'corporate_ofc_division',
+          'nature_of_business',
+          'alternative_ofc_address',
+          'alternative_address_1',
+          'alternative_address_2',
+          'alternative_postal_code',
+          'alternative_post_office',
+          'alternative_thana',
+          'alternative_district',
+          'alternative_division',
+          'official_phone',
+          'official_email',
+          'name_of_authorized_representative',
+          'autho_rep_full_name',
+          'autho_rep_nid',
+          'autho_rep_designation',
+          'autho_rep_phone',
+          'autho_rep_email',
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (data == 0) reject(sendApiResult(false, 'Not found.'));
+
+      // var total_amount = 0;
+      // for (let i = 0; i < data.length; i++) {
+      //     total_amount += parseFloat(data[i].credit_amount)
+      // }
+
+      // data.total_amount = total_amount.toFixed(2);
+
+      resolve(sendApiResult(true, 'Data fetched successfully', data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
   });
 };
 

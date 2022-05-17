@@ -1,5 +1,9 @@
 const moment = require('moment');
-const { sendApiResult } = require('../controllers/helperController');
+const express = require('express');
+const {
+  sendApiResult,
+  getSettingsValue,
+} = require('../controllers/helperController');
 const knex = require('../config/database');
 
 const FileUpload = function () {};
@@ -10,7 +14,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
       await knex
         .transaction(async (trx) => {
           let msg;
-          const folderName = req.file_for;
+          const folder_name = req.file_for;
           if (Object.keys(rows).length == 0) {
             resolve(
               sendApiResult(false, 'No Rows Found in your Uploaded File.'),
@@ -21,13 +25,78 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .from('APSISIPDC.cr_user_roles')
             .select('id')
             .where('status', 'Active')
-            .whereIn('user_type', folderName);
+            .whereIn('user_type', folder_name);
           const user_role_id = user_roles[0].id;
+
+          const data_array = [];
+          if (Object.keys(rows).length != 0) {
+            for (let index = 0; index < rows.length; index++) {
+              const temp_data = {
+                Distributor_Name: rows[index].Distributor_Name,
+                Distributor_Code: rows[index].Distributor_Code,
+                Distributor_TIN: rows[index].Distributor_TIN,
+                Official_Email: rows[index].Official_Email,
+                Official_Contact_Number: rows[index].Official_Contact_Number,
+                Is_Distributor_or_Third_Party_Agency:
+                  rows[index].Is_Distributor_or_Third_Party_Agency,
+                Distributor_Corporate_Registration_No:
+                  rows[index].Distributor_Corporate_Registration_No,
+                Trade_License_No: rows[index].Trade_License_No,
+                Distributor_Registered_Office_in_Bangladesh:
+                  rows[index].Distributor_Registered_Office_in_Bangladesh,
+                Address_Line_1: rows[index].Address_Line_1,
+                Address_Line_2: rows[index].Address_Line_2,
+                Postal_Code: rows[index].Postal_Code,
+                Post_Office: rows[index].Post_Office,
+                Thana: rows[index].Thana,
+                District: rows[index].District,
+                Division: rows[index].Division,
+                Name_of_Authorized_Representative:
+                  rows[index].Name_of_Authorized_Representative,
+                Full_Name: rows[index].Full_Name,
+                NID: rows[index].NID,
+                Designation_of_Authorized_Representative:
+                  rows[index].Designation_of_Authorized_Representative,
+                Mobile_No: rows[index].Mobile_No,
+                Official_Email_Id_of_Authorized_Representative:
+                  rows[index].Official_Email_Id_of_Authorized_Representative,
+                Region_of_Operation: rows[index].Region_of_Operation,
+                Distributor_Bank_Account_Number:
+                  rows[index].Distributor_Bank_Account_Number,
+                Distributor_Bank_Account_Title:
+                  rows[index].Distributor_Bank_Account_Title,
+                Distributor_Bank_Account_Type:
+                  rows[index].Distributor_Bank_Account_Type,
+                Distributor_Bank_Name: rows[index].Distributor_Bank_Name,
+                Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
+              };
+              data_array.push(temp_data);
+            }
+          }
+
+          console.log('=========');
+          console.log(data_array);
+          console.log('=========');
+          // resolve(sendApiResult(true, '', data_array));
 
           if (Object.keys(rows).length != 0) {
             const distributor_insert_ids = [];
             const user_insert_ids = [];
             for (let index = 0; index < rows.length; index++) {
+              const distributor_corporate_reg = rows[index].Distributor_Corporate_Registration_No;
+
+              const duplication_check = await knex
+                .count('cr_distributor.corporate_registration_no as count')
+                .from('APSISIPDC.cr_distributor')
+                .where(
+                  'APSISIPDC.cr_distributor.corporate_registration_no',
+                  distributor_corporate_reg,
+                );
+
+              console.log('duplication_check');
+              console.log(duplication_check[0].count);
+              // return duplication_check;
+
               const team_distributor = {
                 distributor_name: rows[index].Distributor_Name,
                 distributor_code: rows[index].Distributor_Code,
@@ -101,7 +170,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 email: rows[index].Official_Email,
                 phone: rows[index].Official_Contact_Number,
                 password: '5efd3b0647df9045c240729d31622c79',
-                cr_user_type: folderName,
+                cr_user_type: folder_name,
               };
               const insert_user = await knex('APSISIPDC.cr_users')
                 .insert(temp_user)
@@ -165,14 +234,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
               const insert_log = {
                 sys_date: new Date(date),
-                file_for: folderName,
-                file_path: `public/configuration_file/${folderName}`,
+                file_for: folder_name,
+                file_path: `public/configuration_file/${folder_name}`,
                 file_name: filename,
                 found_rows: Object.keys(rows).length,
                 upload_rows: Object.keys(distributor_insert_ids).length,
                 created_by: parseInt(req.user_id),
               };
-              console.log('insert_log');
               console.log(insert_log);
               await knex('APSISIPDC.cr_bulk_upload_file_log').insert(
                 insert_log,
@@ -200,4 +268,62 @@ FileUpload.insertExcelData = function (rows, filename, req) {
   });
 };
 
+// @ Arfin
+
+FileUpload.getDistributorList = function (req) {
+  // var query = req;
+  // var per_page = parseInt(req.per_page);
+  // var page = 2;
+
+  const { page, per_page } = req;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex('APSISIPDC.cr_distributor')
+        .where('activation_status', 'Active')
+        .select(
+          'distributor_name',
+          'distributor_code',
+          'distributor_tin',
+          'official_email',
+          'official_contact_number',
+          'is_distributor_or_third_party_agency',
+          'corporate_registration_no',
+          'trade_license_no',
+          'registered_office_bangladesh',
+          'ofc_address1',
+          'ofc_address2',
+          'ofc_postal_code',
+          'ofc_post_office',
+          'ofc_thana',
+          'ofc_district',
+          'ofc_division',
+          'name_of_authorized_representative',
+          'autho_rep_full_name',
+          'autho_rep_nid',
+          'autho_rep_designation',
+          'autho_rep_phone',
+          'autho_rep_email',
+          'region_of_operation',
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (data == 0) reject(sendApiResult(false, 'Not found.'));
+
+      // var total_amount = 0;
+      // for (let i = 0; i < data.length; i++) {
+      //     total_amount += parseFloat(data[i].credit_amount)
+      // }
+
+      // data.total_amount = total_amount.toFixed(2);
+
+      resolve(sendApiResult(true, 'Data fetched successfully', data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 module.exports = FileUpload;
