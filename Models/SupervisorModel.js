@@ -216,18 +216,27 @@ FileUpload.deleteSupervisor = function ({ id }) {
 }
 
 FileUpload.editSupervisor = function (req) {
+  const {
+    supervisor_name,
+    supervisor_nid,
+    phone,
+    manufacturer_id,
+    supervisor_employee_code,
+    region_of_operation,
+    updated_by
+  } = req.body;
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async trx => {
-        const supervisor_update = await trx("APSISIPDC.cr_supervisor").where({ id: req.body.id }).update({
-          'supervisor_name': req.body.supervisor_name,
-          'supervisor_nid': req.body.supervisor_nid,
-          'phone': req.body.phone,
-          'manufacturer_id': req.body.manufacturer_id,
-          'supervisor_employee_code': req.body.supervisor_employee_code,
-          'region_of_operation': req.body.region_of_operation,
+        const supervisor_update = await trx("APSISIPDC.cr_supervisor").where({ id: req.params.id }).update({
+          'supervisor_name': supervisor_name,
+          'supervisor_nid': supervisor_nid,
+          'phone': phone,
+          'manufacturer_id': manufacturer_id,
+          'supervisor_employee_code': supervisor_employee_code,
+          'region_of_operation': region_of_operation,
           'updated_at': new Date(),
-          'updated_by': req.body.updated_by
+          'updated_by': updated_by
         });
         if (supervisor_update <= 0) reject(sendApiResult(false, "Could not Found Supervisor"))
         resolve(sendApiResult(true, "Supervisor updated Successfully", supervisor_update))

@@ -46,7 +46,7 @@ exports.getSalesAgentList = async (req, res) => {
 
 exports.deleteSalesAgent = async(req,res)=>{
   try {
-      const salesagent = await model.deleteSalesAgent(req.body);
+      const salesagent = await model.deleteSalesAgent(req.params);
       res.status(200).send(salesagent);
   } catch (error) {
       res.send(sendApiResult(false,error.message));

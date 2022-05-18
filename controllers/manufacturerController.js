@@ -199,7 +199,7 @@ exports.getManufacturerList = async (req, res) => {
 
 exports.deleteManufacturer = async(req,res)=>{
   try {
-      const manufacturer = await manuFacModel.deleteManufacturer(req.body);
+      const manufacturer = await manuFacModel.deleteManufacturer(req.params);
       res.status(200).send(manufacturer);
   } catch (error) {
       res.send(sendApiResult(false,error.message));

@@ -46,7 +46,7 @@ exports.getSupervisorList = async (req, res) => {
 
 exports.deleteSupervisor = async(req,res)=>{
   try {
-      const supervisor = await superModel.deleteSupervisor(req.body);
+      const supervisor = await superModel.deleteSupervisor(req.params);
       res.status(200).send(supervisor);
   } catch (error) {
       res.send(sendApiResult(false,error.message));

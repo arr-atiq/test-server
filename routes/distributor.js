@@ -3,8 +3,8 @@ const express = require('express');
 const router = express.Router();
 const distributor = require('../controllers/distributorController');
 
-router.post('/get-distributor-list', distributor.getDistributorList);
-router.post("/edit-distributor", distributor.editDistributor);
-router.post("/delete-distributor", distributor.deleteDistributor);
+router.get('/distributors', distributor.getDistributorList);
+router.put("/distributor/:id", distributor.editDistributor);
+router.delete("/distributor/:id", distributor.deleteDistributor);
 
 module.exports = router;

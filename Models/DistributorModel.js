@@ -342,35 +342,62 @@ FileUpload.deleteDistributor = function ({ id }) {
 }
 
 FileUpload.editDistributor = function (req) {
+  const {
+    distributor_name,
+    distributor_code,
+    distributor_tin,
+    official_email,
+    official_contact_number,
+    is_distributor_or_third_party_agency,
+    corporate_registration_no,
+    trade_license_no,
+    registered_office_bangladesh,
+    ofc_address1,
+    ofc_address2,
+    ofc_postal_code,
+    ofc_post_office,
+    ofc_thana,
+    ofc_district,
+    ofc_division,
+    name_of_authorized_representative,
+    autho_rep_full_name,
+    autho_rep_nid,
+    autho_rep_designation,
+    autho_rep_phone,
+    autho_rep_email,
+    region_of_operation,
+    updated_by
+  } = req.body;
+
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async trx => {
-        const distributor_update = await trx("APSISIPDC.cr_distributor").where({ id: req.body.id }).update({
-          'distributor_name': req.body.distributor_name,
-          'distributor_code': req.body.distributor_code,
-          'distributor_tin': req.body.distributor_tin,
-          'official_email': req.body.official_email,
-          'official_contact_number': req.body.official_contact_number,
-          'is_distributor_or_third_party_agency': req.body.is_distributor_or_third_party_agency,
-          'corporate_registration_no': req.body.corporate_registration_no,
-          'trade_license_no': req.body.trade_license_no,
-          'registered_office_bangladesh': req.body.registered_office_bangladesh,
-          'ofc_address1': req.body.ofc_address1,
-          'ofc_address2': req.body.ofc_address2,
-          'ofc_postal_code': req.body.ofc_postal_code,
-          'ofc_post_office': req.body.ofc_post_office,
-          'ofc_thana': req.body.ofc_thana,
-          'ofc_district': req.body.ofc_district,
-          'ofc_division': req.body.ofc_division,
-          'name_of_authorized_representative': req.body.name_of_authorized_representative,
-          'autho_rep_full_name': req.body.autho_rep_full_name,
-          'autho_rep_nid': req.body.autho_rep_nid,
-          'autho_rep_designation': req.body.autho_rep_designation,
-          'autho_rep_phone': req.body.autho_rep_phone,
-          'autho_rep_email': req.body.autho_rep_email,
-          'region_of_operation': req.body.region_of_operation,
+        const distributor_update = await trx("APSISIPDC.cr_distributor").where({ id: req.params.id }).update({
+          'distributor_name': distributor_name,
+          'distributor_code': distributor_code,
+          'distributor_tin': distributor_tin,
+          'official_email': official_email,
+          'official_contact_number': official_contact_number,
+          'is_distributor_or_third_party_agency': is_distributor_or_third_party_agency,
+          'corporate_registration_no': corporate_registration_no,
+          'trade_license_no': trade_license_no,
+          'registered_office_bangladesh': registered_office_bangladesh,
+          'ofc_address1': ofc_address1,
+          'ofc_address2': ofc_address2,
+          'ofc_postal_code': ofc_postal_code,
+          'ofc_post_office': ofc_post_office,
+          'ofc_thana': ofc_thana,
+          'ofc_district': ofc_district,
+          'ofc_division': ofc_division,
+          'name_of_authorized_representative': name_of_authorized_representative,
+          'autho_rep_full_name': autho_rep_full_name,
+          'autho_rep_nid': autho_rep_nid,
+          'autho_rep_designation': autho_rep_designation,
+          'autho_rep_phone': autho_rep_phone,
+          'autho_rep_email': autho_rep_email,
+          'region_of_operation': region_of_operation,
           'updated_at': new Date(),
-          'updated_by': req.body.updated_by
+          'updated_by': updated_by
         });
         if (distributor_update <= 0) reject(sendApiResult(false, "Could not Found Distributor"))
         resolve(sendApiResult(true, "Distributor updated Successfully", distributor_update))

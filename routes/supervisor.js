@@ -3,8 +3,8 @@ const express = require('express');
 const router = express.Router();
 const supervisor = require('../controllers/supervisorController');
 
-router.post('/get-supervisor-list', supervisor.getSupervisorList);
-router.post("/edit-supervisor", supervisor.editSupervisor);
-router.post("/delete-supervisor", supervisor.deleteSupervisor);
+router.get('/supervisors', supervisor.getSupervisorList);
+router.put("/supervisor/:id", supervisor.editSupervisor);
+router.delete("/supervisor/:id", supervisor.deleteSupervisor);
 
 module.exports = router;

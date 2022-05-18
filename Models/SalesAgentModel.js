@@ -217,19 +217,29 @@ FileUpload.deleteSalesAgent = function ({ id }) {
 }
 
 FileUpload.editSalesAgent = function (req) {
+  const {
+    agent_name,
+    agent_nid,
+    phone,
+    manufacturer_id,
+    agent_employee_code,
+    autho_supervisor_employee_code,
+    region_of_operation,
+    updated_by
+  } = req.body;
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async trx => {
-        const salesagent_update = await trx("APSISIPDC.cr_sales_agent").where({ id: req.body.id }).update({
-          'agent_name': req.body.agent_name,
-          'agent_nid': req.body.agent_nid,
-          'phone': req.body.phone,
-          'manufacturer_id': req.body.manufacturer_id,
-          'agent_employee_code': req.body.agent_employee_code,
-          'autho_supervisor_employee_code': req.body.autho_supervisor_employee_code,
-          'region_of_operation': req.body.region_of_operation,
+        const salesagent_update = await trx("APSISIPDC.cr_sales_agent").where({ id: req.params.id }).update({
+          'agent_name': agent_name,
+          'agent_nid': agent_nid,
+          'phone': phone,
+          'manufacturer_id': manufacturer_id,
+          'agent_employee_code': agent_employee_code,
+          'autho_supervisor_employee_code': autho_supervisor_employee_code,
+          'region_of_operation': region_of_operation,
           'updated_at': new Date(),
-          'updated_by': req.body.updated_by
+          'updated_by': updated_by
         });
         if (salesagent_update <= 0) reject(sendApiResult(false, "Could not Found Salesagent"))
         resolve(sendApiResult(true, "Salesagent updated Successfully", salesagent_update))

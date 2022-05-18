@@ -46,7 +46,7 @@ exports.getDistributorList = async (req, res) => {
 
 exports.deleteDistributor = async (req, res) => {
   try {
-    const distributor = await distModel.deleteDistributor(req.body);
+    const distributor = await distModel.deleteDistributor(req.params);
     res.status(200).send(distributor);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
