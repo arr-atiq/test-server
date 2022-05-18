@@ -58,54 +58,116 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
           // console.log(user_role_id+" === "+ main_insert_tbl); return false;
 
+          const data_array = [];
           if (Object.keys(rows).length != 0) {
+            for (let index = 0; index < rows.length; index++) {
+              const reg_no = rows[index].Manufacturer_Registration_No;
+              const duplication_check = await knex
+                .count('cr_manufacturer.registration_no as count')
+                .from('APSISIPDC.cr_manufacturer')
+                .where(
+                  'APSISIPDC.cr_manufacturer.registration_no',
+                  reg_no,
+                );
+              const duplication_check_val = parseInt(duplication_check[0].count);
+              if (duplication_check_val == 0) {
+                const temp_data = {
+                  Manufacturer_Name: rows[index].Manufacturer_Name,
+                  Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity],
+                  Name_of_Scheme: rows[index].Name_of_Scheme,
+                  Manufacturer_Registration_No: rows[index].Manufacturer_Registration_No,
+                  Manufacturer_TIN: rows[index].Manufacturer_TIN,
+                  Manufacturer_BIN: rows[index].Manufacturer_BIN,
+                  Website_URL: rows[index].Website_URL,
+                  Registered_Corporate_Office_Address_in_Bangladesh: rows[index].Registered_Corporate_Office_Address_in_Bangladesh,
+                  Corporate_Office_Address_Line_1: rows[index].Corporate_Office_Address_Line_1,
+                  Corporate_Office_Address_Line_2: rows[index].Corporate_Office_Address_Line_2,
+                  Corporate_Office_Postal_Code: rows[index].Corporate_Office_Postal_Code,
+                  Corporate_Office_Post_Office: rows[index].Corporate_Office_Post_Office,
+                  Corporate_Office_Thana: rows[index].Corporate_Office_Thana,
+                  Corporate_Office_District: rows[index].Corporate_Office_District,
+                  Corporate_Office_Division: rows[index].Corporate_Office_Division,
+                  Nature_of_Business: nature_business_arr[rows[index].Nature_of_Business],
+                  Alternative_Addresses: rows[index].Alternative_Addresses,
+                  Alternative_Address_Line_1: rows[index].Alternative_Address_Line_1,
+                  Alternative_Address_Line_2: rows[index].Alternative_Address_Line_2,
+                  Alternative_Postal_Code: rows[index].Alternative_Postal_Code,
+                  Alternative_Post_Office: rows[index].Alternative_Post_Office,
+                  Alternative_Thana: rows[index].Alternative_Thana,
+                  Alternative_District: rows[index].Alternative_District,
+                  Alternative_Division: rows[index].Alternative_Division,
+                  Official_Phone_Number: rows[index].Official_Phone_Number,
+                  Official_Email_ID: rows[index].Official_Email_ID,
+                  Authorized_Representative_Name: rows[index].Authorized_Representative_Name,
+                  Authorized_Representative_Full_Name: rows[index].Authorized_Representative_Full_Name,
+                  Authorized_Representative_NID: rows[index].Authorized_Representative_NID,
+                  Authorized_Representative_Designation: rows[index].Authorized_Representative_Designation,
+                  Authorized_Representative_Mobile_No: rows[index].Authorized_Representative_Mobile_No,
+                  Authorized_Representative_Official_Email_ID: rows[index].Authorized_Representative_Official_Email_ID,
+                  Manufacturer_Name: rows[index].Manufacturer_Name,
+                  Official_Email_ID: rows[index].Official_Email_ID,
+                  Official_Phone_Number: rows[index].Official_Phone_Number,
+                };
+                data_array.push(temp_data);
+              }
+            }
+          }
+
+          if (Object.keys(rows).length != 0 && Object.keys(data_array).length == 0) {
+            const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+            const empty_insert_log = {
+              sys_date: new Date(date),
+              file_for: folder_name,
+              file_path: `public/configuration_file/${folder_name}`,
+              file_name: filename,
+              found_rows: Object.keys(rows).length,
+              upload_rows: Object.keys(data_array).length,
+              created_by: parseInt(req.user_id),
+            };
+            await knex('APSISIPDC.cr_bulk_upload_file_log').insert(
+              empty_insert_log,
+            );
+            msg = 'File Uploaded successfully!';
+            resolve(sendApiResult(true, msg, empty_insert_log));
+          }
+
+          if (Object.keys(data_array).length != 0) {
             const manufacture_insert_ids = [];
             const user_insert_ids = [];
-            for (let index = 0; index < rows.length; index++) {
+            for (let index = 0; index < data_array.length; index++) {
               const team_manufacture = {
-                manufacturer_name: rows[index].Manufacturer_Name,
-                type_of_entity: type_entity_arr[rows[index].Type_of_Entity],
-                name_of_scheme: rows[index].Name_of_Scheme,
-                registration_no: rows[index].Manufacturer_Registration_No,
-                manufacturer_tin: rows[index].Manufacturer_TIN,
-                manufacturer_bin: rows[index].Manufacturer_BIN,
-                website_link: rows[index].Website_URL,
-                corporate_ofc_address:
-                  rows[index].Registered_Corporate_Office_Address_in_Bangladesh,
-                corporate_ofc_address_1:
-                  rows[index].Corporate_Office_Address_Line_1,
-                corporate_ofc_address_2:
-                  rows[index].Corporate_Office_Address_Line_2,
-                corporate_ofc_postal_code:
-                  rows[index].Corporate_Office_Postal_Code,
-                corporate_ofc_post_office:
-                  rows[index].Corporate_Office_Post_Office,
-                corporate_ofc_thana: rows[index].Corporate_Office_Thana,
-                corporate_ofc_district: rows[index].Corporate_Office_District,
-                corporate_ofc_division: rows[index].Corporate_Office_Division,
-                nature_of_business:
-                  nature_business_arr[rows[index].Nature_of_Business],
-                alternative_ofc_address: rows[index].Alternative_Addresses,
-                alternative_address_1: rows[index].Alternative_Address_Line_1,
-                alternative_address_2: rows[index].Alternative_Address_Line_2,
-                alternative_postal_code: rows[index].Alternative_Postal_Code,
-                alternative_post_office: rows[index].Alternative_Post_Office,
-                alternative_thana: rows[index].Alternative_Thana,
-                alternative_district: rows[index].Alternative_District,
-                alternative_division: rows[index].Alternative_Division,
-                official_phone: rows[index].Official_Phone_Number,
-                official_email: rows[index].Official_Email_ID,
-                name_of_authorized_representative:
-                  rows[index].Authorized_Representative_Name,
-                autho_rep_full_name:
-                  rows[index].Authorized_Representative_Full_Name,
-                autho_rep_nid: rows[index].Authorized_Representative_NID,
-                autho_rep_designation:
-                  rows[index].Authorized_Representative_Designation,
-                autho_rep_phone:
-                  rows[index].Authorized_Representative_Mobile_No,
-                autho_rep_email:
-                  rows[index].Authorized_Representative_Official_Email_ID,
+                manufacturer_name: data_array[index].Manufacturer_Name,
+                type_of_entity: data_array[index].Type_of_Entity,
+                name_of_scheme: data_array[index].Name_of_Scheme,
+                registration_no: data_array[index].Manufacturer_Registration_No,
+                manufacturer_tin: data_array[index].Manufacturer_TIN,
+                manufacturer_bin: data_array[index].Manufacturer_BIN,
+                website_link: data_array[index].Website_URL,
+                corporate_ofc_address:  data_array[index].Registered_Corporate_Office_Address_in_Bangladesh,
+                corporate_ofc_address_1: data_array[index].Corporate_Office_Address_Line_1,
+                corporate_ofc_address_2: data_array[index].Corporate_Office_Address_Line_2,
+                corporate_ofc_postal_code: data_array[index].Corporate_Office_Postal_Code,
+                corporate_ofc_post_office: data_array[index].Corporate_Office_Post_Office,
+                corporate_ofc_thana: data_array[index].Corporate_Office_Thana,
+                corporate_ofc_district: data_array[index].Corporate_Office_District,
+                corporate_ofc_division: data_array[index].Corporate_Office_Division,
+                nature_of_business: data_array[index].Nature_of_Business,
+                alternative_ofc_address: data_array[index].Alternative_Addresses,
+                alternative_address_1: data_array[index].Alternative_Address_Line_1,
+                alternative_address_2: data_array[index].Alternative_Address_Line_2,
+                alternative_postal_code: data_array[index].Alternative_Postal_Code,
+                alternative_post_office: data_array[index].Alternative_Post_Office,
+                alternative_thana: data_array[index].Alternative_Thana,
+                alternative_district: data_array[index].Alternative_District,
+                alternative_division: data_array[index].Alternative_Division,
+                official_phone: data_array[index].Official_Phone_Number,
+                official_email: data_array[index].Official_Email_ID,
+                name_of_authorized_representative: data_array[index].Authorized_Representative_Name,
+                autho_rep_full_name: data_array[index].Authorized_Representative_Full_Name,
+                autho_rep_nid: data_array[index].Authorized_Representative_NID,
+                autho_rep_designation: data_array[index].Authorized_Representative_Designation,
+                autho_rep_phone: data_array[index].Authorized_Representative_Mobile_No,
+                autho_rep_email: data_array[index].Authorized_Representative_Official_Email_ID,
                 created_by: req.user_id,
               };
               const insert_manufacture = await knex('APSISIPDC.cr_manufacturer')
@@ -116,9 +178,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               }
 
               const temp_user = {
-                name: rows[index].Manufacturer_Name,
-                email: rows[index].Official_Email_ID,
-                phone: rows[index].Official_Phone_Number,
+                name: data_array[index].Manufacturer_Name,
+                email: data_array[index].Official_Email_ID,
+                phone: data_array[index].Official_Phone_Number,
                 password: '5efd3b0647df9045c240729d31622c79',
                 cr_user_type: folder_name,
               };
@@ -172,8 +234,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             }
 
             if (
-              is_manufacture_wise_user_insert == 1
-              && is_user_wise_role_insert == 1
+              is_manufacture_wise_user_insert == 1 && is_user_wise_role_insert == 1
             ) {
               const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
               const insert_log = {
@@ -185,8 +246,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 upload_rows: Object.keys(manufacture_insert_ids).length,
                 created_by: parseInt(req.user_id),
               };
-              console.log('insert_log');
-              console.log(insert_log);
               await knex('APSISIPDC.cr_bulk_upload_file_log').insert(
                 insert_log,
               );
