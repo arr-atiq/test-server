@@ -95,7 +95,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               upload_rows: Object.keys(data_array).length,
               created_by: parseInt(req.user_id),
             };
-            console.log(empty_insert_log);
             await knex('APSISIPDC.cr_bulk_upload_file_log').insert(
               empty_insert_log,
             );
