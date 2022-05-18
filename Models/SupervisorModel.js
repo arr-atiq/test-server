@@ -47,10 +47,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Manufacturer: rows[index].Manufacturer,
                   Supervisor_Employee_Code: rows[index].Supervisor_Employee_Code,
                   Region_of_Operation: rows[index].Region_of_Operation,
-                  Distributor: rows[index].Distributor,
-                  Supervisor_Name: rows[index].Supervisor_Name,
-                  Supervisor_Employee_Code: rows[index].Supervisor_Employee_Code,
-                  Phone: rows[index].Phone,
+                  Distributor: rows[index].Distributor
                 };
                 data_array.push(temp_data);
               }
