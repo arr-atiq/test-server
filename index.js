@@ -77,7 +77,7 @@ app.get('/', (req, res) => res.json({ message: 'Apsis Dana platform is up and ru
 app.use('/login', require('./routes/login'));
 app.use('/bulk', authenticateToken, require('./routes/bulk'));
 app.use('/menu', authenticateToken, require('./routes/menu'));
-app.use('/manufactuer', authenticateToken, require('./routes/manufactuer'));
+app.use('/manufacturer', authenticateToken, require('./routes/manufacturer'));
 app.use('/distributor', authenticateToken, require('./routes/distributor'));
 app.use('/supervisor', authenticateToken, require('./routes/supervisor'));
 app.use('/salesagent', authenticateToken, require('./routes/salesagent'));
