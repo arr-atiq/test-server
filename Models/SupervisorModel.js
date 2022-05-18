@@ -6,7 +6,7 @@ const {
 } = require('../controllers/helperController');
 const knex = require('../config/database');
 
-const FileUpload = function () {};
+const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -200,5 +200,43 @@ FileUpload.getSupervisorList = function (req) {
     }
   });
 };
+
+FileUpload.deleteSupervisor = function ({ id }) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex.transaction(async trx => {
+        const supervisor_delete = await trx("APSISIPDC.cr_supervisor").where({ id: id }).delete();
+        if (supervisor_delete <= 0) reject(sendApiResult(false, "Could not Found Supervisor"))
+        resolve(sendApiResult(true, "Supervisor Deleted Successfully", supervisor_delete))
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  })
+}
+
+FileUpload.editSupervisor = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex.transaction(async trx => {
+        const supervisor_update = await trx("APSISIPDC.cr_supervisor").where({ id: req.body.id }).update({
+          'supervisor_name': req.body.supervisor_name,
+          'supervisor_nid': req.body.supervisor_nid,
+          'phone': req.body.phone,
+          'manufacturer_id': req.body.manufacturer_id,
+          'supervisor_employee_code': req.body.supervisor_employee_code,
+          'region_of_operation': req.body.region_of_operation,
+          'updated_at': new Date(),
+          'updated_by': req.body.updated_by
+        });
+        if (supervisor_update <= 0) reject(sendApiResult(false, "Could not Found Supervisor"))
+        resolve(sendApiResult(true, "Supervisor updated Successfully", supervisor_update))
+      });
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  })
+}
 
 module.exports = FileUpload;

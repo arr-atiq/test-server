@@ -43,3 +43,21 @@ exports.getDistributorList = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.deleteDistributor = async (req, res) => {
+  try {
+    const distributor = await distModel.deleteDistributor(req.body);
+    res.status(200).send(distributor);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+}
+
+exports.editDistributor = async (req, res) => {
+  try {
+    const distributor = await distModel.editDistributor(req);
+    res.status(200).send(distributor);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+}

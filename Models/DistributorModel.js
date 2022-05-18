@@ -6,7 +6,7 @@ const {
 } = require('../controllers/helperController');
 const knex = require('../config/database');
 
-const FileUpload = function () {};
+const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -326,4 +326,59 @@ FileUpload.getDistributorList = function (req) {
     }
   });
 };
+
+FileUpload.deleteDistributor = function ({ id }) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex.transaction(async trx => {
+        const distributor_delete = await trx("APSISIPDC.cr_distributor").where({ id: id }).delete();
+        if (distributor_delete <= 0) reject(sendApiResult(false, "Could not Found Distributor"))
+        resolve(sendApiResult(true, "Distributor Deleted Successfully", distributor_delete))
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  })
+}
+
+FileUpload.editDistributor = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex.transaction(async trx => {
+        const distributor_update = await trx("APSISIPDC.cr_distributor").where({ id: req.body.id }).update({
+          'distributor_name': req.body.distributor_name,
+          'distributor_code': req.body.distributor_code,
+          'distributor_tin': req.body.distributor_tin,
+          'official_email': req.body.official_email,
+          'official_contact_number': req.body.official_contact_number,
+          'is_distributor_or_third_party_agency': req.body.is_distributor_or_third_party_agency,
+          'corporate_registration_no': req.body.corporate_registration_no,
+          'trade_license_no': req.body.trade_license_no,
+          'registered_office_bangladesh': req.body.registered_office_bangladesh,
+          'ofc_address1': req.body.ofc_address1,
+          'ofc_address2': req.body.ofc_address2,
+          'ofc_postal_code': req.body.ofc_postal_code,
+          'ofc_post_office': req.body.ofc_post_office,
+          'ofc_thana': req.body.ofc_thana,
+          'ofc_district': req.body.ofc_district,
+          'ofc_division': req.body.ofc_division,
+          'name_of_authorized_representative': req.body.name_of_authorized_representative,
+          'autho_rep_full_name': req.body.autho_rep_full_name,
+          'autho_rep_nid': req.body.autho_rep_nid,
+          'autho_rep_designation': req.body.autho_rep_designation,
+          'autho_rep_phone': req.body.autho_rep_phone,
+          'autho_rep_email': req.body.autho_rep_email,
+          'region_of_operation': req.body.region_of_operation,
+          'updated_at': new Date(),
+          'updated_by': req.body.updated_by
+        });
+        if (distributor_update <= 0) reject(sendApiResult(false, "Could not Found Distributor"))
+        resolve(sendApiResult(true, "Distributor updated Successfully", distributor_update))
+      });
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  })
+}
 module.exports = FileUpload;
