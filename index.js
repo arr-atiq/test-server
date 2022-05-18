@@ -4,29 +4,31 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const logger = require('pino')();
-const auth = require('./controllers/auth');
+const YAML = require('yamljs');
+const swaggerUi = require('swagger-ui-express');
+
 
 const { informationLog, errorLog } = require('./log/log');
 
 const { PORT, NODE_ENV } = process.env;
 
-process.on('uncaughtException', (ex) => {
-  errorLog.error({
-    message: 'uncaughtException',
-    exception: ex,
-    time: Date.now(),
-  });
-  process.exit(1);
-});
+// process.on('uncaughtException', (ex) => {
+//   errorLog.error({
+//     message: 'uncaughtException',
+//     exception: ex,
+//     time: Date.now(),
+//   });
+//   process.exit(1);
+// });
 
-process.on('unhandledRejection', (ex) => {
-  errorLog.error({
-    message: 'unhandledRejection',
-    exception: ex,
-    time: Date.now(),
-  });
-  process.exit(1);
-});
+// process.on('unhandledRejection', (ex) => {
+//   errorLog.error({
+//     message: 'unhandledRejection',
+//     exception: ex,
+//     time: Date.now(),
+//   });
+//   process.exit(1);
+// });
 
 const app = express();
 app.use(express.static(`${__dirname}/public`));
@@ -71,15 +73,18 @@ function authenticateToken(req, res, next) {
   });
 }
 
-app.get('/', (req, res) => res.json({ message: 'Apsis dana platform is up and running' }));
-
-app.post('/login', auth.login);
+app.get('/', (req, res) => res.json({ message: 'Apsis Dana platform is up and running' }));
+app.use('/login', require('./routes/login'));
 app.use('/bulk', authenticateToken, require('./routes/bulk'));
 app.use('/menu', authenticateToken, require('./routes/menu'));
 app.use('/manufactuer', authenticateToken, require('./routes/manufactuer'));
 app.use('/distributor', authenticateToken, require('./routes/distributor'));
 app.use('/supervisor', authenticateToken, require('./routes/supervisor'));
 app.use('/salesagent', authenticateToken, require('./routes/salesagent'));
+
+const swaggerDocument = YAML.load('./swagger.yaml');
+swaggerDocument.host = process.env.HOSTIP.split('//')[1];
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.listen(PORT, () => {
   logger.info(`App on ${NODE_ENV} is running on port ${PORT}`);
