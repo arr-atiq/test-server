@@ -68,36 +68,7 @@ exports.login = async (req, res) => {
       remember_token: refreshToken,
     });
 
-    const userRoleInfo = await knex('APSISIPDC.cr_user_wise_role')
-      .select('cr_user_roles.name', 'cr_user_roles.user_type')
-      .innerJoin(
-        'APSISIPDC.cr_user_roles',
-        'cr_user_wise_role.role_id',
-        'cr_user_roles.id',
-      )
-      .where('cr_user_wise_role.user_id', userData.id)
-      .where('cr_user_wise_role.status', 'Active')
-      .first();
-
-    userData.designation = userRoleInfo.name;
-    const supportdistributorId = [];
-    let distributorId = '';
-    if (userRoleInfo.user_type === 'manufacturer_onboarding') {
-      distributorId = '';
-    } else if (userRoleInfo.user_type === 'distributor_onboarding') {
-      distributorId = await knex('APSISIPDC.cr_user_wise_distributor')
-        .select('distributor_id')
-        .where('user_id', userData.id)
-        .whereNotIn('dh_id', supportdistributorId)
-        .where('cr_user_wise_distributor.activation_status', 'Active')
-        .where('cr_user_wise_distributor.status', 'Active')
-        .pluck('distributor_id');
-    }
-
     delete userData.id;
-    delete userData.id;
-
-    userData.distributorId = distributorId;
     userData.token = token;
     userData.refreshToken = refreshToken;
 
