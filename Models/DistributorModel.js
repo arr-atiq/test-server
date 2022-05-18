@@ -282,6 +282,7 @@ FileUpload.getDistributorList = function (req) {
       const data = await knex('APSISIPDC.cr_distributor')
         .where('activation_status', 'Active')
         .select(
+          'id',
           'distributor_name',
           'distributor_code',
           'distributor_tin',

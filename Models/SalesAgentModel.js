@@ -173,6 +173,7 @@ FileUpload.getSalesAgentList = function (req) {
       const data = await knex('APSISIPDC.cr_sales_agent')
         .where('activation_status', 'Active')
         .select(
+          'id',
           'agent_name',
           'agent_nid',
           'phone',

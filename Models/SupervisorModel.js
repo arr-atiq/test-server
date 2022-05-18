@@ -173,6 +173,7 @@ FileUpload.getSupervisorList = function (req) {
       const data = await knex('APSISIPDC.cr_supervisor')
         .where('activation_status', 'Active')
         .select(
+          'id',
           'supervisor_name',
           'supervisor_nid',
           'phone',
