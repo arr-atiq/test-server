@@ -39,9 +39,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   'APSISIPDC.cr_distributor.corporate_registration_no',
                   distributor_corporate_reg,
                 );
-              const duplication_check_val = parseInt(
-                duplication_check[0].count,
-              );
+              const duplication_check_val = parseInt(duplication_check[0].count);
               if (duplication_check_val == 0) {
                 const temp_data = {
                   Distributor_Name: rows[index].Distributor_Name,
@@ -86,10 +84,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               }
             }
           }
-          if (
-            Object.keys(rows).length != 0
-            && Object.keys(data_array).length == 0
-          ) {
+          if (Object.keys(rows).length != 0 && Object.keys(data_array).length == 0) {
             const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
             const empty_insert_log = {
               sys_date: new Date(date),
@@ -254,7 +249,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 file_for: folder_name,
                 file_path: `public/configuration_file/${folder_name}`,
                 file_name: filename,
-                found_rows: Object.keys(data_array).length,
+                found_rows: Object.keys(rows).length,
                 upload_rows: Object.keys(distributor_insert_ids).length,
                 created_by: parseInt(req.user_id),
               };
