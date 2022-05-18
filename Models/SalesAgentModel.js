@@ -6,7 +6,7 @@ const {
 } = require('../controllers/helperController');
 const knex = require('../config/database');
 
-const FileUpload = function () {};
+const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -241,4 +241,52 @@ FileUpload.getSalesAgentList = function (req) {
   });
 };
 
+FileUpload.deleteSalesAgent = function ({ id }) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex.transaction(async trx => {
+        const salesagent_delete = await trx("APSISIPDC.cr_sales_agent").where({ id: id }).delete();
+        if (salesagent_delete <= 0) reject(sendApiResult(false, "Could not Found Salesagent"))
+        resolve(sendApiResult(true, "Salesagent Deleted Successfully", salesagent_delete))
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  })
+}
+
+FileUpload.editSalesAgent = function (req) {
+  const {
+    agent_name,
+    agent_nid,
+    phone,
+    manufacturer_id,
+    agent_employee_code,
+    autho_supervisor_employee_code,
+    region_of_operation,
+    updated_by
+  } = req.body;
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex.transaction(async trx => {
+        const salesagent_update = await trx("APSISIPDC.cr_sales_agent").where({ id: req.params.id }).update({
+          'agent_name': agent_name,
+          'agent_nid': agent_nid,
+          'phone': phone,
+          'manufacturer_id': manufacturer_id,
+          'agent_employee_code': agent_employee_code,
+          'autho_supervisor_employee_code': autho_supervisor_employee_code,
+          'region_of_operation': region_of_operation,
+          'updated_at': new Date(),
+          'updated_by': updated_by
+        });
+        if (salesagent_update <= 0) reject(sendApiResult(false, "Could not Found Salesagent"))
+        resolve(sendApiResult(true, "Salesagent updated Successfully", salesagent_update))
+      });
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  })
+}
 module.exports = FileUpload;
