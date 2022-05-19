@@ -57,11 +57,9 @@ paths:
           schema:
             $ref: '#/definitions/ApiResponse'
         '400':
-          description: Invalid Fields
+          description: Bad request
         '500':
-          description: Internal Server Error  
-        "500":
-          description: Internal Server Error
+          description: Internal Server Error 
 
 securityDefinitions:
   x-access-token:
