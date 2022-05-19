@@ -10,6 +10,7 @@ const swaggerUi = require('swagger-ui-express');
 const { informationLog, errorLog } = require('./log/log');
 const { decodeToken } = require('./controllers/helper');
 
+
 const { PORT, NODE_ENV } = process.env;
 
 // process.on('uncaughtException', (ex) => {

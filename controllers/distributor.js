@@ -34,7 +34,6 @@ const importExcelData2DB = async function (filename, req) {
   }
 };
 
-// @Arfin
 
 exports.getDistributorList = async (req, res) => {
   try {

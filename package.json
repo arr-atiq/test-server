@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "check": "prettier --write . && eslint --fix .  --ext .js",
+    "check": "prettier --write .",
     "code:format": "prettier --write .",
     "lint:fix": "eslint --fix .  --ext .js"
   },
@@ -29,6 +29,7 @@
     "fs": "^0.0.1-security",
     "fs-extra": "^10.1.0",
     "get-base-url": "^3.0.2",
+    "joi": "^17.6.0",
     "jsonwebtoken": "^8.5.1",
     "knex": "^0.21.14",
     "knex-generic-errors": "^0.1.5",
