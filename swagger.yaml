@@ -36,7 +36,30 @@ paths:
           description: Invalid Fields
         '500':
           description: Internal Server Error    
-
+  /scheme:
+    post:
+      tags:
+        - Scheme
+      summary: Create Scheme
+      description: API for creating scheme by Dana Admin.
+      parameters:
+        - in: body
+          name: body
+          description: Scheme Payload
+          required: true
+          schema:
+            $ref: '#/definitions/Scheme'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Scheme created Successfull
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        '400':
+          description: Invalid Fields
+        '500':
+          description: Internal Server Error  
 securityDefinitions:
   x-access-token:
     type: apiKey
@@ -52,6 +75,38 @@ definitions:
       password:
         type: string
         description: Pasword of the user
+  Scheme: 
+    properties:
+      scheme_name:
+        type: string
+        description: Scheme name 
+      rate_of_interest:
+        type: number
+        description: Rate of interest (%)    
+      loan_tenor_in_days:
+        type: integer
+        description:  Loan Tenor (days)  
+      expiry_date:
+        type: string
+        description: Expiry (day/month/year) for sanction limi 
+      grace_periods_in_days:
+        type: integer
+        description: Grace period (days) 
+      penalty_periods:
+        type: integer
+        description: Penal period (days) 
+      daily_penalty:
+        type: number
+        description: Daily penalty (%)  
+      processing_cost:
+        type: number
+        description: Processing fee (BDT)  
+      transaction_fee:
+        type: number
+        description: Transaction cost (BDT)  
+      collection_fee_sharing_with_agency:
+        type: number
+        description: Collection fee sharing with agency (%)                                                                           
   ApiResponse:
     type: object
     properties:

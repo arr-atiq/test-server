@@ -6,6 +6,7 @@ const axios = require('axios');
 const moment = require('moment');
 const excel = require('excel4node');
 const knex = require('../config/database');
+const jwt = require('jsonwebtoken');
 
 exports.sendApiResult = function (success, message, data = {}) {
   var data = {
@@ -610,4 +611,12 @@ exports.uploadDynamicBulkConfig = function (name) {
   });
   return storage;
 };
-// @kamruzzaman - end
+
+
+module.exports.decodeToken = async token => {
+  const decoded = jwt.verify(
+    token,
+    process.env.JWT_SECRET
+  );
+  return decoded.userData.id;
+};

@@ -3,10 +3,10 @@ const express = require('express');
 const readXlsxFile = require('read-excel-file/node');
 const xlsx = require('xlsx');
 const moment = require('moment');
-const { sendApiResult, uploaddir } = require('./helperController');
-const superModel = require('../Models/SupervisorModel');
+const { sendApiResult, uploaddir } = require('./helper');
+const distModel = require('../Models/Distributor');
 
-exports.uploadSupervisorOnboardingFile = async (req, res) => {
+exports.uploadDistributorOnboardingFile = async (req, res) => {
   const upload = await importExcelData2DB(req.file.filename, req.body);
   res.status(200).send(upload);
 };
@@ -25,7 +25,7 @@ const importExcelData2DB = async function (filename, req) {
       const sheetname = sheetnames[i];
       arrayName = sheetname.toString();
       resData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetname]);
-      var insert = await superModel.insertExcelData(resData, filename, req);
+      var insert = await distModel.insertExcelData(resData, filename, req);
     }
     return insert;
   } catch (error) {
@@ -33,30 +33,30 @@ const importExcelData2DB = async function (filename, req) {
   }
 };
 
-// @ Arfin
+// @Arfin
 
-exports.getSupervisorList = async (req, res) => {
+exports.getDistributorList = async (req, res) => {
   try {
-    const result = await superModel.getSupervisorList(req.body);
+    const result = await distModel.getDistributorList(req.body);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
 };
 
-exports.deleteSupervisor = async(req,res)=>{
+exports.deleteDistributor = async (req, res) => {
   try {
-      const supervisor = await superModel.deleteSupervisor(req.params);
-      res.status(200).send(supervisor);
+    const distributor = await distModel.deleteDistributor(req.params);
+    res.status(200).send(distributor);
   } catch (error) {
-      res.send(sendApiResult(false,error.message));
+    res.send(sendApiResult(false, error.message));
   }
 }
 
-exports.editSupervisor = async (req, res) => {
+exports.editDistributor = async (req, res) => {
   try {
-    const supervisor = await superModel.editSupervisor(req);
-    res.status(200).send(supervisor);
+    const distributor = await distModel.editDistributor(req);
+    res.status(200).send(distributor);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }

@@ -1,4 +1,4 @@
-const { sendApiResult } = require('../controllers/helperController');
+const { sendApiResult } = require('../controllers/helper');
 const knex = require('../config/database');
 
 const Menu = function () {};

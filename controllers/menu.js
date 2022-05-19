@@ -1,5 +1,5 @@
-const { sendApiResult } = require('./helperController');
-const Menu = require('../Models/MenuModel');
+const { sendApiResult } = require('./helper');
+const Menu = require('../Models/Menu');
 
 exports.menuList = async (req, res) => {
   try {

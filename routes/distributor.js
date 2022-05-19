@@ -1,7 +1,7 @@
 const express = require('express');
 
 const router = express.Router();
-const distributor = require('../controllers/distributorController');
+const distributor = require('../controllers/distributor');
 
 router.get('/distributors', distributor.getDistributorList);
 router.put("/distributor/:id", distributor.editDistributor);
