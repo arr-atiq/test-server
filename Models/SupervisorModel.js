@@ -6,7 +6,7 @@ const {
 } = require('../controllers/helperController');
 const knex = require('../config/database');
 
-const FileUpload = function () { };
+const FileUpload = function () {};
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -204,16 +204,24 @@ FileUpload.getSupervisorList = function (req) {
 FileUpload.deleteSupervisor = function ({ id }) {
   return new Promise(async (resolve, reject) => {
     try {
-      await knex.transaction(async trx => {
-        const supervisor_delete = await trx("APSISIPDC.cr_supervisor").where({ id: id }).delete();
-        if (supervisor_delete <= 0) reject(sendApiResult(false, "Could not Found Supervisor"))
-        resolve(sendApiResult(true, "Supervisor Deleted Successfully", supervisor_delete))
+      await knex.transaction(async (trx) => {
+        const supervisor_delete = await trx('APSISIPDC.cr_supervisor')
+          .where({ id })
+          .delete();
+        if (supervisor_delete <= 0) reject(sendApiResult(false, 'Could not Found Supervisor'));
+        resolve(
+          sendApiResult(
+            true,
+            'Supervisor Deleted Successfully',
+            supervisor_delete,
+          ),
+        );
       });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
+  });
+};
 
 FileUpload.editSupervisor = function (req) {
   const {
@@ -223,29 +231,36 @@ FileUpload.editSupervisor = function (req) {
     manufacturer_id,
     supervisor_employee_code,
     region_of_operation,
-    updated_by
+    updated_by,
   } = req.body;
   return new Promise(async (resolve, reject) => {
     try {
-      await knex.transaction(async trx => {
-        const supervisor_update = await trx("APSISIPDC.cr_supervisor").where({ id: req.params.id }).update({
-          'supervisor_name': supervisor_name,
-          'supervisor_nid': supervisor_nid,
-          'phone': phone,
-          'manufacturer_id': manufacturer_id,
-          'supervisor_employee_code': supervisor_employee_code,
-          'region_of_operation': region_of_operation,
-          'updated_at': new Date(),
-          'updated_by': updated_by
-        });
-        if (supervisor_update <= 0) reject(sendApiResult(false, "Could not Found Supervisor"))
-        resolve(sendApiResult(true, "Supervisor updated Successfully", supervisor_update))
+      await knex.transaction(async (trx) => {
+        const supervisor_update = await trx('APSISIPDC.cr_supervisor')
+          .where({ id: req.params.id })
+          .update({
+            supervisor_name,
+            supervisor_nid,
+            phone,
+            manufacturer_id,
+            supervisor_employee_code,
+            region_of_operation,
+            updated_at: new Date(),
+            updated_by,
+          });
+        if (supervisor_update <= 0) reject(sendApiResult(false, 'Could not Found Supervisor'));
+        resolve(
+          sendApiResult(
+            true,
+            'Supervisor updated Successfully',
+            supervisor_update,
+          ),
+        );
       });
-
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
+  });
+};
 
 module.exports = FileUpload;

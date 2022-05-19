@@ -6,7 +6,7 @@ const {
 } = require('../controllers/helperController');
 const knex = require('../config/database');
 
-const FileUpload = function () { };
+const FileUpload = function () {};
 require('dotenv').config();
 
 FileUpload.insertExcelData = function (rows, filename, req) {
@@ -213,7 +213,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
   });
 };
 
-//@ Arfin- start-coding
+// @ Arfin- start-coding
 
 FileUpload.getManufacturerList = function (req) {
   // var query = req;
@@ -225,9 +225,14 @@ FileUpload.getManufacturerList = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex('APSISIPDC.cr_manufacturer')
-        .leftJoin("APSISIPDC.cr_manufacturer_type_entity", "cr_manufacturer_type_entity.id", "cr_manufacturer.type_of_entity")
+        .leftJoin(
+          'APSISIPDC.cr_manufacturer_type_entity',
+          'cr_manufacturer_type_entity.id',
+          'cr_manufacturer.type_of_entity',
+        )
         .where('activation_status', 'Active')
-        .select('cr_manufacturer.id',
+        .select(
+          'cr_manufacturer.id',
           'manufacturer_name',
           knex.raw('"cr_manufacturer_type_entity"."name" as "type_of_entity"'),
           'name_of_scheme',
@@ -278,17 +283,24 @@ FileUpload.getManufacturerList = function (req) {
 FileUpload.deleteManufacturer = function ({ id }) {
   return new Promise(async (resolve, reject) => {
     try {
-      await knex.transaction(async trx => {
-        const manufacturer_delete = await trx("APSISIPDC.cr_manufacturer").where({ id: id }).delete();
-        if (manufacturer_delete <= 0) reject(sendApiResult(false, "Could not Found manufacturer"))
-        resolve(sendApiResult(true, "Manufacturer Deleted Successfully", manufacturer_delete))
+      await knex.transaction(async (trx) => {
+        const manufacturer_delete = await trx('APSISIPDC.cr_manufacturer')
+          .where({ id })
+          .delete();
+        if (manufacturer_delete <= 0) reject(sendApiResult(false, 'Could not Found manufacturer'));
+        resolve(
+          sendApiResult(
+            true,
+            'Manufacturer Deleted Successfully',
+            manufacturer_delete,
+          ),
+        );
       });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
-
+  });
+};
 
 FileUpload.editManufacturer = function (req) {
   const {
@@ -324,60 +336,69 @@ FileUpload.editManufacturer = function (req) {
     autho_rep_designation,
     autho_rep_phone,
     autho_rep_email,
-    updated_by
+    updated_by,
   } = req.body;
 
   return new Promise(async (resolve, reject) => {
     try {
-      const type_entity_manufacturer = await knex('APSISIPDC.cr_manufacturer_type_entity')
+      const type_entity_manufacturer = await knex(
+        'APSISIPDC.cr_manufacturer_type_entity',
+      )
         .where('name', type_of_entity)
         .select('id');
-      await knex.transaction(async trx => {
-        const manufacturer_update = await trx("APSISIPDC.cr_manufacturer").where({ id: req.params.id }).update({
-          'manufacturer_name': manufacturer_name,
-          'type_of_entity': type_entity_manufacturer[0].id,
-          'name_of_scheme': name_of_scheme,
-          'registration_no': registration_no,
-          'manufacturer_tin': manufacturer_tin,
-          'manufacturer_bin': manufacturer_bin,
-          'website_link': website_link,
-          'corporate_ofc_address': corporate_ofc_address,
-          'corporate_ofc_address_1': corporate_ofc_address_1,
-          'corporate_ofc_address_2': corporate_ofc_address_2,
-          'corporate_ofc_postal_code': corporate_ofc_postal_code,
-          'corporate_ofc_post_office': corporate_ofc_post_office,
-          'corporate_ofc_thana': corporate_ofc_thana,
-          'corporate_ofc_district': corporate_ofc_district,
-          'corporate_ofc_division': corporate_ofc_division,
-          'nature_of_business': nature_of_business,
-          'alternative_ofc_address': alternative_ofc_address,
-          'alternative_address_1': alternative_address_1,
-          'alternative_address_2': alternative_address_2,
-          'alternative_postal_code': alternative_postal_code,
-          'alternative_post_office': alternative_post_office,
-          'alternative_thana': alternative_thana,
-          'alternative_district': alternative_district,
-          'alternative_division': alternative_division,
-          'official_phone': official_phone,
-          'official_email': official_email,
-          'name_of_authorized_representative': name_of_authorized_representative,
-          'autho_rep_full_name': autho_rep_full_name,
-          'autho_rep_nid': autho_rep_nid,
-          'autho_rep_designation': autho_rep_designation,
-          'autho_rep_phone': autho_rep_phone,
-          'autho_rep_email': autho_rep_email,
-          'updated_at': new Date(),
-          'updated_by': updated_by
-        });
-        if (manufacturer_update <= 0) reject(sendApiResult(false, "Could not Found Manufacturer"))
-        resolve(sendApiResult(true, "Manufacturer updated Successfully", manufacturer_update))
+      await knex.transaction(async (trx) => {
+        const manufacturer_update = await trx('APSISIPDC.cr_manufacturer')
+          .where({ id: req.params.id })
+          .update({
+            manufacturer_name,
+            type_of_entity: type_entity_manufacturer[0].id,
+            name_of_scheme,
+            registration_no,
+            manufacturer_tin,
+            manufacturer_bin,
+            website_link,
+            corporate_ofc_address,
+            corporate_ofc_address_1,
+            corporate_ofc_address_2,
+            corporate_ofc_postal_code,
+            corporate_ofc_post_office,
+            corporate_ofc_thana,
+            corporate_ofc_district,
+            corporate_ofc_division,
+            nature_of_business,
+            alternative_ofc_address,
+            alternative_address_1,
+            alternative_address_2,
+            alternative_postal_code,
+            alternative_post_office,
+            alternative_thana,
+            alternative_district,
+            alternative_division,
+            official_phone,
+            official_email,
+            name_of_authorized_representative,
+            autho_rep_full_name,
+            autho_rep_nid,
+            autho_rep_designation,
+            autho_rep_phone,
+            autho_rep_email,
+            updated_at: new Date(),
+            updated_by,
+          });
+        if (manufacturer_update <= 0) reject(sendApiResult(false, 'Could not Found Manufacturer'));
+        resolve(
+          sendApiResult(
+            true,
+            'Manufacturer updated Successfully',
+            manufacturer_update,
+          ),
+        );
       });
-
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
+  });
+};
 
-//@ Arfin-end-coding
+// @ Arfin-end-coding
 module.exports = FileUpload;
