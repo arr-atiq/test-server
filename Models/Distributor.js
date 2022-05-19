@@ -3,7 +3,7 @@ const express = require('express');
 const {
   sendApiResult,
   getSettingsValue,
-} = require('../controllers/helperController');
+} = require('../controllers/helper');
 const knex = require('../config/database');
 
 const FileUpload = function () {};

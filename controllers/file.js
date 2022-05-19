@@ -1,7 +1,7 @@
 const xlsx = require('xlsx');
 const moment = require('moment');
 const { sendApiResult } = require('./helperController');
-const FileModel = require('../Models/FileModel');
+const FileModel = require('../Models/File');
 
 exports.uploadScopOutletsFile = async (req, res) => {
   const upload = await importScopeOutlets2DB(req.file.filename, req.body);

@@ -3,8 +3,8 @@ const express = require('express');
 const readXlsxFile = require('read-excel-file/node');
 const xlsx = require('xlsx');
 const moment = require('moment');
-const { sendApiResult, uploaddir } = require('./helperController');
-const superModel = require('../Models/SupervisorModel');
+const { sendApiResult, uploaddir } = require('./helper');
+const superModel = require('../Models/Supervisor');
 
 exports.uploadSupervisorOnboardingFile = async (req, res) => {
   const upload = await importExcelData2DB(req.file.filename, req.body);

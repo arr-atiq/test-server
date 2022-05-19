@@ -8,6 +8,7 @@ const YAML = require('yamljs');
 const swaggerUi = require('swagger-ui-express');
 
 const { informationLog, errorLog } = require('./log/log');
+const { decodeToken } = require('./controllers/helper');
 
 const { PORT, NODE_ENV } = process.env;
 
@@ -64,10 +65,12 @@ function authenticateToken(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1];
   if (token == null) return res.sendStatus(401);
 
-  jwt.verify(token, process.env.JWT_SECRET, (err) => {
+  jwt.verify(token, process.env.JWT_SECRET, async (err) => {
     if (err) {
       return res.sendStatus(403);
     }
+    const userId = await decodeToken(token);
+    req.user_id = userId;
     next();
   });
 }
@@ -80,6 +83,7 @@ app.use('/manufacturer', authenticateToken, require('./routes/manufacturer'));
 app.use('/distributor', authenticateToken, require('./routes/distributor'));
 app.use('/supervisor', authenticateToken, require('./routes/supervisor'));
 app.use('/salesagent', authenticateToken, require('./routes/salesagent'));
+app.use('/scheme', authenticateToken, require('./routes/scheme'));
 
 const swaggerDocument = YAML.load('./swagger.yaml');
 swaggerDocument.host = process.env.HOSTIP.split('//')[1];

@@ -4,12 +4,12 @@ const readXlsxFile = require('read-excel-file/node');
 const xlsx = require('xlsx');
 const moment = require('moment');
 const excel = require('excel4node');
-const manuFacModel = require('../Models/ManufacturerModel');
+const manuFacModel = require('../Models/Manufacturer');
 const {
   sendApiResult,
   uploaddir,
   generaeteExcel,
-} = require('./helperController');
+} = require('./helper');
 
 exports.uploadManufacturerOnboardingFile = async (req, res) => {
   console.log(req.file);

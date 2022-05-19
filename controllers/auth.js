@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const md5 = require('md5');
 const knex = require('../config/database');
-const { sendApiResult } = require('./helperController');
+const { sendApiResult } = require('./helper');
 
 exports.refreshToken = async (req, res) => {
   const { email } = req.body;

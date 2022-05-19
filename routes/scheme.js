@@ -1,8 +1,7 @@
 const express = require('express');
-
 const router = express.Router();
-const menu = require('../controllers/menu');
+const scheme = require('../controllers/scheme');
 
-router.post('/menu-list', menu.menuList);
+router.post('/', scheme.createScheme);
 
 module.exports = router;

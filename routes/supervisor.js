@@ -1,7 +1,7 @@
 const express = require('express');
 
 const router = express.Router();
-const supervisor = require('../controllers/supervisorController');
+const supervisor = require('../controllers/supervisor');
 
 router.get('/supervisors', supervisor.getSupervisorList);
 router.put('/supervisor/:id', supervisor.editSupervisor);

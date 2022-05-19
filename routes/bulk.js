@@ -2,12 +2,12 @@ const express = require('express');
 
 const router = express.Router();
 const multer = require('multer');
-const manufacturer = require('../controllers/manufacturerController');
-const distributor = require('../controllers/distributorController');
-const supervisor = require('../controllers/supervisorController');
-const salesagent = require('../controllers/salesAgentController');
-const menu = require('../controllers/menuController');
-const { uploadDynamicBulkConfig } = require('../controllers/helperController');
+const manufacturer = require('../controllers/manufacturer');
+const distributor = require('../controllers/distributor');
+const supervisor = require('../controllers/supervisor');
+const salesagent = require('../controllers/salesAgent');
+const menu = require('../controllers/menu');
+const { uploadDynamicBulkConfig } = require('../controllers/helper');
 
 const uploadDynBulkFile = multer({ storage: uploadDynamicBulkConfig('file') });
 
