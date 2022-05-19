@@ -7,6 +7,7 @@ const { sendApiResult, uploaddir } = require('./helper');
 const superModel = require('../Models/Supervisor');
 
 exports.uploadSupervisorOnboardingFile = async (req, res) => {
+  req.body.user_id = req.user_id
   const upload = await importExcelData2DB(req.file.filename, req.body);
   res.status(200).send(upload);
 };

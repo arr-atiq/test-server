@@ -12,7 +12,7 @@ const {
 } = require('./helper');
 
 exports.uploadManufacturerOnboardingFile = async (req, res) => {
-  console.log(req.file);
+  req.body.user_id = req.user_id
   if (req.file != 'undefined') {
     const upload = await importExcelData2DB(req.file.filename, req.body);
     res.status(200).send(upload);
