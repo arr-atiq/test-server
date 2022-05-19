@@ -6,7 +6,7 @@ const {
 } = require('../controllers/helper');
 const knex = require('../config/database');
 
-const FileUpload = function () { };
+const FileUpload = function () {};
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -28,7 +28,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .whereIn('user_type', folder_name);
           const user_role_id = user_roles[0].id;
 
-          // console.log(user_role_id+" === "+ main_insert_tbl); return false;
 
           const data_array = [];
           if (Object.keys(rows).length != 0) {
@@ -37,23 +36,32 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const duplication_check = await knex
                 .count('cr_supervisor.supervisor_nid as count')
                 .from('APSISIPDC.cr_supervisor')
-                .where('APSISIPDC.cr_supervisor.supervisor_nid',supervisor_nid);
-              const duplication_check_val = parseInt(duplication_check[0].count);
+                .where(
+                  'APSISIPDC.cr_supervisor.supervisor_nid',
+                  supervisor_nid,
+                );
+              const duplication_check_val = parseInt(
+                duplication_check[0].count,
+              );
               if (duplication_check_val == 0) {
                 const temp_data = {
                   Supervisor_Name: rows[index].Supervisor_Name,
                   Supervisor_NID: rows[index].Supervisor_NID,
                   Phone: rows[index].Phone,
                   Manufacturer: rows[index].Manufacturer,
-                  Supervisor_Employee_Code: rows[index].Supervisor_Employee_Code,
+                  Supervisor_Employee_Code:
+                    rows[index].Supervisor_Employee_Code,
                   Region_of_Operation: rows[index].Region_of_Operation,
-                  Distributor: rows[index].Distributor
+                  Distributor: rows[index].Distributor,
                 };
                 data_array.push(temp_data);
               }
             }
           }
-          if (Object.keys(rows).length != 0 && Object.keys(data_array).length == 0) {
+          if (
+            Object.keys(rows).length != 0
+            && Object.keys(data_array).length == 0
+          ) {
             const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
             const empty_insert_log = {
               sys_date: new Date(date),
@@ -64,7 +72,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               upload_rows: Object.keys(data_array).length,
               created_by: parseInt(req.user_id),
             };
-            await knex('APSISIPDC.cr_bulk_upload_file_log').insert(empty_insert_log);
+            await knex('APSISIPDC.cr_bulk_upload_file_log').insert(
+              empty_insert_log,
+            );
             msg = 'File Uploaded successfully!';
             resolve(sendApiResult(true, msg, empty_insert_log));
           }
@@ -79,7 +89,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 supervisor_nid: data_array[index].Supervisor_NID,
                 phone: data_array[index].Phone,
                 manufacturer_id: data_array[index].Manufacturer,
-                supervisor_employee_code: data_array[index].Supervisor_Employee_Code,
+                supervisor_employee_code:
+                  data_array[index].Supervisor_Employee_Code,
                 region_of_operation: data_array[index].Region_of_Operation,
                 created_by: req.user_id,
               };
@@ -184,27 +195,21 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
         })
         .then((result) => {
-          //
         })
         .catch((error) => {
           reject(sendApiResult(false, 'Data not inserted.'));
-          console.log(error);
+          logger.info(error);
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    console.log(error, 'Promise error');
+    logger.info(error, 'Promise error');
   });
 };
 
-// @Arfin
 
 FileUpload.getSupervisorList = function (req) {
-  // var query = req;
-  // var per_page = parseInt(req.per_page);
-  // var page = 2;
-
   const { page, per_page } = req;
 
   return new Promise(async (resolve, reject) => {
@@ -212,6 +217,7 @@ FileUpload.getSupervisorList = function (req) {
       const data = await knex('APSISIPDC.cr_supervisor')
         .where('activation_status', 'Active')
         .select(
+          'id',
           'supervisor_name',
           'supervisor_nid',
           'phone',
@@ -225,15 +231,7 @@ FileUpload.getSupervisorList = function (req) {
           isLengthAware: true,
         });
       if (data == 0) reject(sendApiResult(false, 'Not found.'));
-
-      // var total_amount = 0;
-      // for (let i = 0; i < data.length; i++) {
-      //     total_amount += parseFloat(data[i].credit_amount)
-      // }
-
-      // data.total_amount = total_amount.toFixed(2);
-
-      resolve(sendApiResult(true, 'Data fetched successfully', data));
+     resolve(sendApiResult(true, 'Data fetched successfully', data));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -243,16 +241,24 @@ FileUpload.getSupervisorList = function (req) {
 FileUpload.deleteSupervisor = function ({ id }) {
   return new Promise(async (resolve, reject) => {
     try {
-      await knex.transaction(async trx => {
-        const supervisor_delete = await trx("APSISIPDC.cr_supervisor").where({ id: id }).delete();
-        if (supervisor_delete <= 0) reject(sendApiResult(false, "Could not Found Supervisor"))
-        resolve(sendApiResult(true, "Supervisor Deleted Successfully", supervisor_delete))
+      await knex.transaction(async (trx) => {
+        const supervisor_delete = await trx('APSISIPDC.cr_supervisor')
+          .where({ id })
+          .delete();
+        if (supervisor_delete <= 0) reject(sendApiResult(false, 'Could not Found Supervisor'));
+        resolve(
+          sendApiResult(
+            true,
+            'Supervisor Deleted Successfully',
+            supervisor_delete,
+          ),
+        );
       });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
+  });
+};
 
 FileUpload.editSupervisor = function (req) {
   const {
@@ -262,29 +268,36 @@ FileUpload.editSupervisor = function (req) {
     manufacturer_id,
     supervisor_employee_code,
     region_of_operation,
-    updated_by
+    updated_by,
   } = req.body;
   return new Promise(async (resolve, reject) => {
     try {
-      await knex.transaction(async trx => {
-        const supervisor_update = await trx("APSISIPDC.cr_supervisor").where({ id: req.params.id }).update({
-          'supervisor_name': supervisor_name,
-          'supervisor_nid': supervisor_nid,
-          'phone': phone,
-          'manufacturer_id': manufacturer_id,
-          'supervisor_employee_code': supervisor_employee_code,
-          'region_of_operation': region_of_operation,
-          'updated_at': new Date(),
-          'updated_by': updated_by
-        });
-        if (supervisor_update <= 0) reject(sendApiResult(false, "Could not Found Supervisor"))
-        resolve(sendApiResult(true, "Supervisor updated Successfully", supervisor_update))
+      await knex.transaction(async (trx) => {
+        const supervisor_update = await trx('APSISIPDC.cr_supervisor')
+          .where({ id: req.params.id })
+          .update({
+            supervisor_name,
+            supervisor_nid,
+            phone,
+            manufacturer_id,
+            supervisor_employee_code,
+            region_of_operation,
+            updated_at: new Date(),
+            updated_by,
+          });
+        if (supervisor_update <= 0) reject(sendApiResult(false, 'Could not Found Supervisor'));
+        resolve(
+          sendApiResult(
+            true,
+            'Supervisor updated Successfully',
+            supervisor_update,
+          ),
+        );
       });
-
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
+  });
+};
 
 module.exports = FileUpload;

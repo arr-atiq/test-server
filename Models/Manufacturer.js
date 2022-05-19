@@ -6,7 +6,7 @@ const {
 } = require('../controllers/helper');
 const knex = require('../config/database');
 
-const FileUpload = function () { };
+const FileUpload = function () {};
 require('dotenv').config();
 
 FileUpload.insertExcelData = function (rows, filename, req) {
@@ -56,7 +56,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
           // Nature of business scope - end
 
-          // console.log(user_role_id+" === "+ main_insert_tbl); return false;
 
           const data_array = [];
           if (Object.keys(rows).length != 0) {
@@ -65,32 +64,43 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const duplication_check = await knex
                 .count('cr_manufacturer.registration_no as count')
                 .from('APSISIPDC.cr_manufacturer')
-                .where(
-                  'APSISIPDC.cr_manufacturer.registration_no',
-                  reg_no,
-                );
-              const duplication_check_val = parseInt(duplication_check[0].count);
+                .where('APSISIPDC.cr_manufacturer.registration_no', reg_no);
+              const duplication_check_val = parseInt(
+                duplication_check[0].count,
+              );
               if (duplication_check_val == 0) {
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity],
                   Name_of_Scheme: rows[index].Name_of_Scheme,
-                  Manufacturer_Registration_No: rows[index].Manufacturer_Registration_No,
+                  Manufacturer_Registration_No:
+                    rows[index].Manufacturer_Registration_No,
                   Manufacturer_TIN: rows[index].Manufacturer_TIN,
                   Manufacturer_BIN: rows[index].Manufacturer_BIN,
                   Website_URL: rows[index].Website_URL,
-                  Registered_Corporate_Office_Address_in_Bangladesh: rows[index].Registered_Corporate_Office_Address_in_Bangladesh,
-                  Corporate_Office_Address_Line_1: rows[index].Corporate_Office_Address_Line_1,
-                  Corporate_Office_Address_Line_2: rows[index].Corporate_Office_Address_Line_2,
-                  Corporate_Office_Postal_Code: rows[index].Corporate_Office_Postal_Code,
-                  Corporate_Office_Post_Office: rows[index].Corporate_Office_Post_Office,
+                  Registered_Corporate_Office_Address_in_Bangladesh:
+                    rows[index]
+                      .Registered_Corporate_Office_Address_in_Bangladesh,
+                  Corporate_Office_Address_Line_1:
+                    rows[index].Corporate_Office_Address_Line_1,
+                  Corporate_Office_Address_Line_2:
+                    rows[index].Corporate_Office_Address_Line_2,
+                  Corporate_Office_Postal_Code:
+                    rows[index].Corporate_Office_Postal_Code,
+                  Corporate_Office_Post_Office:
+                    rows[index].Corporate_Office_Post_Office,
                   Corporate_Office_Thana: rows[index].Corporate_Office_Thana,
-                  Corporate_Office_District: rows[index].Corporate_Office_District,
-                  Corporate_Office_Division: rows[index].Corporate_Office_Division,
-                  Nature_of_Business: nature_business_arr[rows[index].Nature_of_Business],
+                  Corporate_Office_District:
+                    rows[index].Corporate_Office_District,
+                  Corporate_Office_Division:
+                    rows[index].Corporate_Office_Division,
+                  Nature_of_Business:
+                    nature_business_arr[rows[index].Nature_of_Business],
                   Alternative_Addresses: rows[index].Alternative_Addresses,
-                  Alternative_Address_Line_1: rows[index].Alternative_Address_Line_1,
-                  Alternative_Address_Line_2: rows[index].Alternative_Address_Line_2,
+                  Alternative_Address_Line_1:
+                    rows[index].Alternative_Address_Line_1,
+                  Alternative_Address_Line_2:
+                    rows[index].Alternative_Address_Line_2,
                   Alternative_Postal_Code: rows[index].Alternative_Postal_Code,
                   Alternative_Post_Office: rows[index].Alternative_Post_Office,
                   Alternative_Thana: rows[index].Alternative_Thana,
@@ -98,12 +108,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Alternative_Division: rows[index].Alternative_Division,
                   Official_Phone_Number: rows[index].Official_Phone_Number,
                   Official_Email_ID: rows[index].Official_Email_ID,
-                  Authorized_Representative_Name: rows[index].Authorized_Representative_Name,
-                  Authorized_Representative_Full_Name: rows[index].Authorized_Representative_Full_Name,
-                  Authorized_Representative_NID: rows[index].Authorized_Representative_NID,
-                  Authorized_Representative_Designation: rows[index].Authorized_Representative_Designation,
-                  Authorized_Representative_Mobile_No: rows[index].Authorized_Representative_Mobile_No,
-                  Authorized_Representative_Official_Email_ID: rows[index].Authorized_Representative_Official_Email_ID,
+                  Authorized_Representative_Name:
+                    rows[index].Authorized_Representative_Name,
+                  Authorized_Representative_Full_Name:
+                    rows[index].Authorized_Representative_Full_Name,
+                  Authorized_Representative_NID:
+                    rows[index].Authorized_Representative_NID,
+                  Authorized_Representative_Designation:
+                    rows[index].Authorized_Representative_Designation,
+                  Authorized_Representative_Mobile_No:
+                    rows[index].Authorized_Representative_Mobile_No,
+                  Authorized_Representative_Official_Email_ID:
+                    rows[index].Authorized_Representative_Official_Email_ID,
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Official_Email_ID: rows[index].Official_Email_ID,
                   Official_Phone_Number: rows[index].Official_Phone_Number,
@@ -113,7 +129,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             }
           }
 
-          if (Object.keys(rows).length != 0 && Object.keys(data_array).length == 0) {
+          if (
+            Object.keys(rows).length != 0
+            && Object.keys(data_array).length == 0
+          ) {
             const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
             const empty_insert_log = {
               sys_date: new Date(date),
@@ -143,31 +162,49 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 manufacturer_tin: data_array[index].Manufacturer_TIN,
                 manufacturer_bin: data_array[index].Manufacturer_BIN,
                 website_link: data_array[index].Website_URL,
-                corporate_ofc_address:  data_array[index].Registered_Corporate_Office_Address_in_Bangladesh,
-                corporate_ofc_address_1: data_array[index].Corporate_Office_Address_Line_1,
-                corporate_ofc_address_2: data_array[index].Corporate_Office_Address_Line_2,
-                corporate_ofc_postal_code: data_array[index].Corporate_Office_Postal_Code,
-                corporate_ofc_post_office: data_array[index].Corporate_Office_Post_Office,
+                corporate_ofc_address:
+                  data_array[index]
+                    .Registered_Corporate_Office_Address_in_Bangladesh,
+                corporate_ofc_address_1:
+                  data_array[index].Corporate_Office_Address_Line_1,
+                corporate_ofc_address_2:
+                  data_array[index].Corporate_Office_Address_Line_2,
+                corporate_ofc_postal_code:
+                  data_array[index].Corporate_Office_Postal_Code,
+                corporate_ofc_post_office:
+                  data_array[index].Corporate_Office_Post_Office,
                 corporate_ofc_thana: data_array[index].Corporate_Office_Thana,
-                corporate_ofc_district: data_array[index].Corporate_Office_District,
-                corporate_ofc_division: data_array[index].Corporate_Office_Division,
+                corporate_ofc_district:
+                  data_array[index].Corporate_Office_District,
+                corporate_ofc_division:
+                  data_array[index].Corporate_Office_Division,
                 nature_of_business: data_array[index].Nature_of_Business,
-                alternative_ofc_address: data_array[index].Alternative_Addresses,
-                alternative_address_1: data_array[index].Alternative_Address_Line_1,
-                alternative_address_2: data_array[index].Alternative_Address_Line_2,
-                alternative_postal_code: data_array[index].Alternative_Postal_Code,
-                alternative_post_office: data_array[index].Alternative_Post_Office,
+                alternative_ofc_address:
+                  data_array[index].Alternative_Addresses,
+                alternative_address_1:
+                  data_array[index].Alternative_Address_Line_1,
+                alternative_address_2:
+                  data_array[index].Alternative_Address_Line_2,
+                alternative_postal_code:
+                  data_array[index].Alternative_Postal_Code,
+                alternative_post_office:
+                  data_array[index].Alternative_Post_Office,
                 alternative_thana: data_array[index].Alternative_Thana,
                 alternative_district: data_array[index].Alternative_District,
                 alternative_division: data_array[index].Alternative_Division,
                 official_phone: data_array[index].Official_Phone_Number,
                 official_email: data_array[index].Official_Email_ID,
-                name_of_authorized_representative: data_array[index].Authorized_Representative_Name,
-                autho_rep_full_name: data_array[index].Authorized_Representative_Full_Name,
+                name_of_authorized_representative:
+                  data_array[index].Authorized_Representative_Name,
+                autho_rep_full_name:
+                  data_array[index].Authorized_Representative_Full_Name,
                 autho_rep_nid: data_array[index].Authorized_Representative_NID,
-                autho_rep_designation: data_array[index].Authorized_Representative_Designation,
-                autho_rep_phone: data_array[index].Authorized_Representative_Mobile_No,
-                autho_rep_email: data_array[index].Authorized_Representative_Official_Email_ID,
+                autho_rep_designation:
+                  data_array[index].Authorized_Representative_Designation,
+                autho_rep_phone:
+                  data_array[index].Authorized_Representative_Mobile_No,
+                autho_rep_email:
+                  data_array[index].Authorized_Representative_Official_Email_ID,
                 created_by: req.user_id,
               };
               const insert_manufacture = await knex('APSISIPDC.cr_manufacturer')
@@ -234,7 +271,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             }
 
             if (
-              is_manufacture_wise_user_insert == 1 && is_user_wise_role_insert == 1
+              is_manufacture_wise_user_insert == 1
+              && is_user_wise_role_insert == 1
             ) {
               const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
               const insert_log = {
@@ -258,35 +296,33 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
         })
         .then((result) => {
-          //
         })
         .catch((error) => {
           reject(sendApiResult(false, 'Data not inserted.'));
-          console.log(error);
+          logger.info(error);
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    console.log(error, 'Promise error');
+    logger.info(error, 'Promise error');
   });
 };
 
-//@ Arfin- start-coding
 
 FileUpload.getManufacturerList = function (req) {
-  // var query = req;
-  // var per_page = parseInt(req.per_page);
-  // var page = 2;
-
   const { page, per_page } = req;
-
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex('APSISIPDC.cr_manufacturer')
-        .leftJoin("APSISIPDC.cr_manufacturer_type_entity", "cr_manufacturer_type_entity.id", "cr_manufacturer.type_of_entity")
+        .leftJoin(
+          'APSISIPDC.cr_manufacturer_type_entity',
+          'cr_manufacturer_type_entity.id',
+          'cr_manufacturer.type_of_entity',
+        )
         .where('activation_status', 'Active')
-        .select('cr_manufacturer.id',
+        .select(
+          'cr_manufacturer.id',
           'manufacturer_name',
           knex.raw('"cr_manufacturer_type_entity"."name" as "type_of_entity"'),
           'name_of_scheme',
@@ -337,17 +373,24 @@ FileUpload.getManufacturerList = function (req) {
 FileUpload.deleteManufacturer = function ({ id }) {
   return new Promise(async (resolve, reject) => {
     try {
-      await knex.transaction(async trx => {
-        const manufacturer_delete = await trx("APSISIPDC.cr_manufacturer").where({ id: id }).delete();
-        if (manufacturer_delete <= 0) reject(sendApiResult(false, "Could not Found manufacturer"))
-        resolve(sendApiResult(true, "Manufacturer Deleted Successfully", manufacturer_delete))
+      await knex.transaction(async (trx) => {
+        const manufacturer_delete = await trx('APSISIPDC.cr_manufacturer')
+          .where({ id })
+          .delete();
+        if (manufacturer_delete <= 0) reject(sendApiResult(false, 'Could not Found manufacturer'));
+        resolve(
+          sendApiResult(
+            true,
+            'Manufacturer Deleted Successfully',
+            manufacturer_delete,
+          ),
+        );
       });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
-
+  });
+};
 
 FileUpload.editManufacturer = function (req) {
   const {
@@ -383,60 +426,68 @@ FileUpload.editManufacturer = function (req) {
     autho_rep_designation,
     autho_rep_phone,
     autho_rep_email,
-    updated_by
+    updated_by,
   } = req.body;
 
   return new Promise(async (resolve, reject) => {
     try {
-      const type_entity_manufacturer = await knex('APSISIPDC.cr_manufacturer_type_entity')
+      const type_entity_manufacturer = await knex(
+        'APSISIPDC.cr_manufacturer_type_entity',
+      )
         .where('name', type_of_entity)
         .select('id');
-      await knex.transaction(async trx => {
-        const manufacturer_update = await trx("APSISIPDC.cr_manufacturer").where({ id: req.params.id }).update({
-          'manufacturer_name': manufacturer_name,
-          'type_of_entity': type_entity_manufacturer[0].id,
-          'name_of_scheme': name_of_scheme,
-          'registration_no': registration_no,
-          'manufacturer_tin': manufacturer_tin,
-          'manufacturer_bin': manufacturer_bin,
-          'website_link': website_link,
-          'corporate_ofc_address': corporate_ofc_address,
-          'corporate_ofc_address_1': corporate_ofc_address_1,
-          'corporate_ofc_address_2': corporate_ofc_address_2,
-          'corporate_ofc_postal_code': corporate_ofc_postal_code,
-          'corporate_ofc_post_office': corporate_ofc_post_office,
-          'corporate_ofc_thana': corporate_ofc_thana,
-          'corporate_ofc_district': corporate_ofc_district,
-          'corporate_ofc_division': corporate_ofc_division,
-          'nature_of_business': nature_of_business,
-          'alternative_ofc_address': alternative_ofc_address,
-          'alternative_address_1': alternative_address_1,
-          'alternative_address_2': alternative_address_2,
-          'alternative_postal_code': alternative_postal_code,
-          'alternative_post_office': alternative_post_office,
-          'alternative_thana': alternative_thana,
-          'alternative_district': alternative_district,
-          'alternative_division': alternative_division,
-          'official_phone': official_phone,
-          'official_email': official_email,
-          'name_of_authorized_representative': name_of_authorized_representative,
-          'autho_rep_full_name': autho_rep_full_name,
-          'autho_rep_nid': autho_rep_nid,
-          'autho_rep_designation': autho_rep_designation,
-          'autho_rep_phone': autho_rep_phone,
-          'autho_rep_email': autho_rep_email,
-          'updated_at': new Date(),
-          'updated_by': updated_by
-        });
-        if (manufacturer_update <= 0) reject(sendApiResult(false, "Could not Found Manufacturer"))
-        resolve(sendApiResult(true, "Manufacturer updated Successfully", manufacturer_update))
+      await knex.transaction(async (trx) => {
+        const manufacturer_update = await trx('APSISIPDC.cr_manufacturer')
+          .where({ id: req.params.id })
+          .update({
+            manufacturer_name,
+            type_of_entity: type_entity_manufacturer[0].id,
+            name_of_scheme,
+            registration_no,
+            manufacturer_tin,
+            manufacturer_bin,
+            website_link,
+            corporate_ofc_address,
+            corporate_ofc_address_1,
+            corporate_ofc_address_2,
+            corporate_ofc_postal_code,
+            corporate_ofc_post_office,
+            corporate_ofc_thana,
+            corporate_ofc_district,
+            corporate_ofc_division,
+            nature_of_business,
+            alternative_ofc_address,
+            alternative_address_1,
+            alternative_address_2,
+            alternative_postal_code,
+            alternative_post_office,
+            alternative_thana,
+            alternative_district,
+            alternative_division,
+            official_phone,
+            official_email,
+            name_of_authorized_representative,
+            autho_rep_full_name,
+            autho_rep_nid,
+            autho_rep_designation,
+            autho_rep_phone,
+            autho_rep_email,
+            updated_at: new Date(),
+            updated_by,
+          });
+        if (manufacturer_update <= 0) reject(sendApiResult(false, 'Could not Found Manufacturer'));
+        resolve(
+          sendApiResult(
+            true,
+            'Manufacturer updated Successfully',
+            manufacturer_update,
+          ),
+        );
       });
-
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
+  });
+};
 
-//@ Arfin-end-coding
 module.exports = FileUpload;

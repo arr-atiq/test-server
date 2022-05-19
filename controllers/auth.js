@@ -68,7 +68,7 @@ exports.login = async (req, res) => {
       remember_token: refreshToken,
     });
 
-    delete userData.id;
+    // delete userData.id;
     userData.token = token;
     userData.refreshToken = refreshToken;
 

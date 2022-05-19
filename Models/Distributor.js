@@ -6,7 +6,7 @@ const {
 } = require('../controllers/helper');
 const knex = require('../config/database');
 
-const FileUpload = function () { };
+const FileUpload = function () {};
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -39,7 +39,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   'APSISIPDC.cr_distributor.corporate_registration_no',
                   distributor_corporate_reg,
                 );
-              const duplication_check_val = parseInt(duplication_check[0].count);
+              const duplication_check_val = parseInt(
+                duplication_check[0].count,
+              );
               if (duplication_check_val == 0) {
                 const temp_data = {
                   Distributor_Name: rows[index].Distributor_Name,
@@ -84,7 +86,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               }
             }
           }
-          if (Object.keys(rows).length != 0 && Object.keys(data_array).length == 0) {
+          if (
+            Object.keys(rows).length != 0
+            && Object.keys(data_array).length == 0
+          ) {
             const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
             const empty_insert_log = {
               sys_date: new Date(date),
@@ -264,27 +269,22 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
         })
         .then((result) => {
-          //
+          
         })
         .catch((error) => {
           reject(sendApiResult(false, 'Data not inserted.'));
-          console.log(error);
+          logger.info(error);
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    console.log(error, 'Promise error');
+    logger.info(error, 'Promise error');
   });
 };
 
-// @ Arfin
 
 FileUpload.getDistributorList = function (req) {
-  // var query = req;
-  // var per_page = parseInt(req.per_page);
-  // var page = 2;
-
   const { page, per_page } = req;
 
   return new Promise(async (resolve, reject) => {
@@ -292,6 +292,7 @@ FileUpload.getDistributorList = function (req) {
       const data = await knex('APSISIPDC.cr_distributor')
         .where('activation_status', 'Active')
         .select(
+          'id',
           'distributor_name',
           'distributor_code',
           'distributor_tin',
@@ -322,14 +323,6 @@ FileUpload.getDistributorList = function (req) {
           isLengthAware: true,
         });
       if (data == 0) reject(sendApiResult(false, 'Not found.'));
-
-      // var total_amount = 0;
-      // for (let i = 0; i < data.length; i++) {
-      //     total_amount += parseFloat(data[i].credit_amount)
-      // }
-
-      // data.total_amount = total_amount.toFixed(2);
-
       resolve(sendApiResult(true, 'Data fetched successfully', data));
     } catch (error) {
       reject(sendApiResult(false, error.message));
@@ -340,16 +333,24 @@ FileUpload.getDistributorList = function (req) {
 FileUpload.deleteDistributor = function ({ id }) {
   return new Promise(async (resolve, reject) => {
     try {
-      await knex.transaction(async trx => {
-        const distributor_delete = await trx("APSISIPDC.cr_distributor").where({ id: id }).delete();
-        if (distributor_delete <= 0) reject(sendApiResult(false, "Could not Found Distributor"))
-        resolve(sendApiResult(true, "Distributor Deleted Successfully", distributor_delete))
+      await knex.transaction(async (trx) => {
+        const distributor_delete = await trx('APSISIPDC.cr_distributor')
+          .where({ id })
+          .delete();
+        if (distributor_delete <= 0) reject(sendApiResult(false, 'Could not Found Distributor'));
+        resolve(
+          sendApiResult(
+            true,
+            'Distributor Deleted Successfully',
+            distributor_delete,
+          ),
+        );
       });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
+  });
+};
 
 FileUpload.editDistributor = function (req) {
   const {
@@ -376,46 +377,53 @@ FileUpload.editDistributor = function (req) {
     autho_rep_phone,
     autho_rep_email,
     region_of_operation,
-    updated_by
+    updated_by,
   } = req.body;
 
   return new Promise(async (resolve, reject) => {
     try {
-      await knex.transaction(async trx => {
-        const distributor_update = await trx("APSISIPDC.cr_distributor").where({ id: req.params.id }).update({
-          'distributor_name': distributor_name,
-          'distributor_code': distributor_code,
-          'distributor_tin': distributor_tin,
-          'official_email': official_email,
-          'official_contact_number': official_contact_number,
-          'is_distributor_or_third_party_agency': is_distributor_or_third_party_agency,
-          'corporate_registration_no': corporate_registration_no,
-          'trade_license_no': trade_license_no,
-          'registered_office_bangladesh': registered_office_bangladesh,
-          'ofc_address1': ofc_address1,
-          'ofc_address2': ofc_address2,
-          'ofc_postal_code': ofc_postal_code,
-          'ofc_post_office': ofc_post_office,
-          'ofc_thana': ofc_thana,
-          'ofc_district': ofc_district,
-          'ofc_division': ofc_division,
-          'name_of_authorized_representative': name_of_authorized_representative,
-          'autho_rep_full_name': autho_rep_full_name,
-          'autho_rep_nid': autho_rep_nid,
-          'autho_rep_designation': autho_rep_designation,
-          'autho_rep_phone': autho_rep_phone,
-          'autho_rep_email': autho_rep_email,
-          'region_of_operation': region_of_operation,
-          'updated_at': new Date(),
-          'updated_by': updated_by
-        });
-        if (distributor_update <= 0) reject(sendApiResult(false, "Could not Found Distributor"))
-        resolve(sendApiResult(true, "Distributor updated Successfully", distributor_update))
+      await knex.transaction(async (trx) => {
+        const distributor_update = await trx('APSISIPDC.cr_distributor')
+          .where({ id: req.params.id })
+          .update({
+            distributor_name,
+            distributor_code,
+            distributor_tin,
+            official_email,
+            official_contact_number,
+            is_distributor_or_third_party_agency,
+            corporate_registration_no,
+            trade_license_no,
+            registered_office_bangladesh,
+            ofc_address1,
+            ofc_address2,
+            ofc_postal_code,
+            ofc_post_office,
+            ofc_thana,
+            ofc_district,
+            ofc_division,
+            name_of_authorized_representative,
+            autho_rep_full_name,
+            autho_rep_nid,
+            autho_rep_designation,
+            autho_rep_phone,
+            autho_rep_email,
+            region_of_operation,
+            updated_at: new Date(),
+            updated_by,
+          });
+        if (distributor_update <= 0) reject(sendApiResult(false, 'Could not Found Distributor'));
+        resolve(
+          sendApiResult(
+            true,
+            'Distributor updated Successfully',
+            distributor_update,
+          ),
+        );
       });
-
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
+  });
+};
 module.exports = FileUpload;

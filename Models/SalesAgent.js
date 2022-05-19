@@ -6,7 +6,7 @@ const {
 } = require('../controllers/helper');
 const knex = require('../config/database');
 
-const FileUpload = function () { };
+const FileUpload = function () {};
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -28,7 +28,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .whereIn('user_type', folder_name);
           const user_role_id = user_roles[0].id;
 
-          // console.log(user_role_id+" === "+ main_insert_tbl); return false;
 
           const data_array = [];
           if (Object.keys(rows).length != 0) {
@@ -37,23 +36,29 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const duplication_check = await knex
                 .count('cr_sales_agent.agent_nid as count')
                 .from('APSISIPDC.cr_sales_agent')
-                .where('APSISIPDC.cr_sales_agent.agent_nid',agent_nid);
-              const duplication_check_val = parseInt(duplication_check[0].count);
+                .where('APSISIPDC.cr_sales_agent.agent_nid', agent_nid);
+              const duplication_check_val = parseInt(
+                duplication_check[0].count,
+              );
               if (duplication_check_val == 0) {
                 const temp_data = {
                   Sales_Agent_Name: rows[index].Sales_Agent_Name,
                   Sales_Agent_NID: rows[index].Sales_Agent_NID,
                   Phone: rows[index].Phone,
                   Manufacturer: rows[index].Manufacturer,
-                  Sales_Agent_Employee_Code: rows[index].Sales_Agent_Employee_Code,
+                  Sales_Agent_Employee_Code:
+                    rows[index].Sales_Agent_Employee_Code,
                   Region_of_Operation: rows[index].Region_of_Operation,
-                  Distributor: rows[index].Distributor
+                  Distributor: rows[index].Distributor,
                 };
                 data_array.push(temp_data);
               }
             }
           }
-          if (Object.keys(rows).length != 0 && Object.keys(data_array).length == 0) {
+          if (
+            Object.keys(rows).length != 0
+            && Object.keys(data_array).length == 0
+          ) {
             const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
             const empty_insert_log = {
               sys_date: new Date(date),
@@ -64,7 +69,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               upload_rows: Object.keys(data_array).length,
               created_by: parseInt(req.user_id),
             };
-            await knex('APSISIPDC.cr_bulk_upload_file_log').insert(empty_insert_log);
+            await knex('APSISIPDC.cr_bulk_upload_file_log').insert(
+              empty_insert_log,
+            );
             msg = 'File Uploaded successfully!';
             resolve(sendApiResult(true, msg, empty_insert_log));
           }
@@ -79,9 +86,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 agent_nid: data_array[index].Sales_Agent_NID,
                 phone: data_array[index].Phone,
                 manufacturer_id: data_array[index].Manufacturer,
-                agent_employee_code: data_array[index].Sales_Agent_Employee_Code,
+                agent_employee_code:
+                  data_array[index].Sales_Agent_Employee_Code,
                 region_of_operation: data_array[index].Region_of_Operation,
-                created_by: req.user_id
+                created_by: req.user_id,
               };
               distributor_ids.push(data_array[index].Distributor);
               const insert_sales_agent = await knex('APSISIPDC.cr_sales_agent')
@@ -184,27 +192,21 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
         })
         .then((result) => {
-          //
         })
         .catch((error) => {
           reject(sendApiResult(false, 'Data not inserted.'));
-          console.log(error);
+          logger.info(error);
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    console.log(error, 'Promise error');
+    logger.info(error, 'Promise error');
   });
 };
 
-// @ Arfin
 
 FileUpload.getSalesAgentList = function (req) {
-  // var query = req;
-  // var per_page = parseInt(req.per_page);
-  // var page = 2;
-
   const { page, per_page } = req;
 
   return new Promise(async (resolve, reject) => {
@@ -212,6 +214,7 @@ FileUpload.getSalesAgentList = function (req) {
       const data = await knex('APSISIPDC.cr_sales_agent')
         .where('activation_status', 'Active')
         .select(
+          'id',
           'agent_name',
           'agent_nid',
           'phone',
@@ -227,13 +230,6 @@ FileUpload.getSalesAgentList = function (req) {
         });
       if (data == 0) reject(sendApiResult(false, 'Not found.'));
 
-      // var total_amount = 0;
-      // for (let i = 0; i < data.length; i++) {
-      //     total_amount += parseFloat(data[i].credit_amount)
-      // }
-
-      // data.total_amount = total_amount.toFixed(2);
-
       resolve(sendApiResult(true, 'Data fetched successfully', data));
     } catch (error) {
       reject(sendApiResult(false, error.message));
@@ -244,16 +240,24 @@ FileUpload.getSalesAgentList = function (req) {
 FileUpload.deleteSalesAgent = function ({ id }) {
   return new Promise(async (resolve, reject) => {
     try {
-      await knex.transaction(async trx => {
-        const salesagent_delete = await trx("APSISIPDC.cr_sales_agent").where({ id: id }).delete();
-        if (salesagent_delete <= 0) reject(sendApiResult(false, "Could not Found Salesagent"))
-        resolve(sendApiResult(true, "Salesagent Deleted Successfully", salesagent_delete))
+      await knex.transaction(async (trx) => {
+        const salesagent_delete = await trx('APSISIPDC.cr_sales_agent')
+          .where({ id })
+          .delete();
+        if (salesagent_delete <= 0) reject(sendApiResult(false, 'Could not Found Salesagent'));
+        resolve(
+          sendApiResult(
+            true,
+            'Salesagent Deleted Successfully',
+            salesagent_delete,
+          ),
+        );
       });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
+  });
+};
 
 FileUpload.editSalesAgent = function (req) {
   const {
@@ -264,29 +268,36 @@ FileUpload.editSalesAgent = function (req) {
     agent_employee_code,
     autho_supervisor_employee_code,
     region_of_operation,
-    updated_by
+    updated_by,
   } = req.body;
   return new Promise(async (resolve, reject) => {
     try {
-      await knex.transaction(async trx => {
-        const salesagent_update = await trx("APSISIPDC.cr_sales_agent").where({ id: req.params.id }).update({
-          'agent_name': agent_name,
-          'agent_nid': agent_nid,
-          'phone': phone,
-          'manufacturer_id': manufacturer_id,
-          'agent_employee_code': agent_employee_code,
-          'autho_supervisor_employee_code': autho_supervisor_employee_code,
-          'region_of_operation': region_of_operation,
-          'updated_at': new Date(),
-          'updated_by': updated_by
-        });
-        if (salesagent_update <= 0) reject(sendApiResult(false, "Could not Found Salesagent"))
-        resolve(sendApiResult(true, "Salesagent updated Successfully", salesagent_update))
+      await knex.transaction(async (trx) => {
+        const salesagent_update = await trx('APSISIPDC.cr_sales_agent')
+          .where({ id: req.params.id })
+          .update({
+            agent_name,
+            agent_nid,
+            phone,
+            manufacturer_id,
+            agent_employee_code,
+            autho_supervisor_employee_code,
+            region_of_operation,
+            updated_at: new Date(),
+            updated_by,
+          });
+        if (salesagent_update <= 0) reject(sendApiResult(false, 'Could not Found Salesagent'));
+        resolve(
+          sendApiResult(
+            true,
+            'Salesagent updated Successfully',
+            salesagent_update,
+          ),
+        );
       });
-
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  })
-}
+  });
+};
 module.exports = FileUpload;

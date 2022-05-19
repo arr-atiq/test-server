@@ -7,7 +7,6 @@ const logger = require('pino')();
 const YAML = require('yamljs');
 const swaggerUi = require('swagger-ui-express');
 
-
 const { informationLog, errorLog } = require('./log/log');
 const { decodeToken } = require('./controllers/helper');
 
