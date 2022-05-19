@@ -197,21 +197,21 @@ exports.getManufacturerList = async (req, res) => {
   }
 };
 
-exports.deleteManufacturer = async(req,res)=>{
+exports.deleteManufacturer = async (req, res) => {
   try {
-      const manufacturer = await manuFacModel.deleteManufacturer(req.params);
-      res.status(200).send(manufacturer);
+    const manufacturer = await manuFacModel.deleteManufacturer(req.params);
+    res.status(200).send(manufacturer);
   } catch (error) {
-      res.send(sendApiResult(false,error.message));
+    res.send(sendApiResult(false, error.message));
   }
-}
+};
 
-exports.editManufacturer = async(req,res)=>{
+exports.editManufacturer = async (req, res) => {
   try {
-      const manufacturer = await manuFacModel.editManufacturer(req);
-      res.status(200).send(manufacturer);
+    const manufacturer = await manuFacModel.editManufacturer(req);
+    res.status(200).send(manufacturer);
   } catch (error) {
-      res.send(sendApiResult(false,error.message));
+    res.send(sendApiResult(false, error.message));
   }
-}
+};
 // @Arfin - Code End

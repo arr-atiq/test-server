@@ -30,21 +30,72 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
           // console.log(user_role_id+" === "+ main_insert_tbl); return false;
 
+          const data_array = [];
           if (Object.keys(rows).length != 0) {
+            for (let index = 0; index < rows.length; index++) {
+              const supervisor_nid = rows[index].Supervisor_NID;
+              const duplication_check = await knex
+                .count('cr_supervisor.supervisor_nid as count')
+                .from('APSISIPDC.cr_supervisor')
+                .where(
+                  'APSISIPDC.cr_supervisor.supervisor_nid',
+                  supervisor_nid,
+                );
+              const duplication_check_val = parseInt(
+                duplication_check[0].count,
+              );
+              if (duplication_check_val == 0) {
+                const temp_data = {
+                  Supervisor_Name: rows[index].Supervisor_Name,
+                  Supervisor_NID: rows[index].Supervisor_NID,
+                  Phone: rows[index].Phone,
+                  Manufacturer: rows[index].Manufacturer,
+                  Supervisor_Employee_Code:
+                    rows[index].Supervisor_Employee_Code,
+                  Region_of_Operation: rows[index].Region_of_Operation,
+                  Distributor: rows[index].Distributor,
+                };
+                data_array.push(temp_data);
+              }
+            }
+          }
+          if (
+            Object.keys(rows).length != 0
+            && Object.keys(data_array).length == 0
+          ) {
+            const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+            const empty_insert_log = {
+              sys_date: new Date(date),
+              file_for: folder_name,
+              file_path: `public/configuration_file/${folder_name}`,
+              file_name: filename,
+              found_rows: Object.keys(rows).length,
+              upload_rows: Object.keys(data_array).length,
+              created_by: parseInt(req.user_id),
+            };
+            await knex('APSISIPDC.cr_bulk_upload_file_log').insert(
+              empty_insert_log,
+            );
+            msg = 'File Uploaded successfully!';
+            resolve(sendApiResult(true, msg, empty_insert_log));
+          }
+
+          if (Object.keys(data_array).length != 0) {
             const supervisor_insert_ids = [];
             const user_insert_ids = [];
             const distributor_ids = [];
-            for (let index = 0; index < rows.length; index++) {
+            for (let index = 0; index < data_array.length; index++) {
               const team_supervisor = {
-                supervisor_name: rows[index].Supervisor_Name,
-                supervisor_nid: rows[index].Supervisor_NID,
-                phone: rows[index].Phone,
-                manufacturer_id: rows[index].Manufacturer,
-                supervisor_employee_code: rows[index].Supervisor_Employee_Code,
-                region_of_operation: rows[index].Region_of_Operation,
+                supervisor_name: data_array[index].Supervisor_Name,
+                supervisor_nid: data_array[index].Supervisor_NID,
+                phone: data_array[index].Phone,
+                manufacturer_id: data_array[index].Manufacturer,
+                supervisor_employee_code:
+                  data_array[index].Supervisor_Employee_Code,
+                region_of_operation: data_array[index].Region_of_Operation,
                 created_by: req.user_id,
               };
-              distributor_ids.push(rows[index].Distributor);
+              distributor_ids.push(data_array[index].Distributor);
               const insert_supervisor = await knex('APSISIPDC.cr_supervisor')
                 .insert(team_supervisor)
                 .returning('id');
@@ -53,9 +104,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               }
 
               const temp_user = {
-                name: rows[index].Supervisor_Name,
-                email: rows[index].Supervisor_Employee_Code,
-                phone: rows[index].Phone,
+                name: data_array[index].Supervisor_Name,
+                email: data_array[index].Supervisor_Employee_Code,
+                phone: data_array[index].Phone,
                 password: '5efd3b0647df9045c240729d31622c79',
                 cr_user_type: folder_name,
               };
@@ -173,6 +224,7 @@ FileUpload.getSupervisorList = function (req) {
       const data = await knex('APSISIPDC.cr_supervisor')
         .where('activation_status', 'Active')
         .select(
+          'id',
           'supervisor_name',
           'supervisor_nid',
           'phone',

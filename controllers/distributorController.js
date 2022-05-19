@@ -51,7 +51,7 @@ exports.deleteDistributor = async (req, res) => {
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
-}
+};
 
 exports.editDistributor = async (req, res) => {
   try {
@@ -60,4 +60,4 @@ exports.editDistributor = async (req, res) => {
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
-}
+};

@@ -44,14 +44,14 @@ exports.getSupervisorList = async (req, res) => {
   }
 };
 
-exports.deleteSupervisor = async(req,res)=>{
+exports.deleteSupervisor = async (req, res) => {
   try {
-      const supervisor = await superModel.deleteSupervisor(req.params);
-      res.status(200).send(supervisor);
+    const supervisor = await superModel.deleteSupervisor(req.params);
+    res.status(200).send(supervisor);
   } catch (error) {
-      res.send(sendApiResult(false,error.message));
+    res.send(sendApiResult(false, error.message));
   }
-}
+};
 
 exports.editSupervisor = async (req, res) => {
   try {
@@ -60,4 +60,4 @@ exports.editSupervisor = async (req, res) => {
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
-}
+};

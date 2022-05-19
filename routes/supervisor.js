@@ -4,7 +4,7 @@ const router = express.Router();
 const supervisor = require('../controllers/supervisorController');
 
 router.get('/supervisors', supervisor.getSupervisorList);
-router.put("/supervisor/:id", supervisor.editSupervisor);
-router.delete("/supervisor/:id", supervisor.deleteSupervisor);
+router.put('/supervisor/:id', supervisor.editSupervisor);
+router.delete('/supervisor/:id', supervisor.deleteSupervisor);
 
 module.exports = router;

@@ -1,14 +1,14 @@
-swagger: '2.0'
+swagger: "2.0"
 info:
-  version: '1.0.0'
+  version: "1.0.0"
   title: Dana Api Documentation
   description: Swagger documentation for the Dana project phase-1
-  termsOfService: 'http://swagger.io/terms/'
+  termsOfService: "http://swagger.io/terms/"
   contact:
     email: asad.zaman@apsissolutions.com
   license:
     name: Apache 2.0
-    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 schemes:
   - http
 paths:
@@ -24,18 +24,18 @@ paths:
           description: Login Payload
           required: true
           schema:
-            $ref: '#/definitions/Login'
+            $ref: "#/definitions/Login"
       produces:
         - application/json
       responses:
-        '200':
+        "200":
           description: Login Success
           schema:
-            $ref: '#/definitions/ApiResponse'
-        '400':
+            $ref: "#/definitions/ApiResponse"
+        "400":
           description: Invalid Fields
-        '500':
-          description: Internal Server Error    
+        "500":
+          description: Internal Server Error
 
 securityDefinitions:
   x-access-token:
@@ -60,6 +60,4 @@ definitions:
       message:
         type: string
       body:
-        type: object   
-
-        
+        type: object
