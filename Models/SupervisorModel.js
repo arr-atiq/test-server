@@ -28,7 +28,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .whereIn('user_type', folder_name);
           const user_role_id = user_roles[0].id;
 
-          // console.log(user_role_id+" === "+ main_insert_tbl); return false;
 
           const data_array = [];
           if (Object.keys(rows).length != 0) {
@@ -196,27 +195,21 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
         })
         .then((result) => {
-          //
         })
         .catch((error) => {
           reject(sendApiResult(false, 'Data not inserted.'));
-          console.log(error);
+          logger.info(error);
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    console.log(error, 'Promise error');
+    logger.info(error, 'Promise error');
   });
 };
 
-// @Arfin
 
 FileUpload.getSupervisorList = function (req) {
-  // var query = req;
-  // var per_page = parseInt(req.per_page);
-  // var page = 2;
-
   const { page, per_page } = req;
 
   return new Promise(async (resolve, reject) => {
@@ -238,15 +231,7 @@ FileUpload.getSupervisorList = function (req) {
           isLengthAware: true,
         });
       if (data == 0) reject(sendApiResult(false, 'Not found.'));
-
-      // var total_amount = 0;
-      // for (let i = 0; i < data.length; i++) {
-      //     total_amount += parseFloat(data[i].credit_amount)
-      // }
-
-      // data.total_amount = total_amount.toFixed(2);
-
-      resolve(sendApiResult(true, 'Data fetched successfully', data));
+     resolve(sendApiResult(true, 'Data fetched successfully', data));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }

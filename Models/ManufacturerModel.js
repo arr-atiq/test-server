@@ -56,7 +56,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
           // Nature of business scope - end
 
-          // console.log(user_role_id+" === "+ main_insert_tbl); return false;
 
           const data_array = [];
           if (Object.keys(rows).length != 0) {
@@ -297,29 +296,22 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
         })
         .then((result) => {
-          //
         })
         .catch((error) => {
           reject(sendApiResult(false, 'Data not inserted.'));
-          console.log(error);
+          logger.info(error);
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    console.log(error, 'Promise error');
+    logger.info(error, 'Promise error');
   });
 };
 
-// @ Arfin- start-coding
 
 FileUpload.getManufacturerList = function (req) {
-  // var query = req;
-  // var per_page = parseInt(req.per_page);
-  // var page = 2;
-
   const { page, per_page } = req;
-
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex('APSISIPDC.cr_manufacturer')
@@ -498,5 +490,4 @@ FileUpload.editManufacturer = function (req) {
   });
 };
 
-// @ Arfin-end-coding
 module.exports = FileUpload;
