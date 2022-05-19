@@ -1,0 +1,22 @@
+Table SQl : 
+CREATE TABLE "cr_scheme_parameter" ( "id" NUMBER generated AS identity,
+"scheme_id"  NUMBER  NOT NULL, 
+"uninterrupted_sales" NUMBER NULL, 
+"intrvl_check_uninterrupt_sales" NUMBER NULL, 
+"max_credit_limit_all" NUMBER NULL, 
+"max_credit_limit_by_manufacturer"  NUMBER NULL, 
+"min_avg_sales_manufacturer" NUMBER NULL,
+"avg_sales_duration" NUMBER NULL,
+"interval_checking_avg_sales_duration" NUMBER NULL, 
+"max_limit_no_trade_license" NUMBER NULL,
+"max_limit_no_security_cheque" NUMBER NULL,
+"multiplying_factor" NUMBER NULL,
+"interest_capitalisaion_period" NUMBER NULL,
+"created_by" INTEGER NOT NULL, 
+"created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+ALTER TABLE "cr_scheme_parameter"
+ADD (
+  "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

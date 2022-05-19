@@ -60,7 +60,80 @@ paths:
           description: Bad request
         '500':
           description: Internal Server Error 
-
+  /scheme/list:
+    get:
+      tags:
+        - Scheme
+      summary: Schemes list
+      description: API for getting schemes list
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: List of available schemes.
+  /scheme/{id}:
+    get:
+      tags:
+        - Scheme
+      summary: Scheme details by ID
+      description: API for getting scheme details
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: id            
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Scheme's details.  
+  /scheme/parameter:
+    post:
+      tags:
+        - Scheme
+      summary: Create Scheme Parameter
+      description: API for creating scheme parameter by Dana Admin.
+      parameters:
+        - in: body
+          name: body
+          description: Scheme Payload
+          required: true
+          schema:
+            $ref: '#/definitions/SchemeParameter'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Scheme created Successfull
+          schema:
+            $ref: '#/definitions/ApiResponse'
+        '400':
+          description: Bad request
+  /scheme/{scheme_id}/parameter:
+    get:
+      tags:
+        - Scheme
+      summary: Scheme parameter details by scheme_id
+      description: API for getting scheme pameter details
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: scheme_id            
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Scheme's parameter details.                            
 securityDefinitions:
   x-access-token:
     type: apiKey
@@ -107,7 +180,45 @@ definitions:
         description: Transaction cost (BDT)  
       collection_fee_sharing_with_agency:
         type: number
-        description: Collection fee sharing with agency (%)                                                                           
+        description: Collection fee sharing with agency (%)  
+  SchemeParameter: 
+    properties:
+      scheme_id:
+        type: integer
+        description: Scheme ID 
+      uninterrupted_sales:
+        type: number
+        description: Duration for uninterrupted sales with manufacturer (days/months)    
+      intrvl_check_uninterrupt_sales:
+        type: number
+        description:  Interval for checking uninterrupted sales with manufacturer (monthly/quarterly/biannually/annually)
+      max_credit_limit_all:
+        type: number
+        description: Maximum allowable credit limit (BDT) across all manufacturers
+      max_credit_limit_by_manufacturer:
+        type: number
+        description: Maximum allowable credit limit (BDT) for each manufacturer
+      min_avg_sales_manufacturer:
+        type: number
+        description: Minimum average sales value with manufacturer (BDT)
+      avg_sales_duration:
+        type: number
+        description: Duration for calculating average sales value (days/months)
+      interval_checking_avg_sales_duration:
+        type: number
+        description: Interval for calculating average sales value (month/quarter/semester/year) 
+      max_limit_no_trade_license:
+        type: number
+        description: Maximum limit that can be issued without trade license (BDT)  
+      max_limit_no_security_cheque:
+        type: number
+        description: Maximum allowable limit without security cheque  
+      multiplying_factor:
+        type: number
+        description: Multiplying factor for credit limit assignment  
+      interest_capitalisaion_period:
+        type: number
+        description: Period for interest capitalisation (daily, weekly, monthly/quarterly/bi-annually/annually)                                                                                                  
   ApiResponse:
     type: object
     properties:
