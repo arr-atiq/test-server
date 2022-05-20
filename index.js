@@ -4,29 +4,32 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const logger = require('pino')();
-const auth = require('./controllers/auth');
+const YAML = require('yamljs');
+const swaggerUi = require('swagger-ui-express');
 
 const { informationLog, errorLog } = require('./log/log');
+const { decodeToken } = require('./controllers/helper');
+
 
 const { PORT, NODE_ENV } = process.env;
 
-process.on('uncaughtException', (ex) => {
-  errorLog.error({
-    message: 'uncaughtException',
-    exception: ex,
-    time: Date.now(),
-  });
-  process.exit(1);
-});
+// process.on('uncaughtException', (ex) => {
+//   errorLog.error({
+//     message: 'uncaughtException',
+//     exception: ex,
+//     time: Date.now(),
+//   });
+//   process.exit(1);
+// });
 
-process.on('unhandledRejection', (ex) => {
-  errorLog.error({
-    message: 'unhandledRejection',
-    exception: ex,
-    time: Date.now(),
-  });
-  process.exit(1);
-});
+// process.on('unhandledRejection', (ex) => {
+//   errorLog.error({
+//     message: 'unhandledRejection',
+//     exception: ex,
+//     time: Date.now(),
+//   });
+//   process.exit(1);
+// });
 
 const app = express();
 app.use(express.static(`${__dirname}/public`));
@@ -63,24 +66,29 @@ function authenticateToken(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1];
   if (token == null) return res.sendStatus(401);
 
-  jwt.verify(token, process.env.JWT_SECRET, (err) => {
+  jwt.verify(token, process.env.JWT_SECRET, async (err) => {
     if (err) {
       return res.sendStatus(403);
     }
+    const userId = await decodeToken(token);
+    req.user_id = userId;
     next();
   });
 }
 
-app.get('/', (req, res) => res.json({ message: 'Apsis dana platform is up and running' }));
+app.get('/', (req, res) => res.json({ message: 'Apsis Dana platform is up and running' }));
+app.use('/login', require('./routes/login'));
+app.use('/bulk', authenticateToken, require('./routes/bulk'));
+app.use('/menu', authenticateToken, require('./routes/menu'));
+app.use('/manufacturer', authenticateToken, require('./routes/manufacturer'));
+app.use('/distributor', authenticateToken, require('./routes/distributor'));
+app.use('/supervisor', authenticateToken, require('./routes/supervisor'));
+app.use('/salesagent', authenticateToken, require('./routes/salesagent'));
+app.use('/scheme', authenticateToken, require('./routes/scheme'));
 
-app.post('/login', auth.login);
-app.use('/job', require('./routes/Cronjob'));
-app.use('/bulk', authenticateToken, require('./routes/Bulk'));
-app.use('/menu', authenticateToken, require('./routes/Menu'));
-app.use('/manufactuer', authenticateToken, require('./routes/Manufactuer'));
-app.use('/distributor', authenticateToken, require('./routes/Distributor'));
-app.use('/supervisor', authenticateToken, require('./routes/Supervisor'));
-app.use('/salesagent', authenticateToken, require('./routes/Salesagent'));
+const swaggerDocument = YAML.load('./swagger.yaml');
+swaggerDocument.host = process.env.HOSTIP.split('//')[1];
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.listen(PORT, () => {
   logger.info(`App on ${NODE_ENV} is running on port ${PORT}`);

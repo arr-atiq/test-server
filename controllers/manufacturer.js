@@ -4,15 +4,15 @@ const readXlsxFile = require('read-excel-file/node');
 const xlsx = require('xlsx');
 const moment = require('moment');
 const excel = require('excel4node');
-const manuFacModel = require('../Models/ManufacturerModel');
+const manuFacModel = require('../Models/Manufacturer');
 const {
   sendApiResult,
   uploaddir,
   generaeteExcel,
-} = require('./helperController');
+} = require('./helper');
 
 exports.uploadManufacturerOnboardingFile = async (req, res) => {
-  console.log(req.file);
+  req.body.user_id = req.user_id
   if (req.file != 'undefined') {
     const upload = await importExcelData2DB(req.file.filename, req.body);
     res.status(200).send(upload);
@@ -192,6 +192,24 @@ exports.getManufacturerList = async (req, res) => {
     const result = await manuFacModel.getManufacturerList(req.body);
     result.total_amount = result.data.total_amount;
     res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.deleteManufacturer = async (req, res) => {
+  try {
+    const manufacturer = await manuFacModel.deleteManufacturer(req.params);
+    res.status(200).send(manufacturer);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.editManufacturer = async (req, res) => {
+  try {
+    const manufacturer = await manuFacModel.editManufacturer(req);
+    res.status(200).send(manufacturer);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }

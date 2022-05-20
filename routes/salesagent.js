@@ -1,8 +1,10 @@
 const express = require('express');
 
 const router = express.Router();
-const salesagent = require('../controllers/salesAgentController');
+const salesagent = require('../controllers/salesAgent');
 
-router.post('/get-salesagent-list', salesagent.getSalesAgentList);
+router.get('/salesagents', salesagent.getSalesAgentList);
+router.put('/salesagent/:id', salesagent.editSalesAgent);
+router.delete('/salesagent/:id', salesagent.deleteSalesAgent);
 
 module.exports = router;

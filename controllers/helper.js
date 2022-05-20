@@ -6,6 +6,7 @@ const axios = require('axios');
 const moment = require('moment');
 const excel = require('excel4node');
 const knex = require('../config/database');
+const jwt = require('jsonwebtoken');
 
 exports.sendApiResult = function (success, message, data = {}) {
   var data = {
@@ -436,7 +437,7 @@ exports.OutletCreditInfo = async function (retailer_id) {
     if (moment().day() == 3) { // 3 == wednesday
       howManyDays = 3;
     }
-	*/
+  */
 
   const disbursements = await knex
     .select('dwi.*')
@@ -610,4 +611,31 @@ exports.uploadDynamicBulkConfig = function (name) {
   });
   return storage;
 };
-// @kamruzzaman - end
+
+
+module.exports.decodeToken = async token => {
+  const decoded = jwt.verify(
+    token,
+    process.env.JWT_SECRET
+  );
+  return decoded.userData.id;
+}
+exports.ValidatePhoneNumber = function (phoneNumber) {
+  const validatePhnRegex = /(^(01))[2|3-9]{1}(\d){8}$/;
+  if (phoneNumber.match(validatePhnRegex)) {
+    return true;
+  }
+  return false;
+};
+
+exports.ValidateNID = function (nid) {
+  if (!isNaN(nid)) {
+    const nidLength = nid.toString().length;
+    const nidValidLengthArr = [10, 13, 17];
+    if (nidValidLengthArr.includes(nidLength)) {
+      return true;
+    }
+    return false;
+  }
+  return false;
+}

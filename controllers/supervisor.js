@@ -3,10 +3,11 @@ const express = require('express');
 const readXlsxFile = require('read-excel-file/node');
 const xlsx = require('xlsx');
 const moment = require('moment');
-const { sendApiResult, uploaddir } = require('./helperController');
-const superModel = require('../Models/SupervisorModel');
+const { sendApiResult, uploaddir } = require('./helper');
+const superModel = require('../Models/Supervisor');
 
 exports.uploadSupervisorOnboardingFile = async (req, res) => {
+  req.body.user_id = req.user_id
   const upload = await importExcelData2DB(req.file.filename, req.body);
   res.status(200).send(upload);
 };
@@ -39,6 +40,24 @@ exports.getSupervisorList = async (req, res) => {
   try {
     const result = await superModel.getSupervisorList(req.body);
     res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.deleteSupervisor = async (req, res) => {
+  try {
+    const supervisor = await superModel.deleteSupervisor(req.params);
+    res.status(200).send(supervisor);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.editSupervisor = async (req, res) => {
+  try {
+    const supervisor = await superModel.editSupervisor(req);
+    res.status(200).send(supervisor);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }

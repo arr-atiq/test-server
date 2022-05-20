@@ -1,0 +1,21 @@
+Table SQl : 
+CREATE TABLE "cr_schema" ( "id" NUMBER generated AS identity, "scheme_name"  VARCHAR ( 100 ) NOT NULL, 
+"rate_of_interest" NUMBER NOT NULL, "loan_tenor_in_days" NUMBER NULL, "expiry_date" VARCHAR ( 24 ) NULL, 
+"grace_periods_in_days" INTEGER NULL, "penalty_periods" INTEGER NULL, "daily_penalty" NUMBER NULL,
+"processing_cost" NUMBER NULL,"transaction_fee" NUMBER NULL,"collection_fee_sharing_with_agency" NUMBER NULL,
+"active" char(1) DEFAULT '1',
+"created_by" INTEGER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+To add updated_at column:
+ALTER TABLE "cr_schema"
+ADD (
+  "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+create trigger set_updated_at
+  before update on cr_schema
+  for each row
+begin
+  :new.updated_at := current_timestamp();
+end;

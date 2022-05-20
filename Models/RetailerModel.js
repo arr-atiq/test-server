@@ -13,7 +13,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
         .transaction(async (trx) => {
           let msg;
           const folderName = req.file_for;
-          if (Object.keys(rows).length == 0) {
+          if (Object.keys(rows).length === 0) {
             resolve(
               sendApiResult(false, 'No Rows Found in your Uploaded File.'),
             );

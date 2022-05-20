@@ -3,10 +3,11 @@ const express = require('express');
 const readXlsxFile = require('read-excel-file/node');
 const xlsx = require('xlsx');
 const moment = require('moment');
-const { sendApiResult, uploaddir } = require('./helperController');
-const distModel = require('../Models/DistributorModel');
+const { sendApiResult, uploaddir } = require('./helper');
+const model = require('../Models/SalesAgent');
 
-exports.uploadDistributorOnboardingFile = async (req, res) => {
+exports.uploadSalesAgentOnboardingFile = async (req, res) => {
+  req.body.user_id = req.user_id
   const upload = await importExcelData2DB(req.file.filename, req.body);
   res.status(200).send(upload);
 };
@@ -25,7 +26,7 @@ const importExcelData2DB = async function (filename, req) {
       const sheetname = sheetnames[i];
       arrayName = sheetname.toString();
       resData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetname]);
-      var insert = await distModel.insertExcelData(resData, filename, req);
+      var insert = await model.insertExcelData(resData, filename, req);
     }
     return insert;
   } catch (error) {
@@ -33,12 +34,30 @@ const importExcelData2DB = async function (filename, req) {
   }
 };
 
-// @Arfin
+// @ Arfin
 
-exports.getDistributorList = async (req, res) => {
+exports.getSalesAgentList = async (req, res) => {
   try {
-    const result = await distModel.getDistributorList(req.body);
+    const result = await model.getSalesAgentList(req.body);
     res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.deleteSalesAgent = async (req, res) => {
+  try {
+    const salesagent = await model.deleteSalesAgent(req.params);
+    res.status(200).send(salesagent);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.editSalesAgent = async (req, res) => {
+  try {
+    const salesagent = await model.editSalesAgent(req);
+    res.status(200).send(salesagent);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
