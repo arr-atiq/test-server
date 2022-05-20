@@ -31,16 +31,14 @@ camelCase :: Recommended // we will use it.
 Api Convention :
 
 GET
-POST 
-PUT 
+POST
+PUT
 PATCH
 DELETE
 
-EXAMPLE ENDPOINT : 
-GET = {BASE_URL}/users  i.e Using This endpoint we will get all users list.
-GET = {BASE_URL}/user/:id  i.e Using This endpoint we will get single user details.
+EXAMPLE ENDPOINT :
+GET = {BASE_URL}/users i.e Using This endpoint we will get all users list.
+GET = {BASE_URL}/user/:id i.e Using This endpoint we will get single user details.
 POST = {BASE_URL}/user i.e Using this endpoint we will store user.
-DELETE = {BASE_URL}/user/:id  i.e Using This endpoint we will get single user deletion.
-PUT/PATCH = {BASE_URL}/user/:id  i.e Using This endpoint we will Update single user Record.
-
-
+DELETE = {BASE_URL}/user/:id i.e Using This endpoint we will get single user deletion.
+PUT/PATCH = {BASE_URL}/user/:id i.e Using This endpoint we will Update single user Record.
