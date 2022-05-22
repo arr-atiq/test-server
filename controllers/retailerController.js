@@ -19,13 +19,14 @@ const importExcelData2DB = async function (filename, req) {
     );
     const sheetnames = Object.keys(workbook.Sheets);
     let i = sheetnames.length;
+    var insert = '';
     while (i--) {
       const sheetname = sheetnames[i];
       const arrayName = sheetname.toString();
       resData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetname]);
-      const insert = await model.insertExcelData(resData, filename, req);
+      insert = await model.insertExcelData(resData, filename, req);
     }
-    return insert;
+    return insert;    
   } catch (error) {
     return sendApiResult(false, 'File not uploaded');
   }

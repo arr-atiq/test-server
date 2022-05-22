@@ -8,6 +8,7 @@ const supervisor = require('../controllers/supervisor');
 const salesagent = require('../controllers/salesAgent');
 const menu = require('../controllers/menu');
 const { uploadDynamicBulkConfig } = require('../controllers/helper');
+const retailer = require('../controllers/retailerController');
 
 const uploadDynBulkFile = multer({ storage: uploadDynamicBulkConfig('file') });
 
