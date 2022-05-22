@@ -14,6 +14,8 @@ exports.sendApiResult = function (success, message, data = {}) {
     message,
     data,
   };
+  console.log('success',data)
+
   return data;
 };
 
@@ -618,7 +620,7 @@ module.exports.decodeToken = async token => {
     token,
     process.env.JWT_SECRET
   );
-  return decoded.userData.id;
+  return decoded?.userData?.id;
 }
 exports.ValidatePhoneNumber = function (phoneNumber) {
   const validatePhnRegex = /(^(01))[2|3-9]{1}(\d){8}$/;

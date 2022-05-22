@@ -1,11 +1,11 @@
 const logger = require('pino')();
 const knex = require('../config/database');
 const Joi = require('joi');
+const { sendApiResult } = require('./helper');
 
 module.exports.createScheme = async (req, res) => {
   const { data } = req;
   const schemaAvailable = await knex.from('APSISIPDC.cr_schema').select('id').where('scheme_name', data.scheme_name)
-  console.log(schemaAvailable)
   try {
     const schemaId = schemaAvailable[0]?.id ?? false;
     if (!schemaId) {
@@ -94,3 +94,55 @@ module.exports.getParameterDetails = async (req, res) => {
   });
 
 }
+
+module.exports.temp = async (req, res) => {
+  const {
+   status,
+  } = req.body;
+
+
+    try {
+      if(req.body.RN == 1 ){
+          knex.transaction(async (trx) => {
+          const updateData = await trx('APSISIPDC.cr_retailer')
+            .where("id", req.params.id )
+            .update({
+             status: status
+            });
+            //.toSQL().toNative()
+          if (updateData <= 0){
+            res.send(sendApiResult(false, 'Could not Found temp')) ;
+          } else{
+            res.send(sendApiResult(
+                true,
+                'Temp updated Successfully',
+                updateData,
+              ))
+          }
+          
+      })
+     }
+      else{
+         knex.transaction(async (trx) => {
+            const updateData = await trx('APSISIPDC.cr_retailer_manu_dist_mapping')
+              .where({ id: req.params.id })
+              .update({
+               status : status
+              });
+            
+            if (updateData <= 0) res.send(sendApiResult(false, 'Could not Found temp'));
+            res.send(
+              sendApiResult(
+                true,
+                'Temp updated Successfully',
+                updateData,
+              ),
+            );
+         })
+      }
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+     
+}
+
