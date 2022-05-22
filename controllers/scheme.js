@@ -5,6 +5,7 @@ const Joi = require('joi');
 module.exports.createScheme = async (req, res) => {
   const { data } = req;
   const schemaAvailable = await knex.from('APSISIPDC.cr_schema').select('id').where('scheme_name', data.scheme_name)
+  console.log(schemaAvailable)
   try {
     const schemaId = schemaAvailable[0]?.id ?? false;
     if (!schemaId) {
