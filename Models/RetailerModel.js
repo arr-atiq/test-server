@@ -553,8 +553,8 @@ const checkMonthlySalesData = async function (monthCount = 12, minimumSalesAmoun
     }
     if (validData.includes(false)) return false;
     else return true;
-  }  
-  return false;
+  }
+  return false; 
 };
 
 const prepare_1RN_accountNumber = async function (max_r_number) {  
