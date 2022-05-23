@@ -8,7 +8,7 @@ module.exports.createScheme = async (req, res) => {
     .from("APSISIPDC.cr_schema")
     .select("id")
     .where("scheme_name", data.scheme_name);
-  console.log(schemaAvailable);
+  
   try {
     const schemaId = schemaAvailable[0]?.id ?? false;
     if (!schemaId) {
@@ -21,7 +21,7 @@ module.exports.createScheme = async (req, res) => {
     } else {
       return res.status(400).send({
         success: false,
-        message: "Fail :: scheme not created ",
+        message: "Fail :: scheme not created",
         response: "Schema name already Available",
       });
     }
@@ -83,13 +83,24 @@ module.exports.createParameter = async (req, res) => {
 
 module.exports.getParameterDetails = async (req, res) => {
   const { scheme_id } = req.params;
-  const schemaParameterDeatils = await knex
-    .from("APSISIPDC.cr_scheme_parameter")
-    .select()
-    .where("scheme_id", scheme_id);
+  const schemaParameterDeatils = await getParameterDetailsbyID(scheme_id);
   return res.status(200).send({
     success: true,
     message: "Success :: scheme parameter details ",
     data: schemaParameterDeatils,
   });
+};
+
+module.exports.getSchemeDetailsById = async function (scheme_id) {
+  const schemaDeatils = await getParameterDetailsbyID(scheme_id);
+  return schemaDeatils;
+};
+
+const getParameterDetailsbyID = async function (scheme_id) {
+  const schemaParameterDeatils = await knex
+    .from("APSISIPDC.cr_scheme_parameter")
+    .select()
+    .where("scheme_id", scheme_id).first();
+ 
+  return schemaParameterDeatils;
 };

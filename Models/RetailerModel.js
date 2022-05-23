@@ -4,10 +4,11 @@ const { getJsDateFromExcel } = require("excel-date-to-js");
 const {
   sendApiResult,
   ValidateNID,
-  UpdatedTime,
+  UpdatedTime
 } = require("../controllers/helper");
 const knex = require("../config/database");
-const scheme = require("../controllers/scheme");
+const {getSchemeDetailsById} = require("../controllers/scheme");
+const {creditLimit} = require("../controllers/credit_limit");
 
 const Retailer = function () {};
 
@@ -255,7 +256,7 @@ Retailer.getRetailerList = function (req) {
 
 Retailer.checkRetailerEligibility = function (req) {
   return new Promise(async (resolve, reject) => {
-    try {
+    try {    
       const manufacturerSql = await knex
         .from("APSISIPDC.cr_manufacturer")
         .select("id", "manufacturer_name")
@@ -397,6 +398,12 @@ Retailer.checkRetailerEligibility = function (req) {
             });
           ++disqualifiedOutletCount;
         }
+
+        var salesArray = [];
+        for (let i = 1; i <= 12; i++) {
+          salesArray.push(value["month_" + i]);
+        }
+
         if (validNID == true && validMonthlySalesData == true) {
           const checkMasterRetailer = await knex
             .from("APSISIPDC.cr_retailer")
@@ -457,8 +464,8 @@ Retailer.checkRetailerEligibility = function (req) {
                 ? 1000000
                 : r_number_rmn.MASTER_R_NUMBER;
 
-            console.log(r_number_rmn.MASTER_R_NUMBER);
-            console.log(max_r_number_rmn);
+            // console.log(r_number_rmn.MASTER_R_NUMBER);
+            // console.log(max_r_number_rmn);
 
             var temp_r_number_rmn = max_r_number_rmn++;
             var retailerManuSchemeMappingInsert = {
@@ -472,6 +479,7 @@ Retailer.checkRetailerEligibility = function (req) {
               manufacturer_id: manufacturerList[value.manufacturer],
               distributor_id: distributorList[value.distributor_code],
               scheme_id: value.scheme_id,
+              sales_array: JSON.stringify(salesArray),
               status: "Active",
             };
 
@@ -533,6 +541,7 @@ Retailer.checkRetailerEligibility = function (req) {
               manufacturer_id: manufacturerList[value.manufacturer],
               distributor_id: distributorList[value.distributor_code],
               scheme_id: value.scheme_id,
+              sales_array: JSON.stringify(salesArray),
               status: "Active",
             };
 
@@ -563,11 +572,41 @@ Retailer.checkRetailerEligibility = function (req) {
   });
 };
 
+Retailer.schemeWiseLimitConfigure = async function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const retailerList = await knex.from("APSISIPDC.cr_retailer_manu_scheme_mapping")
+            .select(
+              "id",
+              "scheme_id",
+              "sales_array"
+            )
+            .where("limit_status", 'Unset')
+            .where("status", 'Active');
 
-Retailer.schemeWiseLimitConfigure = function (req) {
-  // var scheme_id = 24;
-  // const reatilerSchemeDetails = scheme.getParameterDetails();
-  // console.log(reatilerSchemeDetails);
+      if (Object.keys(retailerList).length !== 0) {
+        for (const [key, value] of Object.entries(retailerList)) {      
+          var schemaParameterDeatils = await getSchemeDetailsById(value.scheme_id);
+          const salesArray = JSON.parse(value.sales_array);
+          const systemLimit = await creditLimit(schemaParameterDeatils.uninterrupted_sales, schemaParameterDeatils.min_avg_sales_manufacturer, schemaParameterDeatils.avg_sales_duration, schemaParameterDeatils.multiplying_factor, salesArray, schemaParameterDeatils.interval_checking_avg_sales_duration);
+          await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+              .where({ id: value.id })
+              .update({
+                system_limit: parseFloat(systemLimit),
+                limit_status: "Initiated",              
+                system_limit_date: new Date(),
+                updated_at: new Date()
+              });
+        };
+      } else {
+        var msg = 'No data Found';
+        reject(sendApiResult(false, msg));
+      }
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
 }
 
 const checkMonthlySalesData = async function (

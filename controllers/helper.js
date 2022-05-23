@@ -614,7 +614,7 @@ exports.uploadDynamicBulkConfig = function (name) {
   return storage;
 };
 
-module.exports.decodeToken = async (token) => {
+exports.decodeToken = async (token) => {
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
   return decoded.userData.id;
 };

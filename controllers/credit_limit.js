@@ -1,11 +1,7 @@
 const logger = require("pino")();
-module.exports.creditLimit = () => {
-  const uninterrupt = 12; // uninterrupted_sales
-  const min_avg_sale = 20000; // min_avg_sales_manufacturer
-  const duraion_avg_sale_calculation_month = 06; // avg_sales_duration
-  const multiplyFacotor = 2; // multiplying_factor
-  const sales_info = [20000, 0, 0, 0, 0, 0, 200000, 0, 0, 0, 0, 20000]; // need to configure
-  const interval_check_month = 1; // interval_checking_avg_sales_duration
+
+
+module.exports.creditLimit = async function (uninterrupt, min_avg_sale, duraion_avg_sale_calculation_month, multiplyFacotor, sales_info, interval_check_month) {
   var credit_limit = 0;
   var count_uninterrupt = 0;
   var count_uninterrupt_if_first_input_zero = 0;
