@@ -189,7 +189,7 @@ exports.generateManufacturerSample = async (req, res) => {
 
 exports.getManufacturerList = async (req, res) => {
   try {
-    const result = await manuFacModel.getManufacturerList(req.body);
+    const result = await manuFacModel.getManufacturerList(req.query);
     result.total_amount = result.data.total_amount;
     res.status(200).send(result);
   } catch (error) {
