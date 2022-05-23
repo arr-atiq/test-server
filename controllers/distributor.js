@@ -61,3 +61,12 @@ exports.editDistributor = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.getDistributorByManufacturer = async (req, res) => {
+  try {
+    const result = await distModel.getDistributorByManufacturer(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
