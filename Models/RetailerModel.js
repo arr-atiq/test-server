@@ -1,16 +1,13 @@
 const moment = require("moment");
 
-const { getJsDateFromExcel } = require("excel-date-to-js");
-const {
-  sendApiResult,
+const { getJsDateFromExcel } = require('excel-date-to-js');
+const { sendApiResult,
   ValidateNID,
   UpdatedTime
-} = require("../controllers/helper");
-const knex = require("../config/database");
-const {getSchemeDetailsById} = require("../controllers/scheme");
-const {creditLimit} = require("../controllers/credit_limit");
+} = require('../controllers/helperController');
+const knex = require('../config/database');
 
-const Retailer = function () {};
+const FileUpload = function () { };
 
 Retailer.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -87,8 +84,8 @@ Retailer.insertExcelData = function (rows, filename, req) {
                     ? rows[index].Retailer_Corporate_Registration_No
                     : null,
                 trade_license_no:
-                  rows[index].Trade_License_No_of_Primary_Establishment !==
-                  undefined
+                  rows[index].Trade_License_No_of_Primary_Establishment
+                    !== undefined
                     ? rows[index].Trade_License_No_of_Primary_Establishment
                     : null,
                 outlet_address:
@@ -123,8 +120,8 @@ Retailer.insertExcelData = function (rows, filename, req) {
                     : null,
                 autho_rep_full_name:
                   rows[index]
-                    .Full_Name_of_Retailer_Authorized_Representative !==
-                  undefined
+                    .Full_Name_of_Retailer_Authorized_Representative
+                    !== undefined
                     ? rows[index]
                         .Full_Name_of_Retailer_Authorized_Representative
                     : null,
@@ -137,8 +134,8 @@ Retailer.insertExcelData = function (rows, filename, req) {
                     ? rows[index].Mobile_No_of_Representative
                     : null,
                 autho_rep_email:
-                  rows[index].Official_Email_of_Retailer_Representative !==
-                  undefined
+                  rows[index].Official_Email_of_Retailer_Representative
+                    !== undefined
                     ? rows[index].Official_Email_of_Retailer_Representative
                     : null,
                 region_operation:
@@ -146,8 +143,8 @@ Retailer.insertExcelData = function (rows, filename, req) {
                     ? rows[index].Region_of_Operation
                     : null,
                 duration_sales_data:
-                  rows[index].Duration_of_Sales_Data_Submitted_in_Months !==
-                  undefined
+                  rows[index].Duration_of_Sales_Data_Submitted_in_Months
+                    !== undefined
                     ? rows[index].Duration_of_Sales_Data_Submitted_in_Months
                     : null,
                 scheme_id:
@@ -227,7 +224,7 @@ Retailer.insertExcelData = function (rows, filename, req) {
           //
         })
         .catch((error) => {
-          reject(sendApiResult(false, "Data not inserted."));
+          reject(sendApiResult(false, 'Data not inserted.'));
           // console.log(error);
         });
     } catch (error) {
@@ -351,64 +348,48 @@ Retailer.checkRetailerEligibility = function (req) {
         .where("reason", null);
 
       let max_r_number_rn = 0;
-      const r_number_rn = await knex("APSISIPDC.cr_retailer")
+      const r_number_rn = await knex('APSISIPDC.cr_retailer')
         .whereRaw('"master_r_number" >= 100000000000')
-        .select(knex.raw(`MAX("master_r_number") AS master_r_number`))
-        .first();
+        .select(
+          knex.raw(`MAX("master_r_number") AS master_r_number`)
+        ).first();
 
-      max_r_number_rn =
-        r_number_rn.master_r_number == null
-          ? 100000000001
-          : r_number_rn.master_r_number;
+      max_r_number_rn = (r_number_rn.master_r_number == null) ? 100000000001 : r_number_rn.master_r_number;
 
-      const monthCount = 12,
-        minimumSalesAmount = 50000;
+      const monthCount = 12, minimumSalesAmount = 50000;
       var validNID, validMonthlySalesData;
-      var eligibileOutletCount = 0,
-        disqualifiedOutletCount = 0;
+      var eligibileOutletCount = 0, disqualifiedOutletCount = 0;
       for (const [key, value] of Object.entries(bulkRetailerInfoList)) {
-        var disqualifiedReason = "";
+        var disqualifiedReason = '';
         validNID = ValidateNID(value.retailer_nid);
         if (validNID === false) {
-          disqualifiedReason = disqualifiedReason + "NID Number Invalid. ;; ";
+          disqualifiedReason = disqualifiedReason + 'NID Number Invalid. ;; ';
         }
         const monthlySalesArray = [];
         for (let i = 1; i <= 12; i++) {
-          monthlySalesArray[i] = value["month_" + i];
+          monthlySalesArray[i] = value['month_' + i];
         }
-        validMonthlySalesData = await checkMonthlySalesData(
-          monthCount,
-          minimumSalesAmount,
-          monthlySalesArray
-        );
+        validMonthlySalesData = await checkMonthlySalesData(monthCount, minimumSalesAmount, monthlySalesArray);
         if (validMonthlySalesData == false) {
-          disqualifiedReason =
-            disqualifiedReason + "Monthly Sales Data Invalid. ;; ";
+          disqualifiedReason = disqualifiedReason + 'Monthly Sales Data Invalid. ;; ';
         }
 
         if (validNID == false || validMonthlySalesData == false) {
-          const retailerEligibilityUpdate = await knex(
-            "APSISIPDC.cr_retailer_temp"
-          )
+          const retailerEligibilityUpdate = await knex('APSISIPDC.cr_retailer_temp')
             .where({ id: value.id })
             .update({
               eligibility_status: "Failed",
               reason: disqualifiedReason,
-              updated_at: new Date(),
+              updated_at: new Date()
             });
           ++disqualifiedOutletCount;
         }
-
-        var salesArray = [];
-        for (let i = 1; i <= 12; i++) {
-          salesArray.push(value["month_" + i]);
-        }
-
         if (validNID == true && validMonthlySalesData == true) {
+
           const checkMasterRetailer = await knex
-            .from("APSISIPDC.cr_retailer")
-            .select("id")
-            .where("retailer_code", value.retailer_code);
+            .from('APSISIPDC.cr_retailer')
+            .select('id')
+            .where('retailer_code', value.retailer_code);
 
           if (Object.keys(checkMasterRetailer).length === 0) {
             const temp_r_number_rn = max_r_number_rn++;
@@ -421,9 +402,7 @@ Retailer.checkRetailerEligibility = function (req) {
               phone: value.phone,
               email: value.email,
               retailer_type: parseInt(retailerType[value.retailer_type]),
-              type_of_entity: parseInt(
-                retailerTypeEntity[value.type_of_entity]
-              ),
+              type_of_entity: parseInt(retailerTypeEntity[value.type_of_entity]),
               retailer_code: value.retailer_code,
               onboarding: value.onboarding,
               order_placement: value.order_placement,
@@ -444,58 +423,46 @@ Retailer.checkRetailerEligibility = function (req) {
               autho_rep_phone: value.autho_rep_phone,
               autho_rep_email: value.autho_rep_email,
               region_operation: value.region_operation,
-              duration_sales_data: parseInt(value.duration_sales_data),
+              duration_sales_data: parseInt(value.duration_sales_data)
             };
 
-            const masterRetailerInsertLog = await knex("APSISIPDC.cr_retailer")
-              .insert(masterRetailerData)
-              .returning("id");
+            const masterRetailerInsertLog = await knex(
+              'APSISIPDC.cr_retailer',
+            ).insert(masterRetailerData)
+              .returning('id');
 
             var max_r_number_rmn = 0;
-            var r_number_rmn = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-              .where("manufacturer_id", manufacturerList[value.manufacturer])
+            var r_number_rmn = await knex('APSISIPDC.cr_retailer_manu_dist_mapping')
+              .where('manufacturer_id', manufacturerList[value.manufacturer])
               .whereRaw('"master_r_number" >= 1000000')
-              .select(knex.raw(`MAX("master_r_number") AS master_r_number`))
-              .first();
+              .select(
+                knex.raw(`MAX("master_r_number") AS master_r_number`)
+              ).first();
 
-            max_r_number_rmn =
-              r_number_rmn.MASTER_R_NUMBER === undefined ||
-              r_number_rmn.MASTER_R_NUMBER == null
-                ? 1000000
-                : r_number_rmn.MASTER_R_NUMBER;
-
-            // console.log(r_number_rmn.MASTER_R_NUMBER);
-            // console.log(max_r_number_rmn);
+            max_r_number_rmn = (r_number_rmn.MASTER_R_NUMBER === undefined || r_number_rmn.MASTER_R_NUMBER == null) ? 1000000 : r_number_rmn.MASTER_R_NUMBER;
 
             var temp_r_number_rmn = max_r_number_rmn++;
-            var retailerManuSchemeMappingInsert = {
+            var retailerManuDistMappingInsert = {
               master_r_number: parseInt(temp_r_number_rmn),
-              ac_number_1rmn: await prepare_1RMN_accountNumber(
-                temp_r_number_rmn,
-                manufacturerList[value.manufacturer]
-              ),
+              ac_number_1rmn: await prepare_1RMN_accountNumber(temp_r_number_rmn, manufacturerList[value.manufacturer]),
               retailer_id: masterRetailerInsertLog[0],
               retailer_code: value.retailer_code,
               manufacturer_id: manufacturerList[value.manufacturer],
               distributor_id: distributorList[value.distributor_code],
-              scheme_id: value.scheme_id,
-              sales_array: JSON.stringify(salesArray),
-              status: "Active",
+              status: 'Active'
             };
 
             const mappingRetailerInsertLog = await knex(
-              "APSISIPDC.cr_retailer_manu_scheme_mapping"
-            ).insert(retailerManuSchemeMappingInsert);
+              'APSISIPDC.cr_retailer_manu_dist_mapping',
+            ).insert(retailerManuDistMappingInsert);
 
             if (mappingRetailerInsertLog == true) {
-              const retailerEligibilityUpdate = await knex(
-                "APSISIPDC.cr_retailer_temp"
-              )
+              const retailerEligibilityUpdate = await knex('APSISIPDC.cr_retailer_temp')
                 .where({ id: value.id })
                 .update({
                   eligibility_status: "Success",
                   reason: null,
-                  updated_at: new Date(),
+                  updated_at: new Date()
                 });
 
               ++eligibileOutletCount;
@@ -503,61 +470,48 @@ Retailer.checkRetailerEligibility = function (req) {
           }
 
           const checkRetailerManuMapping = await knex
-            .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
-            .select("id")
-            .where("retailer_code", value.retailer_code)
-            .where("manufacturer_id", manufacturerList[value.manufacturer]);
+            .from('APSISIPDC.cr_retailer_manu_dist_mapping')
+            .select('id')
+            .where('retailer_code', value.retailer_code)
+            .where('manufacturer_id', manufacturerList[value.manufacturer]);
 
           if (Object.keys(checkRetailerManuMapping).length !== 0) {
             var max_r_number_rmn = 0;
-            var r_number_rmn = await knex(
-              "APSISIPDC.cr_retailer_manu_scheme_mapping"
-            )
-              .where("retailer_code", value.retailer_code)
-              .where("manufacturer_id", manufacturerList[value.manufacturer])
+            var r_number_rmn = await knex('APSISIPDC.cr_retailer_manu_dist_mapping')
+              .where('retailer_code', value.retailer_code)
+              .where('manufacturer_id', manufacturerList[value.manufacturer])
               .whereRaw('"master_r_number" >= 1000000')
               .select(
                 knex.raw(`MAX("master_r_number") AS master_r_number`),
-                knex.raw(`"retailer_id" AS retailer_id`)
+                knex.raw(`"retailer_id" AS retailer_id`),
               )
               .groupBy("retailer_id")
               .first();
 
-            max_r_number_rmn =
-              r_number_rmn.MASTER_R_NUMBER === undefined ||
-              r_number_rmn.MASTER_R_NUMBER == null
-                ? 1000000
-                : r_number_rmn.MASTER_R_NUMBER;
+            max_r_number_rmn = (r_number_rmn.MASTER_R_NUMBER === undefined || r_number_rmn.MASTER_R_NUMBER == null) ? 1000000 : r_number_rmn.MASTER_R_NUMBER;
 
             var temp_r_number_rmn = max_r_number_rmn++;
-            var retailerManuSchemeMappingInsert = {
+            var retailerManuDistMappingInsert = {
               master_r_number: parseInt(temp_r_number_rmn),
-              ac_number_1rmn: await prepare_1RMN_accountNumber(
-                temp_r_number_rmn,
-                manufacturerList[value.manufacturer]
-              ),
+              ac_number_1rmn: await prepare_1RMN_accountNumber(temp_r_number_rmn, manufacturerList[value.manufacturer]),
               retailer_id: r_number_rmn.RETAILER_ID,
               retailer_code: value.retailer_code,
               manufacturer_id: manufacturerList[value.manufacturer],
               distributor_id: distributorList[value.distributor_code],
-              scheme_id: value.scheme_id,
-              sales_array: JSON.stringify(salesArray),
-              status: "Active",
+              status: 'Active'
             };
 
             const mappingRetailerInsertLog = await knex(
-              "APSISIPDC.cr_retailer_manu_scheme_mapping"
-            ).insert(retailerManuSchemeMappingInsert);
+              'APSISIPDC.cr_retailer_manu_dist_mapping',
+            ).insert(retailerManuDistMappingInsert);
 
             if (mappingRetailerInsertLog == true) {
-              const retailerEligibilityUpdate = await knex(
-                "APSISIPDC.cr_retailer_temp"
-              )
+              const retailerEligibilityUpdate = await knex('APSISIPDC.cr_retailer_temp')
                 .where({ id: value.id })
                 .update({
                   eligibility_status: "Success",
                   reason: null,
-                  updated_at: new Date(),
+                  updated_at: new Date()
                 });
 
               ++eligibileOutletCount;
@@ -565,64 +519,18 @@ Retailer.checkRetailerEligibility = function (req) {
           }
         }
       }
-      resolve(sendApiResult(true, "Retailer Eligibility Check Successful."));
+      resolve(sendApiResult(true, 'Job Successful.'));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   });
 };
 
-Retailer.schemeWiseLimitConfigure = async function (req) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const retailerList = await knex.from("APSISIPDC.cr_retailer_manu_scheme_mapping")
-            .select(
-              "id",
-              "scheme_id",
-              "sales_array"
-            )
-            .where("limit_status", 'Unset')
-            .where("status", 'Active');
-
-      if (Object.keys(retailerList).length !== 0) {
-        for (const [key, value] of Object.entries(retailerList)) {      
-          var schemaParameterDeatils = await getSchemeDetailsById(value.scheme_id);
-          const salesArray = JSON.parse(value.sales_array);
-          const systemLimit = await creditLimit(schemaParameterDeatils.uninterrupted_sales, schemaParameterDeatils.min_avg_sales_manufacturer, schemaParameterDeatils.avg_sales_duration, schemaParameterDeatils.multiplying_factor, salesArray, schemaParameterDeatils.interval_checking_avg_sales_duration);
-          await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-              .where({ id: value.id })
-              .update({
-                system_limit: parseFloat(systemLimit),
-                limit_status: "Initiated",              
-                system_limit_date: new Date(),
-                updated_at: new Date()
-              });
-        };
-      } else {
-        var msg = 'No data Found';
-        reject(sendApiResult(false, msg));
-      }
-
-    } catch (error) {
-      reject(sendApiResult(false, error.message));
-    }
-  });
-}
-
-const checkMonthlySalesData = async function (
-  monthCount = 12,
-  minimumSalesAmount,
-  monthlySalesArray
-) {
-  if (
-    !isNaN(monthCount) ||
-    !isNaN(minimumSalesAmount) | !isNaN(monthlySalesArray)
-  ) {
+const checkMonthlySalesData = async function (monthCount = 12, minimumSalesAmount, monthlySalesArray) {
+  if (!isNaN(monthCount) || !isNaN(minimumSalesAmount) | !isNaN(monthlySalesArray)) {
     const validData = [];
     for (let i = monthCount; i >= 1; --i) {
-      parseInt(monthlySalesArray[i]) >= parseInt(minimumSalesAmount)
-        ? validData.push(true)
-        : validData.push(false);
+      (parseInt(monthlySalesArray[i]) >= parseInt(minimumSalesAmount)) ? validData.push(true) : validData.push(false);
     }
     if (validData.includes(false)) return false;
     else return true;
@@ -634,26 +542,63 @@ const prepare_1RN_accountNumber = async function (max_r_number) {
   //  1RN where R = Retailer ID (12-digit integer, system generated), N = Account Number, length (3). The numbers will be filled with zeros in the left.
   const R = max_r_number;
   const N = await generateRandomNumber(3);
-  const RN_number = 0 + "" + R + "" + N;
+  const RN_number = 0 + '' + R + '' + N;
   return RN_number;
-};
+}
 
 const prepare_1RMN_accountNumber = async function (max_r_number, m_number) {
   // 1RMN where R = Retailer ID (7-digit integer, system generated), M = Manufacturer ID (5-digit integer, system generated), N = Account Number (3-digit integer, system generated) The numbers will be filled with zeros in the left with 1 being the 16th digit.
   const R = max_r_number;
   const M = m_number;
   const N = await generateRandomNumber(3);
-  const RMN_number = 0 + "" + R + "" + M + "" + N;
+  const RMN_number = 0 + '' + R + '' + M + '' + N;
   return RMN_number;
-};
+}
 
 const generateRandomNumber = async function (count) {
-  const numberList = "1234567890";
-  var randomNumber = "";
+  const numberList = '1234567890';
+  var randomNumber = '';
   for (var i = 0; i < count; i++) {
-    randomNumber += numberList[parseInt(Math.random() * numberList.length)];
+    randomNumber += numberList[parseInt(Math.random() * (numberList.length))];
   }
   return randomNumber;
 };
 
-module.exports = Retailer;
+//@Arfin
+FileUpload.getRetailerByDistributor = function (req) {
+  const { distributor_id } = req.params;
+  const { page, per_page } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex('APSISIPDC.cr_retailer_manu_scheme_mapping')
+        .leftJoin('APSISIPDC.cr_schema',
+          'cr_schema.id',
+          'cr_retailer_manu_scheme_mapping.scheme_id',
+        )
+        .where('cr_retailer_manu_scheme_mapping.status', 'Active')
+        .where('cr_retailer_manu_scheme_mapping.distributor_id', distributor_id)
+        .select(
+          'cr_retailer_manu_scheme_mapping.retailer_id',
+          'master_r_number',
+          'ac_number_1rmn',
+          'retailer_code',
+          'scheme_id',
+          'cr_schema.scheme_name'
+
+        )
+        .distinct()
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (data == 0) reject(sendApiResult(false, 'Not found.'));
+      resolve(sendApiResult(true, 'Data fetched successfully', data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+module.exports = FileUpload;

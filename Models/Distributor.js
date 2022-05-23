@@ -3,7 +3,7 @@ const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const knex = require("../config/database");
 
-const FileUpload = function () {};
+const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -43,6 +43,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (duplication_check_val == 0) {
                 const temp_data = {
                   Distributor_Name: rows[index].Distributor_Name,
+                  Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Code: rows[index].Distributor_Code,
                   Distributor_TIN: rows[index].Distributor_TIN,
                   Official_Email: rows[index].Official_Email,
@@ -111,6 +112,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < data_array.length; index++) {
               const team_distributor = {
                 distributor_name: data_array[index].Distributor_Name,
+                manufacturer_id: data_array[index].Manufacturer_id,
                 distributor_code: data_array[index].Distributor_Code,
                 distributor_tin: data_array[index].Distributor_TIN,
                 official_email: data_array[index].Official_Email,
@@ -148,7 +150,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .returning("id");
               if (insert_distributor) {
                 const temp_manufacturer_vs_distributor_map = {
-                  manufacturer_id: req.manufacturer_id,
+                  manufacturer_id: data_array[index].Manufacturer_id,
                   distributor_id: insert_distributor[0],
                   created_by: req.user_id,
                 };
@@ -271,7 +273,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             resolve(sendApiResult(true, msg));
           }
         })
-        .then((result) => {})
+        .then((result) => {
+
+        })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
           logger.info(error);
@@ -423,6 +427,38 @@ FileUpload.editDistributor = function (req) {
           )
         );
       });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+
+FileUpload.getDistributorByManufacturer = function (req) {
+  const { manufacturer_id } = req.params;
+  const { page, per_page } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex('APSISIPDC.cr_retailer_manu_scheme_mapping')
+        .leftJoin('APSISIPDC.cr_distributor',
+          'cr_distributor.id',
+          'cr_retailer_manu_scheme_mapping.distributor_id',
+        )
+        .where('cr_retailer_manu_scheme_mapping.status', 'Active')
+        .where('cr_retailer_manu_scheme_mapping.manufacturer_id', manufacturer_id)
+        .select(
+          'cr_retailer_manu_scheme_mapping.distributor_id',
+          'cr_distributor.distributor_name'
+        )
+        .distinct()
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (data == 0) reject(sendApiResult(false, 'Not found.'));
+      resolve(sendApiResult(true, 'Data fetched successfully', data));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
