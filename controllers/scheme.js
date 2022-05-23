@@ -102,7 +102,7 @@ module.exports.temp = async (req, res) => {
 
 
     try {
-      if(req.body.RN == 1 ){
+      if(req.body.type == '1RN' ){
           knex.transaction(async (trx) => {
           const updateData = await trx('APSISIPDC.cr_retailer')
             .where("id", req.params.id )
