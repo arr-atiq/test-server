@@ -1,7 +1,7 @@
 // ref: https://devhints.io/knex
 // TODO: implement more dynamic env var settings loader
-require('dotenv').config();
-require('oracledb');
+require("dotenv").config();
+require("oracledb");
 
 module.exports = {
   development: {
@@ -13,37 +13,37 @@ module.exports = {
       database: process.env.DB_NAME_ORACLE,
       port: process.env.DB_PORT,
       connectString:
-        '(DESCRIPTION= (ADDRESS_LIST=  (ADDRESS=(PROTOCOL=TCP) (HOST=192.168.20.38)(PORT=1521) ) ) (CONNECT_DATA=(SID=orcl) ) )',
+        "(DESCRIPTION= (ADDRESS_LIST=  (ADDRESS=(PROTOCOL=TCP) (HOST=192.168.20.38)(PORT=1521) ) ) (CONNECT_DATA=(SID=orcl) ) )",
     },
   },
   staging: {
-    client: 'postgresql',
+    client: "postgresql",
     connection: {
-      database: 'my_db',
-      user: 'username',
-      password: 'password',
+      database: "my_db",
+      user: "username",
+      password: "password",
     },
     pool: {
       min: 2,
       max: 10,
     },
     migrations: {
-      tableName: 'knex_migrations',
+      tableName: "knex_migrations",
     },
   },
   production: {
-    client: 'postgresql',
+    client: "postgresql",
     connection: {
-      database: 'my_db',
-      user: 'username',
-      password: 'password',
+      database: "my_db",
+      user: "username",
+      password: "password",
     },
     pool: {
       min: 2,
       max: 10,
     },
     migrations: {
-      tableName: 'knex_migrations',
+      tableName: "knex_migrations",
     },
   },
 };

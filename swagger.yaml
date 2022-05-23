@@ -34,8 +34,8 @@ paths:
             $ref: "#/definitions/ApiResponse"
         "400":
           description: Invalid Fields
-        '500':
-          description: Internal Server Error    
+        "500":
+          description: Internal Server Error
   /scheme:
     post:
       tags:
@@ -48,18 +48,18 @@ paths:
           description: Scheme Payload
           required: true
           schema:
-            $ref: '#/definitions/Scheme'
+            $ref: "#/definitions/Scheme"
       produces:
         - application/json
       responses:
-        '200':
+        "200":
           description: Scheme created Successfull
           schema:
-            $ref: '#/definitions/ApiResponse'
-        '400':
+            $ref: "#/definitions/ApiResponse"
+        "400":
           description: Bad request
-        '500':
-          description: Internal Server Error 
+        "500":
+          description: Internal Server Error
   /scheme/list:
     get:
       tags:
@@ -74,7 +74,7 @@ paths:
       produces:
         - application/json
       responses:
-        '200':
+        "200":
           description: List of available schemes.
   /scheme/{id}:
     get:
@@ -88,12 +88,12 @@ paths:
           description: Bearer token
           required: true
         - in: path
-          name: id            
+          name: id
       produces:
         - application/json
       responses:
-        '200':
-          description: Scheme's details.  
+        "200":
+          description: Scheme's details.
   /scheme/parameter:
     post:
       tags:
@@ -106,15 +106,15 @@ paths:
           description: Scheme Payload
           required: true
           schema:
-            $ref: '#/definitions/SchemeParameter'
+            $ref: "#/definitions/SchemeParameter"
       produces:
         - application/json
       responses:
-        '200':
+        "200":
           description: Scheme created Successfull
           schema:
-            $ref: '#/definitions/ApiResponse'
-        '400':
+            $ref: "#/definitions/ApiResponse"
+        "400":
           description: Bad request
   /scheme/{scheme_id}/parameter:
     get:
@@ -128,12 +128,12 @@ paths:
           description: Bearer token
           required: true
         - in: path
-          name: scheme_id            
+          name: scheme_id
       produces:
         - application/json
       responses:
-        '200':
-          description: Scheme's parameter details.                            
+        "200":
+          description: Scheme's parameter details.
 securityDefinitions:
   x-access-token:
     type: apiKey
@@ -149,49 +149,49 @@ definitions:
       password:
         type: string
         description: Pasword of the user
-  Scheme: 
+  Scheme:
     properties:
       scheme_name:
         type: string
-        description: Scheme name 
+        description: Scheme name
       rate_of_interest:
         type: number
-        description: Rate of interest (%)    
+        description: Rate of interest (%)
       loan_tenor_in_days:
         type: integer
-        description:  Loan Tenor (days)  
+        description: Loan Tenor (days)
       expiry_date:
         type: string
-        description: Expiry (day/month/year) for sanction limi 
+        description: Expiry (day/month/year) for sanction limi
       grace_periods_in_days:
         type: integer
-        description: Grace period (days) 
+        description: Grace period (days)
       penalty_periods:
         type: integer
-        description: Penal period (days) 
+        description: Penal period (days)
       daily_penalty:
         type: number
-        description: Daily penalty (%)  
+        description: Daily penalty (%)
       processing_cost:
         type: number
-        description: Processing fee (BDT)  
+        description: Processing fee (BDT)
       transaction_fee:
         type: number
-        description: Transaction cost (BDT)  
+        description: Transaction cost (BDT)
       collection_fee_sharing_with_agency:
         type: number
-        description: Collection fee sharing with agency (%)  
-  SchemeParameter: 
+        description: Collection fee sharing with agency (%)
+  SchemeParameter:
     properties:
       scheme_id:
         type: integer
-        description: Scheme ID 
+        description: Scheme ID
       uninterrupted_sales:
         type: number
-        description: Duration for uninterrupted sales with manufacturer (days/months)    
+        description: Duration for uninterrupted sales with manufacturer (days/months)
       intrvl_check_uninterrupt_sales:
         type: number
-        description:  Interval for checking uninterrupted sales with manufacturer (monthly/quarterly/biannually/annually)
+        description: Interval for checking uninterrupted sales with manufacturer (monthly/quarterly/biannually/annually)
       max_credit_limit_all:
         type: number
         description: Maximum allowable credit limit (BDT) across all manufacturers
@@ -206,19 +206,19 @@ definitions:
         description: Duration for calculating average sales value (days/months)
       interval_checking_avg_sales_duration:
         type: number
-        description: Interval for calculating average sales value (month/quarter/semester/year) 
+        description: Interval for calculating average sales value (month/quarter/semester/year)
       max_limit_no_trade_license:
         type: number
-        description: Maximum limit that can be issued without trade license (BDT)  
+        description: Maximum limit that can be issued without trade license (BDT)
       max_limit_no_security_cheque:
         type: number
-        description: Maximum allowable limit without security cheque  
+        description: Maximum allowable limit without security cheque
       multiplying_factor:
         type: number
-        description: Multiplying factor for credit limit assignment  
+        description: Multiplying factor for credit limit assignment
       interest_capitalisaion_period:
         type: number
-        description: Period for interest capitalisation (daily, weekly, monthly/quarterly/bi-annually/annually)                                                                                                  
+        description: Period for interest capitalisation (daily, weekly, monthly/quarterly/bi-annually/annually)
   ApiResponse:
     type: object
     properties:
