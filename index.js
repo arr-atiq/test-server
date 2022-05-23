@@ -86,6 +86,7 @@ app.use('/supervisor', authenticateToken, require('./routes/supervisor'));
 app.use('/salesagent', authenticateToken, require('./routes/salesagent'));
 app.use('/scheme', authenticateToken, require('./routes/scheme'));
 app.use('/mail', authenticateToken, require('./routes/mail'));
+app.use('/retailer', authenticateToken, require('./routes/Retailer'));
 app.use('/job', require('./routes/Cronjob'));
 
 const swaggerDocument = YAML.load('./swagger.yaml');
