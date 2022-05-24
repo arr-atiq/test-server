@@ -83,7 +83,7 @@ paths:
           description: Manufacturer updated Successfully
         '500':
           description: Failed
-  /manufacturer/{id):
+  /manufacturer/manufacturer/{id):
     delete:
       tags:
         - Manufacturer
@@ -104,8 +104,30 @@ paths:
         '200':
           description: Mafacturer deleted Successfully
         '400':
-          description: Failed to get  
-  /distributors:
+          description: Failed to get
+  /manufacturer/schema:
+    put:
+      tags:
+        - Manufacturer
+      summary: Update All Schema ID by Manufacturer ID
+      description: This api will update the Schema ID
+      parameters:
+        - in: body
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: manufacturer_id
+          required: true
+          schema:
+            $ref: '#/definitions/AllSchemaIDUpdate'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Schema ID updated Successfully
+        '500':
+          description: Failed
+  /distributor/distributors:
     get:
       tags:
         - Distributor
@@ -130,7 +152,33 @@ paths:
             $ref: "#/definitions/Distributor"  
         '403':
           description: Forbidden
-  /distributor/{id}:
+  /distributor/distributors/{manufacturer_id}:
+    get:
+      tags:
+        - Distributor
+      summary: Getting list of Distributor by Manufacturer ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: manufacturer_id
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Total available Distributor and list of Distributor per page by Manufacturer ID  
+        '403':
+          description: Forbidden
+  /distributor/distributor/{id}:
     put:
       tags:
         - Distributor
@@ -152,7 +200,7 @@ paths:
           description: Distributor updated Successfully
         '500':
           description: Failed
-  /distributor/{id):
+  /distributor/distributor/{id):
     delete:
       tags:
         - Distributor
@@ -174,7 +222,7 @@ paths:
           description: Distributor deleted Successfully
         '400':
           description: Failed to get
-  /supervisors:
+  /supervisor/supervisors:
     get:
       tags:
         - Supervisor
@@ -199,7 +247,7 @@ paths:
             $ref: "#/definitions/Supervisor"  
         '403':
           description: Forbidden
-  /supervisor/{id}:
+  /supervisor/supervisor/{id}:
     put:
       tags:
         - Supervisor
@@ -221,7 +269,7 @@ paths:
           description: Supervisor updated Successfully
         '500':
           description: Failed
-  /supervisor/{id):
+  /supervisor/supervisor/{id):
     delete:
       tags:
         - Supervisor
@@ -243,7 +291,7 @@ paths:
           description: Supervisor deleted Successfully
         '400':
           description: Failed to get
-  /salesagents:
+  /salesagent/salesagents:
     get:
       tags:
         - Salesagent
@@ -268,7 +316,7 @@ paths:
             $ref: "#/definitions/Salesagent"  
         '403':
           description: Forbidden
-  /salesagent/{id}:
+  /salesagent/salesagent/{id}:
     put:
       tags:
         - Salesagent
@@ -290,7 +338,7 @@ paths:
           description: Salesagent updated Successfully
         '500':
           description: Failed
-  /salesagent/{id):
+  /salesagent/salesagent/{id):
     delete:
       tags:
         - Salesagent
@@ -312,6 +360,54 @@ paths:
           description: Salesagent deleted Successfully
         '400':
           description: Failed to get
+  /retailer/retailers/{distributor_id}:
+    get:
+      tags:
+        - Retailer
+      summary: Getting list of Retailer by Distributor ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: distributor_id
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Total available Retailer and list of Retailer per page by Manufacturer ID  
+        '403':
+          description: Forbidden
+  /retailer/schema:
+    put:
+      tags:
+        - Retailer
+      summary: Update Schema ID by Retailer IDs
+      description: This api will update the Schema ID
+      parameters:
+        - in: body
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: retailer_ids
+          required: true
+          schema:
+            $ref: '#/definitions/SchemaIDUpdate'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Schema ID updated Successfully
+        '500':
+          description: Failed
   /scheme:
     post:
       tags:
@@ -408,6 +504,44 @@ paths:
       produces:
         - application/json
       responses:
+        '200':
+          description: Scheme's parameter details.
+  /mail/sendmail:
+    post:
+      tags:
+        - Mail
+      summary: Save Mail in database with type
+      description: API for saving mail details
+      parameters:
+        - in: body
+          name: body
+          description: Mail Payload
+          required: true
+          schema:
+            $ref: '#/definitions/Mail'            
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Mail details save successfully.
+  /mail/sendmail/{id}:
+    get:
+      tags:
+        - Mail
+      summary: Mail details get by id
+      description: API for getting Mail and send details
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: id            
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Mail details.                           
         "200":
           description: Scheme's parameter details.
 securityDefinitions:
@@ -786,3 +920,33 @@ definitions:
       updated_by:
         type: number
         description: Id of who updated salesagent info
+  Mail:
+    properties:
+      type:
+        type: string
+        description: type of specific mail
+      mail_subject:
+        type: string
+        description: subject of specific mail
+      mail_body:
+        type: string
+        description: Body and description of specific mail
+  AllSchemaIDUpdate:
+    properties:
+      manufacturer_id:
+        type: number
+        description: manufacturer_id for schema Id
+      schema_id:
+        type: number
+        description: Updated schema Id
+      updateType:
+        type: string
+        description: Update Type of Schema
+  SchemaIDUpdate:
+    properties:
+      retailer_ids:
+        type: number
+        description: Array of Retailer IDs
+      schema_id:
+        type: number
+        description: Updated schema Id
