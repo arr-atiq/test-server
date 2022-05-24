@@ -3,8 +3,8 @@ const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const knex = require("../config/database");
 
-const FileUpload = function () { };
-require('dotenv').config();
+const FileUpload = function () {};
+require("dotenv").config();
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -294,7 +294,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             resolve(sendApiResult(true, msg));
           }
         })
-        .then((result) => { })
+        .then((result) => {})
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
           logger.info(error);
@@ -490,34 +490,33 @@ FileUpload.editManufacturer = function (req) {
 };
 
 FileUpload.updateAllSchemasByManufacturer = function (req) {
-  const {
-    manufacturer_id,
-    scheme_id
-  } = req.body;
+  const { manufacturer_id, scheme_id } = req.body;
   return new Promise(async (resolve, reject) => {
     try {
-      const distributor_ids_Array_Obj = await knex('APSISIPDC.cr_retailer_manu_scheme_mapping')
-        .where('manufacturer_id', manufacturer_id)
-        .select('distributor_id');
+      const distributor_ids_Array_Obj = await knex(
+        "APSISIPDC.cr_retailer_manu_scheme_mapping"
+      )
+        .where("manufacturer_id", manufacturer_id)
+        .select("distributor_id");
 
-      const distributor_ids = distributor_ids_Array_Obj.map(id => id.distributor_id);
+      const distributor_ids = distributor_ids_Array_Obj.map(
+        (id) => id.distributor_id
+      );
       await knex.transaction(async (trx) => {
-        const scheme_update = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
+        const scheme_update = await trx(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping"
+        )
           .whereIn("distributor_id", distributor_ids)
-          .where('manufacturer_id', manufacturer_id)
+          .where("manufacturer_id", manufacturer_id)
           .update({
-            scheme_id
+            scheme_id,
           });
-        if (scheme_update <= 0) reject(sendApiResult(false, 'Could not Found Schema'));
+        if (scheme_update <= 0)
+          reject(sendApiResult(false, "Could not Found Schema"));
         resolve(
-          sendApiResult(
-            true,
-            'Schema updated Successfully',
-            scheme_update,
-          ),
+          sendApiResult(true, "Schema updated Successfully", scheme_update)
         );
       });
-
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
