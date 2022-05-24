@@ -6,7 +6,7 @@ const {
 } = require('../controllers/helper');
 const knex = require('../config/database');
 
-const FileUpload = function () {};
+const FileUpload = function () { };
 require('dotenv').config();
 
 FileUpload.insertExcelData = function (rows, filename, req) {
@@ -311,7 +311,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
 
 FileUpload.getManufacturerList = function (req) {
-  const { page, per_page } = req;
+  const { page, per_page } = req.query;
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex('APSISIPDC.cr_manufacturer')
@@ -484,6 +484,49 @@ FileUpload.editManufacturer = function (req) {
           ),
         );
       });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.updateAllSchemasByManufacturer = function (req) {
+  const {
+    manufacturer_id,
+    scheme_id,
+    updateType
+  } = req.body;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const distributor_ids_Array_Obj = await knex('APSISIPDC.cr_retailer_manu_scheme_mapping')
+        .where('manufacturer_id', manufacturer_id)
+        .select('distributor_id');
+
+      const distributor_ids = distributor_ids_Array_Obj.map(id => id.distributor_id);
+
+      if (updateType == "all") {
+        await knex.transaction(async (trx) => {
+          const scheme_update = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
+            .whereIn("distributor_id", distributor_ids)
+            .where('manufacturer_id',manufacturer_id)
+            .update({
+              scheme_id
+            });
+          if (scheme_update <= 0) reject(sendApiResult(false, 'Could not Found Schema'));
+          resolve(
+            sendApiResult(
+              true,
+              'Schema updated Successfully',
+              scheme_update,
+            ),
+          );
+        });
+
+      }
+      else {
+        reject(sendApiResult(false, 'Update Type is not Matched'));
+      }
+
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }

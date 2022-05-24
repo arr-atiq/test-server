@@ -189,7 +189,7 @@ exports.generateManufacturerSample = async (req, res) => {
 
 exports.getManufacturerList = async (req, res) => {
   try {
-    const result = await manuFacModel.getManufacturerList(req.body);
+    const result = await manuFacModel.getManufacturerList(req);
     result.total_amount = result.data.total_amount;
     res.status(200).send(result);
   } catch (error) {
@@ -214,4 +214,14 @@ exports.editManufacturer = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.updateAllSchemasByManufacturer = async (req, res) => {
+  try {
+    const result = await manuFacModel.updateAllSchemasByManufacturer(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 // @Arfin - Code End
