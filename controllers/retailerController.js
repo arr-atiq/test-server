@@ -50,6 +50,15 @@ exports.checkRetailerEligibility = async (req, res) => {
   }
 };
 
+exports.schemeWiseLimitConfigure = async (req, res) => {
+  try {
+    const result = await model.schemeWiseLimitConfigure(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.getRetailerByDistributor = async (req, res) => {
   try {
     const result = await model.getRetailerByDistributor(req);
