@@ -1,7 +1,7 @@
-const jwt = require('jsonwebtoken');
-const md5 = require('md5');
-const knex = require('../config/database');
-const { sendApiResult } = require('./helper');
+const jwt = require("jsonwebtoken");
+const md5 = require("md5");
+const knex = require("../config/database");
+const { sendApiResult } = require("./helper");
 
 exports.refreshToken = async (req, res) => {
   const { email } = req.body;
@@ -9,16 +9,16 @@ exports.refreshToken = async (req, res) => {
   if (!email) {
     return res.status(400);
   }
-  const data = await knex('cr_users')
+  const data = await knex("cr_users")
     .select(
-      'id',
-      'name',
-      'email',
-      'phone',
-      'cr_user_type',
-      'password',
-      'id_fi',
-      'remember_token',
+      "id",
+      "name",
+      "email",
+      "phone",
+      "cr_user_type",
+      "password",
+      "id_fi",
+      "remember_token"
     )
     .where({ email })
     .first();
@@ -34,7 +34,7 @@ exports.refreshToken = async (req, res) => {
   const refreshOptions = { expiresIn: process.env.REFRESH_TOKEN_LIFE };
   const refreshSecret = process.env.REFRESH_TOKEN_SECRET;
   const refreshToken = jwt.sign(payload, refreshSecret, refreshOptions);
-  await knex('cr_users').where('id', data.id).update({
+  await knex("cr_users").where("id", data.id).update({
     remember_token: refreshToken,
   });
   const output = { token, refreshToken };
@@ -48,13 +48,13 @@ exports.login = async (req, res) => {
     return res.status(400);
   }
 
-  const userData = await knex('APSISIPDC.cr_users')
-    .select('id', 'name', 'email', 'phone', 'password')
-    .where({ email, activation_status: 'Active' })
+  const userData = await knex("APSISIPDC.cr_users")
+    .select("id", "name", "email", "phone", "password")
+    .where({ email, activation_status: "Active" })
     .first();
 
   if (!userData || !(md5(`++${password}--`) === userData.password)) {
-    res.send(sendApiResult(false, 'Oops! Invalid email or Password.'));
+    res.send(sendApiResult(false, "Oops! Invalid email or Password."));
   } else {
     delete userData.password;
     const payload = { userData };
@@ -64,7 +64,7 @@ exports.login = async (req, res) => {
     const refreshOptions = { expiresIn: process.env.REFRESH_TOKEN_LIFE };
     const refreshSecret = process.env.REFRESH_TOKEN_SECRET;
     const refreshToken = jwt.sign(payload, refreshSecret, refreshOptions);
-    await knex('APSISIPDC.cr_users').where('id', userData.id).update({
+    await knex("APSISIPDC.cr_users").where("id", userData.id).update({
       remember_token: refreshToken,
     });
 
@@ -73,7 +73,7 @@ exports.login = async (req, res) => {
     userData.refreshToken = refreshToken;
 
     return res.send(
-      sendApiResult(true, 'You have Successfully Logged In.', userData),
+      sendApiResult(true, "You have Successfully Logged In.", userData)
     );
   }
 };
