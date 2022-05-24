@@ -1,4 +1,4 @@
-const moment = require('moment');
+const moment = require("moment");
 
 const { getJsDateFromExcel } = require('excel-date-to-js');
 const { sendApiResult,
@@ -9,7 +9,7 @@ const knex = require('../config/database');
 
 const FileUpload = function () { };
 
-FileUpload.insertExcelData = function (rows, filename, req) {
+Retailer.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -19,7 +19,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
           if (Object.keys(rows).length === 0) {
             resolve(
-              sendApiResult(false, 'No Rows Found in your Uploaded File.'),
+              sendApiResult(false, "No Rows Found in your Uploaded File.")
             );
           }
 
@@ -123,7 +123,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     .Full_Name_of_Retailer_Authorized_Representative
                     !== undefined
                     ? rows[index]
-                      .Full_Name_of_Retailer_Authorized_Representative
+                        .Full_Name_of_Retailer_Authorized_Representative
                     : null,
                 autho_rep_nid:
                   rows[index].NID_of_Authorized_Representative !== undefined
@@ -147,6 +147,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     !== undefined
                     ? rows[index].Duration_of_Sales_Data_Submitted_in_Months
                     : null,
+                scheme_id:
+                    rows[index].Scheme_ID !==
+                    undefined
+                      ? rows[index].Scheme_ID
+                      : null,
                 start_date:
                   rows[index].Start_Date !== undefined
                     ? getJsDateFromExcel(rows[index].Start_Date)
@@ -156,64 +161,40 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     ? getJsDateFromExcel(rows[index].End_Date)
                     : null,
                 month_1:
-                  rows[index].Month_1 !== undefined
-                    ? rows[index].Month_1
-                    : 0,
+                  rows[index].Month_1 !== undefined ? rows[index].Month_1 : 0,
                 month_2:
-                  rows[index].Month_2 !== undefined
-                    ? rows[index].Month_2
-                    : 0,
+                  rows[index].Month_2 !== undefined ? rows[index].Month_2 : 0,
                 month_3:
-                  rows[index].Month_3 !== undefined
-                    ? rows[index].Month_3
-                    : 0,
+                  rows[index].Month_3 !== undefined ? rows[index].Month_3 : 0,
                 month_4:
-                  rows[index].Month_4 !== undefined
-                    ? rows[index].Month_4
-                    : 0,
+                  rows[index].Month_4 !== undefined ? rows[index].Month_4 : 0,
                 month_5:
-                  rows[index].Month_5 !== undefined
-                    ? rows[index].Month_5
-                    : 0,
+                  rows[index].Month_5 !== undefined ? rows[index].Month_5 : 0,
                 month_6:
-                  rows[index].Month_6 !== undefined
-                    ? rows[index].Month_6
-                    : 0,
+                  rows[index].Month_6 !== undefined ? rows[index].Month_6 : 0,
                 month_7:
-                  rows[index].Month_7 !== undefined
-                    ? rows[index].Month_7
-                    : 0,
+                  rows[index].Month_7 !== undefined ? rows[index].Month_7 : 0,
                 month_8:
-                  rows[index].Month_8 !== undefined
-                    ? rows[index].Month_8
-                    : 0,
+                  rows[index].Month_8 !== undefined ? rows[index].Month_8 : 0,
                 month_9:
-                  rows[index].Month_9 !== undefined
-                    ? rows[index].Month_9
-                    : 0,
+                  rows[index].Month_9 !== undefined ? rows[index].Month_9 : 0,
                 month_10:
-                  rows[index].Month_10 !== undefined
-                    ? rows[index].Month_10
-                    : 0,
+                  rows[index].Month_10 !== undefined ? rows[index].Month_10 : 0,
                 month_11:
-                  rows[index].Month_11 !== undefined
-                    ? rows[index].Month_11
-                    : 0,
+                  rows[index].Month_11 !== undefined ? rows[index].Month_11 : 0,
                 month_12:
-                  rows[index].Month_12 !== undefined
-                    ? rows[index].Month_12
-                    : 0,
+                  rows[index].Month_12 !== undefined ? rows[index].Month_12 : 0,
                 created_by: parseInt(req.user_id),
               };
               retailerList.push(retailerData);
             }
 
             const insertRetailerList = await knex(
-              'APSISIPDC.cr_retailer_temp',
+              "APSISIPDC.cr_retailer_temp"
             ).insert(retailerList);
 
             if (insertRetailerList == true) {
-              const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+              const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
               const insertLog = {
                 retailer_upload_id: retailerUploadId,
                 bulk_upload_date: new Date(date),
@@ -226,16 +207,16 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 created_by: parseInt(req.user_id),
               };
               const uploadLog = await knex(
-                'APSISIPDC.cr_retailer_upload_log',
+                "APSISIPDC.cr_retailer_upload_log"
               ).insert(insertLog);
 
               if (uploadLog == true) {
-                msg = 'File Uploaded successfully!';
+                msg = "File Uploaded successfully!";
                 resolve(sendApiResult(true, msg, insertLog));
               }
             }
           } else {
-            msg = 'No Data Founds to Update';
+            msg = "No Data Founds to Update";
             resolve(sendApiResult(true, msg));
           }
         })
@@ -254,7 +235,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
   });
 };
 
-FileUpload.getRetailerList = function (req) {
+Retailer.getRetailerList = function (req) {
   // var query = req;
   // var per_page = parseInt(req.per_page);
   // var page = 2;
@@ -270,14 +251,13 @@ FileUpload.getRetailerList = function (req) {
   });
 };
 
-FileUpload.retailerEligibilityCheck = function (req) {
+Retailer.checkRetailerEligibility = function (req) {
   return new Promise(async (resolve, reject) => {
-    try {
-
+    try {    
       const manufacturerSql = await knex
-        .from('APSISIPDC.cr_manufacturer')
-        .select('id', 'manufacturer_name')
-        .where('status', 'Active');
+        .from("APSISIPDC.cr_manufacturer")
+        .select("id", "manufacturer_name")
+        .where("status", "Active");
 
       const manufacturerList = [];
       for (const [key, value] of Object.entries(manufacturerSql)) {
@@ -285,9 +265,9 @@ FileUpload.retailerEligibilityCheck = function (req) {
       }
 
       const distributorSql = await knex
-        .from('APSISIPDC.cr_distributor')
-        .select('id', 'distributor_code')
-        .where('status', 'Active');
+        .from("APSISIPDC.cr_distributor")
+        .select("id", "distributor_code")
+        .where("status", "Active");
 
       const distributorList = [];
       for (const [key, value] of Object.entries(distributorSql)) {
@@ -295,9 +275,9 @@ FileUpload.retailerEligibilityCheck = function (req) {
       }
 
       const retailerTypeSql = await knex
-        .from('APSISIPDC.cr_retailer_type')
-        .select('id', 'name')
-        .where('status', 'Active');
+        .from("APSISIPDC.cr_retailer_type")
+        .select("id", "name")
+        .where("status", "Active");
 
       const retailerType = [];
       for (const [key, value] of Object.entries(retailerTypeSql)) {
@@ -305,9 +285,9 @@ FileUpload.retailerEligibilityCheck = function (req) {
       }
 
       const retailerTypeEntitySql = await knex
-        .from('APSISIPDC.cr_retailer_type_entity')
-        .select('id', 'name')
-        .where('status', 'Active');
+        .from("APSISIPDC.cr_retailer_type_entity")
+        .select("id", "name")
+        .where("status", "Active");
 
       const retailerTypeEntity = [];
       for (const [key, value] of Object.entries(retailerTypeEntitySql)) {
@@ -315,56 +295,57 @@ FileUpload.retailerEligibilityCheck = function (req) {
       }
 
       const bulkRetailerInfoList = await knex
-        .from('APSISIPDC.cr_retailer_temp')
+        .from("APSISIPDC.cr_retailer_temp")
         .select(
-          'id',
-          'retailer_upload_id',
-          'retailer_name',
-          'retailer_nid',
-          'phone',
-          'email',
-          'retailer_type',
-          'type_of_entity',
-          'retailer_code',
-          'onboarding',
-          'order_placement',
-          'repayment',
-          'manufacturer',
-          'distributor_code',
-          'retailer_tin',
-          'corporate_registration_no',
-          'trade_license_no',
-          'outlet_address',
-          'outlet_address_1',
-          'outlet_address_2',
-          'postal_code',
-          'post_office',
-          'thana',
-          'district',
-          'division',
-          'autho_rep_full_name',
-          'autho_rep_nid',
-          'autho_rep_phone',
-          'autho_rep_email',
-          'region_operation',
-          'duration_sales_data',
-          'start_date',
-          'end_date',
-          'month_1',
-          'month_2',
-          'month_3',
-          'month_4',
-          'month_5',
-          'month_6',
-          'month_7',
-          'month_8',
-          'month_9',
-          'month_10',
-          'month_11',
-          'month_12'
+          "id",
+          "retailer_upload_id",
+          "retailer_name",
+          "retailer_nid",
+          "phone",
+          "email",
+          "retailer_type",
+          "type_of_entity",
+          "retailer_code",
+          "onboarding",
+          "order_placement",
+          "repayment",
+          "manufacturer",
+          "distributor_code",
+          "retailer_tin",
+          "corporate_registration_no",
+          "trade_license_no",
+          "outlet_address",
+          "outlet_address_1",
+          "outlet_address_2",
+          "postal_code",
+          "post_office",
+          "thana",
+          "district",
+          "division",
+          "autho_rep_full_name",
+          "autho_rep_nid",
+          "autho_rep_phone",
+          "autho_rep_email",
+          "region_operation",
+          "duration_sales_data",
+          "scheme_id",
+          "start_date",
+          "end_date",
+          "month_1",
+          "month_2",
+          "month_3",
+          "month_4",
+          "month_5",
+          "month_6",
+          "month_7",
+          "month_8",
+          "month_9",
+          "month_10",
+          "month_11",
+          "month_12"
         )
-        .where('eligibility_status', null)
-        .where('reason', null);
+        .where("eligibility_status", null)
+        .where("reason", null);
 
       let max_r_number_rn = 0;
       const r_number_rn = await knex('APSISIPDC.cr_retailer')
@@ -581,7 +562,7 @@ const generateRandomNumber = async function (count) {
     randomNumber += numberList[parseInt(Math.random() * (numberList.length))];
   }
   return randomNumber;
-}
+};
 
 //@Arfin
 FileUpload.getRetailerByDistributor = function (req) {

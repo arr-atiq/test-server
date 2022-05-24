@@ -1,23 +1,19 @@
-const fs = require('fs');
-const express = require('express');
-const readXlsxFile = require('read-excel-file/node');
-const xlsx = require('xlsx');
-const moment = require('moment');
-const excel = require('excel4node');
-const manuFacModel = require('../Models/Manufacturer');
-const {
-  sendApiResult,
-  uploaddir,
-  generaeteExcel,
-} = require('./helper');
+const fs = require("fs");
+const express = require("express");
+const readXlsxFile = require("read-excel-file/node");
+const xlsx = require("xlsx");
+const moment = require("moment");
+const excel = require("excel4node");
+const manuFacModel = require("../Models/Manufacturer");
+const { sendApiResult, uploaddir, generaeteExcel } = require("./helper");
 
 exports.uploadManufacturerOnboardingFile = async (req, res) => {
-  req.body.user_id = req.user_id
-  if (req.file != 'undefined') {
+  req.body.user_id = req.user_id;
+  if (req.file != "undefined") {
     const upload = await importExcelData2DB(req.file.filename, req.body);
     res.status(200).send(upload);
   } else {
-    res.status(200).send('File is Missing!');
+    res.status(200).send("File is Missing!");
   }
 };
 
@@ -27,7 +23,7 @@ const importExcelData2DB = async function (filename, req) {
     const folder_name = req.file_for;
     const workbook = xlsx.readFile(
       `./public/configuration_file/${folder_name}/${filename}`,
-      { type: 'array' },
+      { type: "array" }
     );
     const sheetnames = Object.keys(workbook.Sheets);
     let i = sheetnames.length;
@@ -39,7 +35,7 @@ const importExcelData2DB = async function (filename, req) {
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, 'File not uploaded');
+    return sendApiResult(false, "File not uploaded");
   }
 };
 
@@ -80,52 +76,52 @@ exports.generateManufacturerSample = async (req, res) => {
     // 	.groupBy("cr_retail_limit.outlet_code");
 
     const headers = [
-      'Sr.',
-      'Manufacturer_Name',
-      'Type_of_Entity',
-      'Name_of_Scheme',
-      'Manufacturer_Registration_No',
-      'Manufacturer_TIN',
-      'Manufacturer_BIN',
-      'Website_URL',
-      'Registered_Corporate_Office_Address_in_Bangladesh',
-      'Corporate_Office_Address_Line_1',
-      'Corporate_Office_Address_Line_2',
-      'Corporate_Office_Postal_Code',
-      'Corporate_Office_Post_Office',
-      'Corporate_Office_Thana',
-      'Corporate_Office_District',
-      'Corporate_Office_Division',
-      'Nature_of_Business',
-      'Alternative_Addresses',
-      'Alternative_Address_Line_1',
-      'Alternative_Address_Line_2',
-      'Alternative_Postal_Code',
-      'Alternative_Post_Office',
-      'Alternative_Thana',
-      'Alternative_District',
-      'Alternative_Division',
-      'Official_Phone_Number',
-      'Official_Email_ID',
-      'Authorized_Representative_Name',
-      'Authorized_Representative_Full_Name',
-      'Authorized_Representative_NID',
-      'Authorized_Representative_Designation',
-      'Authorized_Representative_Mobile_No',
-      'Authorized_Representative_Official_Email_ID',
+      "Sr.",
+      "Manufacturer_Name",
+      "Type_of_Entity",
+      "Name_of_Scheme",
+      "Manufacturer_Registration_No",
+      "Manufacturer_TIN",
+      "Manufacturer_BIN",
+      "Website_URL",
+      "Registered_Corporate_Office_Address_in_Bangladesh",
+      "Corporate_Office_Address_Line_1",
+      "Corporate_Office_Address_Line_2",
+      "Corporate_Office_Postal_Code",
+      "Corporate_Office_Post_Office",
+      "Corporate_Office_Thana",
+      "Corporate_Office_District",
+      "Corporate_Office_Division",
+      "Nature_of_Business",
+      "Alternative_Addresses",
+      "Alternative_Address_Line_1",
+      "Alternative_Address_Line_2",
+      "Alternative_Postal_Code",
+      "Alternative_Post_Office",
+      "Alternative_Thana",
+      "Alternative_District",
+      "Alternative_Division",
+      "Official_Phone_Number",
+      "Official_Email_ID",
+      "Authorized_Representative_Name",
+      "Authorized_Representative_Full_Name",
+      "Authorized_Representative_NID",
+      "Authorized_Representative_Designation",
+      "Authorized_Representative_Mobile_No",
+      "Authorized_Representative_Official_Email_ID",
     ];
     const workbook = new excel.Workbook();
-    const worksheet = workbook.addWorksheet('Sheet 1');
+    const worksheet = workbook.addWorksheet("Sheet 1");
     const headerStyle = workbook.createStyle({
       fill: {
-        type: 'pattern',
-        patternType: 'solid',
-        bgColor: '#E1F0FF',
-        fgColor: '#E1F0FF',
+        type: "pattern",
+        patternType: "solid",
+        bgColor: "#E1F0FF",
+        fgColor: "#E1F0FF",
       },
       font: {
-        color: '#000000',
-        size: '10',
+        color: "#000000",
+        size: "10",
         bold: true,
       },
     });
@@ -177,10 +173,10 @@ exports.generateManufacturerSample = async (req, res) => {
     // 	col_add++;
     // 	row++;
     // }
-    await workbook.write('public/samples/manufacturerSampleDownload.xlsx');
-    const fileName = 'download/samples/manufacturerSampleDownload.xlsx';
+    await workbook.write("public/samples/manufacturerSampleDownload.xlsx");
+    const fileName = "download/samples/manufacturerSampleDownload.xlsx";
     setTimeout(() => {
-      res.send(sendApiResult(true, 'Sample File Generated', fileName));
+      res.send(sendApiResult(true, "Sample File Generated", fileName));
     }, 1500);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
