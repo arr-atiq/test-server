@@ -687,6 +687,42 @@ Retailer.getRetailerByDistributor = function (req) {
   });
 };
 
+Retailer.getRnRmnMappingById = function (req) {
+  const { retailer_id } = req.params;
+  
+  return new Promise(async (resolve, reject) => {
+    try {
+      const accountInfo = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer.id",
+          "cr_retailer_manu_scheme_mapping.retailer_id"
+        )
+        .where("cr_retailer.status", "Active")
+        .where("cr_retailer_manu_scheme_mapping.status", "Active")
+        .where("cr_retailer.id", retailer_id)
+        .where("cr_retailer_manu_scheme_mapping.retailer_id", retailer_id)
+        .select(
+          "cr_retailer.ac_number_1rn",
+          "cr_retailer_manu_scheme_mapping.ac_number_1rmn"
+        );
+      
+      const getRnRmnMapping = {}, accountInfoArray = [];
+      var account_exist = [];
+      for (const [key, value] of Object.entries(accountInfo)) {
+        if(!account_exist.includes(value.ac_number_1rn)) {
+          account_exist.push(value.ac_number_1rn);
+        }      
+        accountInfoArray.push(value.ac_number_1rmn);
+      }
+      getRnRmnMapping[account_exist[0]] = accountInfoArray;
+      resolve(sendApiResult(true, "RN & RMN Account Info Fetch Successfull.", getRnRmnMapping));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 Retailer.updateSchemaByRetailers = function (req) {
   const { retailer_ids, scheme_id } = req.body;
   return new Promise(async (resolve, reject) => {
