@@ -8,7 +8,7 @@ module.exports.createScheme = async (req, res) => {
     .from("APSISIPDC.cr_schema")
     .select("id")
     .where("scheme_name", data.scheme_name);
-  
+
   try {
     const schemaId = schemaAvailable[0]?.id ?? false;
     if (!schemaId) {
@@ -100,7 +100,8 @@ const getParameterDetailsbyID = async function (scheme_id) {
   const schemaParameterDeatils = await knex
     .from("APSISIPDC.cr_scheme_parameter")
     .select()
-    .where("scheme_id", scheme_id).first();
- 
+    .where("scheme_id", scheme_id)
+    .first();
+
   return schemaParameterDeatils;
 };

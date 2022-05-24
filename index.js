@@ -75,19 +75,20 @@ function authenticateToken(req, res, next) {
   });
 }
 
-app.get('/', (req, res) => res.json({ message: 'Apsis Dana platform is up and running' }));
-app.use('/login', require('./routes/login'));
-app.use('/bulk', authenticateToken, require('./routes/bulk'));
-app.use('/menu', authenticateToken, require('./routes/menu'));
-app.use('/manufacturer', authenticateToken, require('./routes/manufacturer'));
-app.use('/distributor', authenticateToken, require('./routes/distributor'));
-app.use('/supervisor', authenticateToken, require('./routes/supervisor'));
-app.use('/salesagent', authenticateToken, require('./routes/salesagent'));
-app.use('/scheme', authenticateToken, require('./routes/scheme'));
-app.use('/temp' , authenticateToken, require('./routes/scheme'))
-app.use('/mail', authenticateToken, require('./routes/mail'));
-app.use('/retailer', authenticateToken, require('./routes/Retailer'));
-app.use('/job', require('./routes/Cronjob'));
+app.get("/", (req, res) =>
+  res.json({ message: "Apsis Dana platform is up and running" })
+);
+app.use("/login", require("./routes/login"));
+app.use("/bulk", authenticateToken, require("./routes/bulk"));
+app.use("/menu", authenticateToken, require("./routes/menu"));
+app.use("/manufacturer", authenticateToken, require("./routes/manufacturer"));
+app.use("/distributor", authenticateToken, require("./routes/distributor"));
+app.use("/supervisor", authenticateToken, require("./routes/supervisor"));
+app.use("/salesagent", authenticateToken, require("./routes/salesagent"));
+app.use("/scheme", authenticateToken, require("./routes/scheme"));
+app.use("/mail", authenticateToken, require("./routes/mail"));
+app.use("/retailer", authenticateToken, require("./routes/Retailer"));
+app.use("/job", require("./routes/Cronjob"));
 
 const swaggerDocument = YAML.load("./swagger.yaml");
 swaggerDocument.host = process.env.HOSTIP.split("//")[1];

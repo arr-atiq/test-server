@@ -38,7 +38,7 @@ const importExcelData2DB = async function (filename, req) {
 
 exports.getSalesAgentList = async (req, res) => {
   try {
-    const result = await model.getSalesAgentList(req.query);
+    const result = await model.getSalesAgentList(req);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));

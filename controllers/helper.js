@@ -646,4 +646,3 @@ exports.UpdatedTime = function () {
   console.log(updatedTime);
   return new Date(updatedTime);
 };
-

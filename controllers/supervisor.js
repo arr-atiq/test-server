@@ -38,7 +38,7 @@ const importExcelData2DB = async function (filename, req) {
 
 exports.getSupervisorList = async (req, res) => {
   try {
-    const result = await superModel.getSupervisorList(req.query);
+    const result = await superModel.getSupervisorList(req);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
