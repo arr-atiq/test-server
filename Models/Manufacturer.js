@@ -207,6 +207,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const insert_manufacture = await knex("APSISIPDC.cr_manufacturer")
                 .insert(team_manufacture)
                 .returning("id");
+
+              console.log(insert_manufacture);
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
               }

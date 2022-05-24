@@ -396,8 +396,8 @@ paths:
         - in: body
           name: bearer-token
           description: Bearer token
-        - in: path
-          name: retailer_ids
+        - in: body
+          name: body
           required: true
           schema:
             $ref: '#/definitions/SchemaIDUpdate'
@@ -1025,7 +1025,7 @@ definitions:
         description: Update Type of Schema
   SchemaIDUpdate:
     properties:
-      retailer_ids:
+      ids:
         type: number
         description: Array of Retailer IDs
       schema_id:

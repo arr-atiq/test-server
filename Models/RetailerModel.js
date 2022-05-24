@@ -666,12 +666,13 @@ Retailer.getRetailerByDistributor = function (req) {
         .where("cr_retailer_manu_scheme_mapping.status", "Active")
         .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
         .select(
-          "cr_retailer_manu_scheme_mapping.retailer_id",
-          "master_r_number",
-          "ac_number_1rmn",
-          "retailer_code",
-          "scheme_id",
-          "cr_schema.scheme_name"
+          'cr_retailer_manu_scheme_mapping.id',
+          'cr_retailer_manu_scheme_mapping.retailer_id',
+          'master_r_number',
+          'ac_number_1rmn',
+          'retailer_code',
+          'scheme_id',
+          'cr_schema.scheme_name'
         )
         .distinct()
         .paginate({
@@ -724,14 +725,15 @@ Retailer.getRnRmnMappingById = function (req) {
 };
 
 Retailer.updateSchemaByRetailers = function (req) {
-  const { retailer_ids, scheme_id } = req.body;
+  const { ids, scheme_id } = req.body;
+
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async (trx) => {
         const scheme_update = await trx(
           "APSISIPDC.cr_retailer_manu_scheme_mapping"
         )
-          .whereIn("retailer_id", retailer_ids)
+          .whereIn("id", ids)
           .update({
             scheme_id,
           });
