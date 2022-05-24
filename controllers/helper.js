@@ -14,6 +14,8 @@ exports.sendApiResult = function (success, message, data = {}) {
     message,
     data,
   };
+  console.log('success',data)
+
   return data;
 };
 

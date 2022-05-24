@@ -67,13 +67,13 @@ module.exports.createParameter = async (req, res) => {
     const createParameterForScheme = await knex(
       "APSISIPDC.cr_scheme_parameter"
     ).insert(data);
-    return res.status(201).send({
+    return res.send({
       success: true,
       message: "Success :: scheme Parameter Added!",
       response: createParameterForScheme,
     });
   } else {
-    return res.status(400).send({
+    return res.send({
       success: false,
       message: "Success :: scheme Parameter already available!",
       response: "Please selecta different Scheme",
@@ -84,7 +84,7 @@ module.exports.createParameter = async (req, res) => {
 module.exports.getParameterDetails = async (req, res) => {
   const { scheme_id } = req.params;
   const schemaParameterDeatils = await getParameterDetailsbyID(scheme_id);
-  return res.status(200).send({
+  return res.send({
     success: true,
     message: "Success :: scheme parameter details ",
     data: schemaParameterDeatils,

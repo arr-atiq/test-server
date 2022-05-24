@@ -42,8 +42,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               );
               if (duplication_check_val == 0) {
                 const temp_data = {
-                  Distributor_Name: rows[index].Distributor_Name,
                   Manufacturer_id: rows[index].Manufacturer_id,
+                  Distributor_Name: rows[index].Distributor_Name,
                   Distributor_Code: rows[index].Distributor_Code,
                   Distributor_TIN: rows[index].Distributor_TIN,
                   Official_Email: rows[index].Official_Email,
@@ -112,7 +112,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < data_array.length; index++) {
               const team_distributor = {
                 distributor_name: data_array[index].Distributor_Name,
-                manufacturer_id: data_array[index].Manufacturer_id,
                 distributor_code: data_array[index].Distributor_Code,
                 distributor_tin: data_array[index].Distributor_TIN,
                 official_email: data_array[index].Official_Email,
