@@ -689,14 +689,15 @@ Retailer.getRetailerByDistributor = function (req) {
 };
 
 Retailer.updateSchemaByRetailers = function (req) {
-  const { retailer_ids, scheme_id } = req.body;
+  const { ids, scheme_id } = req.body;
+
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async (trx) => {
         const scheme_update = await trx(
           "APSISIPDC.cr_retailer_manu_scheme_mapping"
         )
-          .whereIn("retailer_id", retailer_ids)
+          .whereIn("id", ids)
           .update({
             scheme_id,
           });
