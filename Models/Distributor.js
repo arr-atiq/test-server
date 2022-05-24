@@ -3,7 +3,7 @@ const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const knex = require("../config/database");
 
-const FileUpload = function () { };
+const FileUpload = function () {};
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -273,9 +273,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             resolve(sendApiResult(true, msg));
           }
         })
-        .then((result) => {
-
-        })
+        .then((result) => {})
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
           logger.info(error);
@@ -433,23 +431,26 @@ FileUpload.editDistributor = function (req) {
   });
 };
 
-
 FileUpload.getDistributorByManufacturer = function (req) {
   const { manufacturer_id } = req.params;
   const { page, per_page } = req.query;
 
   return new Promise(async (resolve, reject) => {
     try {
-      const data = await knex('APSISIPDC.cr_retailer_manu_scheme_mapping')
-        .leftJoin('APSISIPDC.cr_distributor',
-          'cr_distributor.id',
-          'cr_retailer_manu_scheme_mapping.distributor_id',
+      const data = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_retailer_manu_scheme_mapping.distributor_id"
         )
-        .where('cr_retailer_manu_scheme_mapping.status', 'Active')
-        .where('cr_retailer_manu_scheme_mapping.manufacturer_id', manufacturer_id)
+        .where("cr_retailer_manu_scheme_mapping.status", "Active")
+        .where(
+          "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          manufacturer_id
+        )
         .select(
-          'cr_retailer_manu_scheme_mapping.distributor_id',
-          'cr_distributor.distributor_name'
+          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_distributor.distributor_name"
         )
         .distinct()
         .paginate({
@@ -457,8 +458,8 @@ FileUpload.getDistributorByManufacturer = function (req) {
           currentPage: page,
           isLengthAware: true,
         });
-      if (data == 0) reject(sendApiResult(false, 'Not found.'));
-      resolve(sendApiResult(true, 'Data fetched successfully', data));
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
