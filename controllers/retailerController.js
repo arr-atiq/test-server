@@ -67,3 +67,12 @@ exports.getRetailerByDistributor = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.updateSchemaByRetailers = async (req, res) => {
+  try {
+    const result = await model.updateSchemaByRetailers(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};

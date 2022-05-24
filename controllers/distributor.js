@@ -36,7 +36,7 @@ const importExcelData2DB = async function (filename, req) {
 
 exports.getDistributorList = async (req, res) => {
   try {
-    const result = await distModel.getDistributorList(req.body);
+    const result = await distModel.getDistributorList(req);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));

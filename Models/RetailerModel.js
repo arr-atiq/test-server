@@ -494,4 +494,32 @@ Retailer.getRetailerByDistributor = function (req) {
   });
 };
 
+Retailer.updateSchemaByRetailers = function (req) {
+  const {
+    retailer_ids,
+    scheme_id
+  } = req.body;
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex.transaction(async (trx) => {
+        const scheme_update = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
+          .whereIn("retailer_id", retailer_ids)
+          .update({
+            scheme_id
+          });
+        if (scheme_update <= 0) reject(sendApiResult(false, 'Could not Found Schema'));
+        resolve(
+          sendApiResult(
+            true,
+            'Schema updated Successfully',
+            scheme_update,
+          ),
+        );
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 module.exports = Retailer;
