@@ -1,7 +1,7 @@
-const express = require('express');
+const express = require("express");
 
 const router = express.Router();
-const manufacturer = require('../controllers/manufacturer');
+const manufacturer = require("../controllers/manufacturer");
 
 router.get('/manufacturers', manufacturer.getManufacturerList);
 router.put('/manufacturer/:id', manufacturer.editManufacturer);

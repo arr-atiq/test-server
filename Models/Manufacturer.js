@@ -1,10 +1,7 @@
-const moment = require('moment');
-const express = require('express');
-const {
-  sendApiResult,
-  getSettingsValue,
-} = require('../controllers/helper');
-const knex = require('../config/database');
+const moment = require("moment");
+const express = require("express");
+const { sendApiResult, getSettingsValue } = require("../controllers/helper");
+const knex = require("../config/database");
 
 const FileUpload = function () { };
 require('dotenv').config();
@@ -19,23 +16,23 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
           if (Object.keys(rows).length == 0) {
             resolve(
-              sendApiResult(false, 'No Rows Found in your Uploaded File.'),
+              sendApiResult(false, "No Rows Found in your Uploaded File.")
             );
           }
 
           const user_roles = await knex
-            .from('APSISIPDC.cr_user_roles')
-            .select('id')
-            .where('status', 'Active')
-            .whereIn('user_type', folder_name);
+            .from("APSISIPDC.cr_user_roles")
+            .select("id")
+            .where("status", "Active")
+            .whereIn("user_type", folder_name);
           const user_role_id = user_roles[0].id;
 
           // Type of entity scope - start
           const type_entity_arr = {};
           const type_entity = await knex
-            .from('APSISIPDC.cr_manufacturer_type_entity')
-            .select('id', 'name')
-            .where('status', 'Active');
+            .from("APSISIPDC.cr_manufacturer_type_entity")
+            .select("id", "name")
+            .where("status", "Active");
           if (Object.keys(type_entity).length != 0) {
             for (let i = 0; i < type_entity.length; i++) {
               type_entity_arr[type_entity[i].name] = type_entity[i].id;
@@ -46,27 +43,27 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           // Nature of business scope - start
           const nature_business_arr = {};
           const nature_business = await knex
-            .from('APSISIPDC.cr_manufacturer_nature_business')
-            .select('id', 'name')
-            .where('status', 'Active');
+            .from("APSISIPDC.cr_manufacturer_nature_business")
+            .select("id", "name")
+            .where("status", "Active");
           if (Object.keys(nature_business).length != 0) {
             for (let i = 0; i < nature_business.length; i++) {
-              nature_business_arr[nature_business[i].name] = nature_business[i].id;
+              nature_business_arr[nature_business[i].name] =
+                nature_business[i].id;
             }
           }
           // Nature of business scope - end
-
 
           const data_array = [];
           if (Object.keys(rows).length != 0) {
             for (let index = 0; index < rows.length; index++) {
               const reg_no = rows[index].Manufacturer_Registration_No;
               const duplication_check = await knex
-                .count('cr_manufacturer.registration_no as count')
-                .from('APSISIPDC.cr_manufacturer')
-                .where('APSISIPDC.cr_manufacturer.registration_no', reg_no);
+                .count("cr_manufacturer.registration_no as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where("APSISIPDC.cr_manufacturer.registration_no", reg_no);
               const duplication_check_val = parseInt(
-                duplication_check[0].count,
+                duplication_check[0].count
               );
               if (duplication_check_val == 0) {
                 const temp_data = {
@@ -130,10 +127,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
 
           if (
-            Object.keys(rows).length != 0
-            && Object.keys(data_array).length == 0
+            Object.keys(rows).length != 0 &&
+            Object.keys(data_array).length == 0
           ) {
-            const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+            const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
             const empty_insert_log = {
               sys_date: new Date(date),
               file_for: folder_name,
@@ -143,10 +140,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               upload_rows: Object.keys(data_array).length,
               created_by: parseInt(req.user_id),
             };
-            await knex('APSISIPDC.cr_bulk_upload_file_log').insert(
-              empty_insert_log,
+            await knex("APSISIPDC.cr_bulk_upload_file_log").insert(
+              empty_insert_log
             );
-            msg = 'File Uploaded successfully!';
+            msg = "File Uploaded successfully!";
             resolve(sendApiResult(true, msg, empty_insert_log));
           }
 
@@ -207,9 +204,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   data_array[index].Authorized_Representative_Official_Email_ID,
                 created_by: req.user_id,
               };
-              const insert_manufacture = await knex('APSISIPDC.cr_manufacturer')
+              const insert_manufacture = await knex("APSISIPDC.cr_manufacturer")
                 .insert(team_manufacture)
-                .returning('id');
+                .returning("id");
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
               }
@@ -218,12 +215,12 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 name: data_array[index].Manufacturer_Name,
                 email: data_array[index].Official_Email_ID,
                 phone: data_array[index].Official_Phone_Number,
-                password: '5efd3b0647df9045c240729d31622c79',
+                password: "5efd3b0647df9045c240729d31622c79",
                 cr_user_type: folder_name,
               };
-              const insert_user = await knex('APSISIPDC.cr_users')
+              const insert_user = await knex("APSISIPDC.cr_users")
                 .insert(temp_user)
-                .returning('id');
+                .returning("id");
               if (insert_user) {
                 user_insert_ids.push(insert_user[0]);
               }
@@ -243,7 +240,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               }
               if (Object.keys(user_wise_manufacture).length != 0) {
                 const insert_user_wise_manufacture = await knex(
-                  'APSISIPDC.cr_manufacturer_user',
+                  "APSISIPDC.cr_manufacturer_user"
                 ).insert(user_wise_manufacture);
                 if (insert_user_wise_manufacture) {
                   is_manufacture_wise_user_insert = 1;
@@ -262,7 +259,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               }
               if (Object.keys(user_wise_role).length != 0) {
                 const insert_user_wise_role = await knex(
-                  'APSISIPDC.cr_user_wise_role',
+                  "APSISIPDC.cr_user_wise_role"
                 ).insert(user_wise_role);
                 if (insert_user_wise_role) {
                   is_user_wise_role_insert = 1;
@@ -271,10 +268,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             }
 
             if (
-              is_manufacture_wise_user_insert == 1
-              && is_user_wise_role_insert == 1
+              is_manufacture_wise_user_insert == 1 &&
+              is_user_wise_role_insert == 1
             ) {
-              const date = moment(new Date()).format('YYYY-MM-DD HH:mm:ss');
+              const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
               const insert_log = {
                 sys_date: new Date(date),
                 file_for: folder_name,
@@ -284,86 +281,84 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 upload_rows: Object.keys(manufacture_insert_ids).length,
                 created_by: parseInt(req.user_id),
               };
-              await knex('APSISIPDC.cr_bulk_upload_file_log').insert(
-                insert_log,
+              await knex("APSISIPDC.cr_bulk_upload_file_log").insert(
+                insert_log
               );
-              msg = 'File Uploaded successfully!';
+              msg = "File Uploaded successfully!";
               resolve(sendApiResult(true, msg, insert_log));
             }
           } else {
-            msg = 'No Data Founds to Update';
+            msg = "No Data Founds to Update";
             resolve(sendApiResult(true, msg));
           }
         })
-        .then((result) => {
-        })
+        .then((result) => { })
         .catch((error) => {
-          reject(sendApiResult(false, 'Data not inserted.'));
+          reject(sendApiResult(false, "Data not inserted."));
           logger.info(error);
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    logger.info(error, 'Promise error');
+    logger.info(error, "Promise error");
   });
 };
-
 
 FileUpload.getManufacturerList = function (req) {
   const { page, per_page } = req.query;
   return new Promise(async (resolve, reject) => {
     try {
-      const data = await knex('APSISIPDC.cr_manufacturer')
+      const data = await knex("APSISIPDC.cr_manufacturer")
         .leftJoin(
-          'APSISIPDC.cr_manufacturer_type_entity',
-          'cr_manufacturer_type_entity.id',
-          'cr_manufacturer.type_of_entity',
+          "APSISIPDC.cr_manufacturer_type_entity",
+          "cr_manufacturer_type_entity.id",
+          "cr_manufacturer.type_of_entity"
         )
-        .where('activation_status', 'Active')
+        .where("activation_status", "Active")
         .select(
-          'cr_manufacturer.id',
-          'manufacturer_name',
+          "cr_manufacturer.id",
+          "manufacturer_name",
           knex.raw('"cr_manufacturer_type_entity"."name" as "type_of_entity"'),
-          'name_of_scheme',
-          'registration_no',
-          'manufacturer_tin',
-          'manufacturer_bin',
-          'website_link',
-          'corporate_ofc_address',
-          'corporate_ofc_address_1',
-          'corporate_ofc_address_2',
-          'corporate_ofc_postal_code',
-          'corporate_ofc_post_office',
-          'corporate_ofc_thana',
-          'corporate_ofc_district',
-          'corporate_ofc_division',
-          'nature_of_business',
-          'alternative_ofc_address',
-          'alternative_address_1',
-          'alternative_address_2',
-          'alternative_postal_code',
-          'alternative_post_office',
-          'alternative_thana',
-          'alternative_district',
-          'alternative_division',
-          'official_phone',
-          'official_email',
-          'name_of_authorized_representative',
-          'autho_rep_full_name',
-          'autho_rep_nid',
-          'autho_rep_designation',
-          'autho_rep_phone',
-          'autho_rep_email',
+          "name_of_scheme",
+          "registration_no",
+          "manufacturer_tin",
+          "manufacturer_bin",
+          "website_link",
+          "corporate_ofc_address",
+          "corporate_ofc_address_1",
+          "corporate_ofc_address_2",
+          "corporate_ofc_postal_code",
+          "corporate_ofc_post_office",
+          "corporate_ofc_thana",
+          "corporate_ofc_district",
+          "corporate_ofc_division",
+          "nature_of_business",
+          "alternative_ofc_address",
+          "alternative_address_1",
+          "alternative_address_2",
+          "alternative_postal_code",
+          "alternative_post_office",
+          "alternative_thana",
+          "alternative_district",
+          "alternative_division",
+          "official_phone",
+          "official_email",
+          "name_of_authorized_representative",
+          "autho_rep_full_name",
+          "autho_rep_nid",
+          "autho_rep_designation",
+          "autho_rep_phone",
+          "autho_rep_email"
         )
         .paginate({
           perPage: per_page,
           currentPage: page,
           isLengthAware: true,
         });
-      if (data == 0) reject(sendApiResult(false, 'Not found.'));
+      if (data == 0) reject(sendApiResult(false, "Not found."));
 
-      resolve(sendApiResult(true, 'Data fetched successfully', data));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -374,16 +369,17 @@ FileUpload.deleteManufacturer = function ({ id }) {
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async (trx) => {
-        const manufacturer_delete = await trx('APSISIPDC.cr_manufacturer')
+        const manufacturer_delete = await trx("APSISIPDC.cr_manufacturer")
           .where({ id })
           .delete();
-        if (manufacturer_delete <= 0) reject(sendApiResult(false, 'Could not Found manufacturer'));
+        if (manufacturer_delete <= 0)
+          reject(sendApiResult(false, "Could not Found manufacturer"));
         resolve(
           sendApiResult(
             true,
-            'Manufacturer Deleted Successfully',
-            manufacturer_delete,
-          ),
+            "Manufacturer Deleted Successfully",
+            manufacturer_delete
+          )
         );
       });
     } catch (error) {
@@ -432,12 +428,12 @@ FileUpload.editManufacturer = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const type_entity_manufacturer = await knex(
-        'APSISIPDC.cr_manufacturer_type_entity',
+        "APSISIPDC.cr_manufacturer_type_entity"
       )
-        .where('name', type_of_entity)
-        .select('id');
+        .where("name", type_of_entity)
+        .select("id");
       await knex.transaction(async (trx) => {
-        const manufacturer_update = await trx('APSISIPDC.cr_manufacturer')
+        const manufacturer_update = await trx("APSISIPDC.cr_manufacturer")
           .where({ id: req.params.id })
           .update({
             manufacturer_name,
@@ -475,13 +471,14 @@ FileUpload.editManufacturer = function (req) {
             updated_at: new Date(),
             updated_by,
           });
-        if (manufacturer_update <= 0) reject(sendApiResult(false, 'Could not Found Manufacturer'));
+        if (manufacturer_update <= 0)
+          reject(sendApiResult(false, "Could not Found Manufacturer"));
         resolve(
           sendApiResult(
             true,
-            'Manufacturer updated Successfully',
-            manufacturer_update,
-          ),
+            "Manufacturer updated Successfully",
+            manufacturer_update
+          )
         );
       });
     } catch (error) {
@@ -493,8 +490,7 @@ FileUpload.editManufacturer = function (req) {
 FileUpload.updateAllSchemasByManufacturer = function (req) {
   const {
     manufacturer_id,
-    scheme_id,
-    updateType
+    scheme_id
   } = req.body;
   return new Promise(async (resolve, reject) => {
     try {
@@ -503,29 +499,22 @@ FileUpload.updateAllSchemasByManufacturer = function (req) {
         .select('distributor_id');
 
       const distributor_ids = distributor_ids_Array_Obj.map(id => id.distributor_id);
-
-      if (updateType == "all") {
-        await knex.transaction(async (trx) => {
-          const scheme_update = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
-            .whereIn("distributor_id", distributor_ids)
-            .where('manufacturer_id',manufacturer_id)
-            .update({
-              scheme_id
-            });
-          if (scheme_update <= 0) reject(sendApiResult(false, 'Could not Found Schema'));
-          resolve(
-            sendApiResult(
-              true,
-              'Schema updated Successfully',
-              scheme_update,
-            ),
-          );
-        });
-
-      }
-      else {
-        reject(sendApiResult(false, 'Update Type is not Matched'));
-      }
+      await knex.transaction(async (trx) => {
+        const scheme_update = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
+          .whereIn("distributor_id", distributor_ids)
+          .where('manufacturer_id', manufacturer_id)
+          .update({
+            scheme_id
+          });
+        if (scheme_update <= 0) reject(sendApiResult(false, 'Could not Found Schema'));
+        resolve(
+          sendApiResult(
+            true,
+            'Schema updated Successfully',
+            scheme_update,
+          ),
+        );
+      });
 
     } catch (error) {
       reject(sendApiResult(false, error.message));
