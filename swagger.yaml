@@ -410,6 +410,65 @@ paths:
       responses:
         "200":
           description: Scheme's parameter details.
+  /bulk/upload-retailer-onboarding-data:
+    post:
+      tags:
+        - Bulk Upload
+      summary: upload retailer bulk data
+      description: upload retailer onboarding bulk excel data.
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: body
+          name: body
+          description: Retailer Onboarding Payload
+          required: true
+          schema:
+            $ref: "#/definitions/Retailer_Onboarding"
+        - in: formData
+          name: file
+          type: file
+          description: upload retailer_onboarding sample file 
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: File Uploaded successfully
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "400":
+          description: Invalid Fields
+        '500':
+          description: Internal Server Error 
+  /job/check-retailer-eligibility/:
+    get:
+      tags:
+        - Cron job
+      summary: Retailer Eligibility Check
+      description: Filter eligible master retailer database and retailer wise maufacturer mapping      
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Retailer Eligibility Check Successful 
+        '403':
+          description: Forbidden 
+  /job/scheme-wise-credit-limit-configure/:
+    get:
+      tags:
+        - Cron job
+      summary: Scheme wise limit configure
+      description: check sales data and set system limit based on sales data     
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Scheme Wise Limit Configure Successful.
+        '403':
+          description: Forbidden 
+
 securityDefinitions:
   x-access-token:
     type: apiKey
@@ -785,4 +844,12 @@ definitions:
         description: Region of operation of the salesagent
       updated_by:
         type: number
-        description: Id of who updated salesagent info
+        description: Id of who updated salesagent info  
+  Retailer_Onboarding:
+    properties:
+      user_id:
+        type: number
+        description: who uploaded the file
+      file_for:
+        type: string
+        description: example value "retailer_onboarding"
