@@ -201,7 +201,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 };
 
 FileUpload.getSalesAgentList = function (req) {
-  const { page, per_page } = req;
+  const { page, per_page } = req.query;
 
   return new Promise(async (resolve, reject) => {
     try {

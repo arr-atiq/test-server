@@ -1,10 +1,10 @@
-const fs = require('fs');
-const express = require('express');
-const readXlsxFile = require('read-excel-file/node');
-const xlsx = require('xlsx');
-const moment = require('moment');
-const { sendApiResult, uploaddir } = require('./helper');
-const mailModel = require('../Models/Mail');
+const fs = require("fs");
+const express = require("express");
+const readXlsxFile = require("read-excel-file/node");
+const xlsx = require("xlsx");
+const moment = require("moment");
+const { sendApiResult, uploaddir } = require("./helper");
+const mailModel = require("../Models/Mail");
 
 exports.saveMail = async (req, res) => {
   try {
