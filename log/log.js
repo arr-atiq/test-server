@@ -1,4 +1,4 @@
-const winston = require('winston');
+const winston = require("winston");
 
 /*
   How to use:
@@ -7,25 +7,25 @@ const winston = require('winston');
 */
 
 const informationLog = winston.createLogger({
-  level: 'info',
+  level: "info",
   format: winston.format.json(),
-  defaultMeta: { service: 'info-service-log' },
+  defaultMeta: { service: "info-service-log" },
   transports: [
     new winston.transports.File({
-      filename: 'log/info/info.log',
-      level: 'info',
+      filename: "log/info/info.log",
+      level: "info",
     }),
   ],
 });
 
 const errorLog = winston.createLogger({
-  level: 'error',
+  level: "error",
   format: winston.format.json(),
-  defaultMeta: { service: 'error-service-log' },
+  defaultMeta: { service: "error-service-log" },
   transports: [
     new winston.transports.File({
-      filename: 'log/error/error.log',
-      level: 'error',
+      filename: "log/error/error.log",
+      level: "error",
     }),
   ],
 });

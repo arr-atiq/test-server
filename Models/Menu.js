@@ -1,5 +1,5 @@
-const { sendApiResult } = require('../controllers/helper');
-const knex = require('../config/database');
+const { sendApiResult } = require("../controllers/helper");
+const knex = require("../config/database");
 
 const Menu = function () {};
 
@@ -8,32 +8,32 @@ Menu.menuList = function (req) {
     try {
       const menu_list = await knex
         .select(
-          'cr_menu.menu_id',
-          'cr_menu.menu_name',
-          'cr_menu.parent',
-          'cr_menu.menu_url',
-          'cr_menu.menu_icon_class',
+          "cr_menu.menu_id",
+          "cr_menu.menu_name",
+          "cr_menu.parent",
+          "cr_menu.menu_url",
+          "cr_menu.menu_icon_class"
         )
         .join(
-          'APSISIPDC.cr_menu_access',
-          'APSISIPDC.cr_menu_access.menu_id',
-          'APSISIPDC.cr_menu.menu_id',
+          "APSISIPDC.cr_menu_access",
+          "APSISIPDC.cr_menu_access.menu_id",
+          "APSISIPDC.cr_menu.menu_id"
         )
-        .from('APSISIPDC.cr_menu')
-        .where('APSISIPDC.cr_menu.status', 'Active')
-        .where('APSISIPDC.cr_menu_access.status', 'Active')
+        .from("APSISIPDC.cr_menu")
+        .where("APSISIPDC.cr_menu.status", "Active")
+        .where("APSISIPDC.cr_menu_access.status", "Active")
         .where(function () {
           this.orWhere({
-            'APSISIPDC.cr_menu_access.user_role_id': req.role_id,
-          }).orWhere({ 'APSISIPDC.cr_menu_access.user_id': req.user_id });
+            "APSISIPDC.cr_menu_access.user_role_id": req.role_id,
+          }).orWhere({ "APSISIPDC.cr_menu_access.user_id": req.user_id });
         })
-        .orderBy('APSISIPDC.cr_menu.menu_order', 'asc');
+        .orderBy("APSISIPDC.cr_menu.menu_order", "asc");
 
       if (Object.keys(menu_list).length != 0) {
         const results = await buildTree(menu_list);
-        resolve(sendApiResult(true, 'Data Fetched Successfully', results));
+        resolve(sendApiResult(true, "Data Fetched Successfully", results));
       } else {
-        reject(sendApiResult(false, 'Data not found'));
+        reject(sendApiResult(false, "Data not found"));
       }
     } catch (error) {
       reject(sendApiResult(false, error.message));
