@@ -601,6 +601,28 @@ paths:
         '200':
           description: Scheme Wise Limit Configure Successful.
         '403':
+          description: Forbidden
+  /retailer/rn_rmn_mapping/{retailer_id}:  
+    get:
+      tags:
+        - Retailer
+      summary: Get 1RN & 1RMN Account
+      description: Get 1RN & 1RMN Account using Retailer ID 
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: retailer_id
+          schema:
+            $ref: "#/definitions/rn_rmn_mapping"
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: RN & RMN Account Info Fetch Successfull 
+        '403':
           description: Forbidden 
 
 securityDefinitions:
@@ -1009,3 +1031,16 @@ definitions:
       schema_id:
         type: number
         description: Updated schema Id
+  Retailer_Onboarding:    
+    properties:
+      user_id:
+        type: integer
+      file_for:
+        type: string
+        description: Retailer Sample File
+      file:
+        type: file
+  rn_rmn_mapping:    
+    properties:
+      retailer_id:
+        type: integer
