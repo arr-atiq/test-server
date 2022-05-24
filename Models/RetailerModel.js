@@ -666,7 +666,7 @@ Retailer.getRetailerByDistributor = function (req) {
         .where("cr_retailer_manu_scheme_mapping.status", "Active")
         .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
         .select(
-          'id',
+          'cr_retailer_manu_scheme_mapping.id',
           'cr_retailer_manu_scheme_mapping.retailer_id',
           'master_r_number',
           'ac_number_1rmn',
