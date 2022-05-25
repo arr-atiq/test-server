@@ -85,3 +85,12 @@ exports.getRnRmnMappingById = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.updateLimit = async (req, res) => {
+  try {
+    const result = await model.updateLimitMapping(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
