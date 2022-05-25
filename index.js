@@ -1,15 +1,11 @@
 require("dotenv").config();
 const express = require("express");
-const bodyParser = require("body-parser");
 const cors = require("cors");
-const jwt = require("jsonwebtoken");
+const bodyParser = require("body-parser");
 const logger = require("pino")();
-const YAML = require("yamljs");
 const swaggerUi = require("swagger-ui-express");
-
+const YAML = require("yamljs");
 const { informationLog, errorLog } = require("./log/log");
-const { decodeToken } = require("./controllers/helper");
-
 const { PORT, NODE_ENV } = process.env;
 
 // process.on('uncaughtException', (ex) => {
@@ -60,35 +56,10 @@ app.use(
   })
 );
 
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1];
-  if (token == null) return res.sendStatus(401);
-
-  jwt.verify(token, process.env.JWT_SECRET, async (err) => {
-    if (err) {
-      return res.sendStatus(403);
-    }
-    const userId = await decodeToken(token);
-    req.user_id = userId;
-    next();
-  });
-}
-
 app.get("/", (req, res) =>
   res.json({ message: "Apsis Dana platform is up and running" })
 );
-app.use("/login", require("./routes/login"));
-app.use("/bulk", authenticateToken, require("./routes/bulk"));
-app.use("/menu", authenticateToken, require("./routes/menu"));
-app.use("/manufacturer", authenticateToken, require("./routes/manufacturer"));
-app.use("/distributor", authenticateToken, require("./routes/distributor"));
-app.use("/supervisor", authenticateToken, require("./routes/supervisor"));
-app.use("/salesagent", authenticateToken, require("./routes/salesagent"));
-app.use("/scheme", authenticateToken, require("./routes/scheme"));
-app.use("/mail", authenticateToken, require("./routes/mail"));
-app.use("/retailer", authenticateToken, require("./routes/Retailer"));
-app.use("/job", require("./routes/Cronjob"));
+require('./routes')(app);
 
 const swaggerDocument = YAML.load("./swagger.yaml");
 swaggerDocument.host = process.env.HOSTIP.split("//")[1];
