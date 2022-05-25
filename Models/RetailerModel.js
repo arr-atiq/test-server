@@ -757,14 +757,33 @@ Retailer.getRnRmnMappingById = function (req) {
           "cr_retailer.id",
           "cr_retailer_manu_scheme_mapping.retailer_id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          "cr_manufacturer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_distributor.id"
+        )
         .where("cr_retailer.status", "Active")
         .where("cr_retailer_manu_scheme_mapping.status", "Active")
         .where("cr_retailer.id", retailer_id)
         .where("cr_retailer_manu_scheme_mapping.retailer_id", retailer_id)
         .select(
           "cr_retailer.ac_number_1rn",
+          "cr_retailer.retailer_name",
+          "cr_retailer.retailer_code",
           "cr_retailer_manu_scheme_mapping.ac_number_1rmn",
           "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_manufacturer.website_link",
+          "cr_manufacturer.official_email",
+          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_distributor.distributor_name",
+          "cr_distributor.registered_office_bangladesh",
+          "cr_distributor.region_of_operation",
           "cr_retailer_manu_scheme_mapping.system_limit",
           "cr_retailer_manu_scheme_mapping.propose_limit",
           "cr_retailer_manu_scheme_mapping.crm_approve_limit"
@@ -778,12 +797,22 @@ Retailer.getRnRmnMappingById = function (req) {
           account_exist.push(value.ac_number_1rn);
         }*/
         accountInfoArray.push({
-          "ac_number_1rmn" : value.ac_number_1rmn, 
-          "manufacturer_id" : value.manufacturer_id,
-          "system_limit" : value.system_limit,
-          "propose_limit" : value.propose_limit,
-          "crm_approve_limit" : value.crm_approve_limit, 
-        
+          "ac_number_1rn": value.ac_number_1rn,
+          "retailer_name": value.retailer_name,
+          "retailer_code": value.retailer_code,
+          "ac_number_1rn": value.ac_number_1rn,
+          "ac_number_1rmn": value.ac_number_1rmn,
+          "manufacturer_id": value.manufacturer_id,
+          "manufacturer_name": value.manufacturer_name,
+          "manufacturer_website_link": value.website_link,
+          "manufacturer_official_email": value.official_email,
+          "distributor_id": value.distributor_id,
+          "distributor_name": value.distributor_name,
+          "distributor_registered_office_bangladesh": value.registered_office_bangladesh,
+          "distributor_region_of_operation": value.region_of_operation,
+          "system_limit": value.system_limit,
+          "propose_limit": value.propose_limit,
+          "crm_approve_limit": value.crm_approve_limit,
         });
       }
       /* getRnRmnMapping[account_exist[0]] = accountInfoArray; */
