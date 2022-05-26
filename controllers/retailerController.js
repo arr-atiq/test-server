@@ -88,6 +88,7 @@ exports.getRnRmnMappingById = async (req, res) => {
 
 exports.updateLimit = async (req, res) => {
   try {
+    req.body.user_id = req.user_id;
     const result = await model.updateLimitMapping(req);
     res.status(200).send(result);
   } catch (error) {

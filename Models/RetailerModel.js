@@ -852,9 +852,10 @@ Retailer.updateSchemaByRetailers = function (req) {
 Retailer.updateLimitMapping = async (req, res) => {
   const {
    type,
-   limitValue
+   limitValue,
+   user_id
   } = req.body;
-   console.log('req.params.rmnID',req.params.rmnID)
+   console.log('req.params.body',req.body)
    return new Promise(async (resolve, reject) => {
     try {
       if(type == 'ProposeLimit' ){
@@ -863,7 +864,8 @@ Retailer.updateLimitMapping = async (req, res) => {
           const updateData = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
             .where({ ac_number_1rmn: req.params.rmnID })
             .update({
-              propose_limit : limitValue
+              propose_limit : limitValue,
+              propose_approve_by:user_id
             });
           
           if (updateData <= 0) (sendApiResult(false, 'Could not Found ac_number_1rmn'));
@@ -882,7 +884,8 @@ Retailer.updateLimitMapping = async (req, res) => {
           const updateData = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
             .where({ ac_number_1rmn: req.params.rmnID })
             .update({
-              crm_approve_limit : limitValue
+              crm_approve_limit : limitValue,
+              crm_approve_by:user_id
             });
           
           if (updateData <= 0) res.send(sendApiResult(false, 'Could not Found ac_number_1rmn'));
