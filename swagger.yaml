@@ -623,7 +623,32 @@ paths:
         '200':
           description: RN & RMN Account Info Fetch Successfull 
         '403':
-          description: Forbidden 
+          description: Forbidden
+  /retailer/get-retailer-list:
+    get:
+      tags:
+        - Retailer
+      summary: Getting list of Retailer
+      description: Retailer List fetched successfully /* limit & page */
+      parameters:
+        - in: body
+          name: bearer-token
+          description: Bearer token
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Retailer List fetched successfully
+          schema:
+            $ref: "#/definitions/Manufacturer"  
+        '403':
+          description: Forbidden
 
 securityDefinitions:
   x-access-token:
