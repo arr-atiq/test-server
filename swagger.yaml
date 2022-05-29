@@ -623,13 +623,13 @@ paths:
         '200':
           description: RN & RMN Account Info Fetch Successfull 
         '403':
-          description: Forbidden
-  /retailer/get-retailer-list:
+          description: Forbidden 
+  /retailer/retailers:
     get:
       tags:
         - Retailer
       summary: Getting list of Retailer
-      description: Retailer List fetched successfully /* limit & page */
+      description: This api will give data in paginated format /* limit & page */
       parameters:
         - in: body
           name: bearer-token
@@ -644,9 +644,9 @@ paths:
         - application/json
       responses:
         '200':
-          description: Retailer List fetched successfully
+          description: Total available Retailers and list of Retailer per page
           schema:
-            $ref: "#/definitions/Manufacturer"  
+            $ref: "#/definitions/Retailer"  
         '403':
           description: Forbidden
 
@@ -1026,6 +1026,62 @@ definitions:
       updated_by:
         type: number
         description: Id of who updated salesagent info
+  Retailer:
+    properties:
+      id:
+        type: number
+        description: id of the specific retailer
+      master_r_number:
+        type: number
+        description: master_r_number of the retailer
+      retailer_name:
+        type: string
+        description: Name of the retailer
+      retailer_nid:
+        type: number
+        description: NID of the retailer
+      phone:
+        type: number
+        description: Phone Number of the retailer
+      retailer_code:
+        type: string
+        description: retailer_code of the retailer
+      retailer_tin:
+        type: number
+        description: TIN certificate of the retailer
+      corporate_registration_no:
+        type: number
+        description: Corporate Registration Number of the retailer
+      trade_license_no:
+        type: number
+        description: Trade License Number of the retailer
+      outlet_address:
+        type: string
+        description: Outlet Address of the retailer
+      postal_code:
+        type: number
+        description: Postal Code of the retailer
+      post_office:
+        type: string
+        description: Post Office Address of the retailer
+      thana:
+        type: string
+        description: Thana Address of the retailer
+      district:
+        type: string
+        description: District Address of the retailer
+      division:
+        type: string
+        description: Division Address of the retailer
+      autho_rep_full_name:
+        type: string
+        description: Authorized representative Full Name of the retailer
+      autho_rep_phone:
+        type: number
+        description: Authorized representative Phone Number of the retailer
+      region_operation:
+        type: string
+        description: Region of Operation of the retailer
   Mail:
     properties:
       type:

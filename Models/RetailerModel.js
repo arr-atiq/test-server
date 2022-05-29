@@ -10,7 +10,7 @@ const knex = require("../config/database");
 const { getSchemeDetailsById } = require("../controllers/scheme");
 const { creditLimit } = require("../controllers/credit_limit");
 
-const Retailer = function () {};
+const Retailer = function () { };
 
 Retailer.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -88,7 +88,7 @@ Retailer.insertExcelData = function (rows, filename, req) {
                     : null,
                 trade_license_no:
                   rows[index].Trade_License_No_of_Primary_Establishment !==
-                  undefined
+                    undefined
                     ? rows[index].Trade_License_No_of_Primary_Establishment
                     : null,
                 outlet_address:
@@ -124,9 +124,9 @@ Retailer.insertExcelData = function (rows, filename, req) {
                 autho_rep_full_name:
                   rows[index]
                     .Full_Name_of_Retailer_Authorized_Representative !==
-                  undefined
+                    undefined
                     ? rows[index]
-                        .Full_Name_of_Retailer_Authorized_Representative
+                      .Full_Name_of_Retailer_Authorized_Representative
                     : null,
                 autho_rep_nid:
                   rows[index].NID_of_Authorized_Representative !== undefined
@@ -138,7 +138,7 @@ Retailer.insertExcelData = function (rows, filename, req) {
                     : null,
                 autho_rep_email:
                   rows[index].Official_Email_of_Retailer_Representative !==
-                  undefined
+                    undefined
                     ? rows[index].Official_Email_of_Retailer_Representative
                     : null,
                 region_operation:
@@ -147,7 +147,7 @@ Retailer.insertExcelData = function (rows, filename, req) {
                     : null,
                 duration_sales_data:
                   rows[index].Duration_of_Sales_Data_Submitted_in_Months !==
-                  undefined
+                    undefined
                     ? rows[index].Duration_of_Sales_Data_Submitted_in_Months
                     : null,
                 scheme_id:
@@ -275,6 +275,47 @@ Retailer.getRetailerList = function (req) {
   } catch (error) {
     reject(sendApiResult(false, error.message));
   }
+  });
+};
+
+Retailer.getRetailerList = function (req) {
+  const { page, per_page } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_retailer")
+        .where("status", "Active")
+        .select(
+          "id",
+          "master_r_number",
+          "retailer_name",
+          "retailer_nid",
+          "phone",
+          "retailer_code",
+          "retailer_tin",
+          "corporate_registration_no",
+          "trade_license_no",
+          "outlet_address",
+          "postal_code",
+          "post_office",
+          "thana",
+          "district",
+          "division",
+          "autho_rep_full_name",
+          "autho_rep_phone",
+          "region_operation"
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
   });
 };
 
@@ -432,16 +473,16 @@ Retailer.checkRetailerEligibility = function (req) {
 
               max_r_number_rmn =
                 r_number_rmn.MASTER_R_NUMBER === undefined ||
-                r_number_rmn.MASTER_R_NUMBER == null
+                  r_number_rmn.MASTER_R_NUMBER == null
                   ? 1000000
                   : parseInt(r_number_rmn.MASTER_R_NUMBER);
 
               var temp_r_number_rmn = ++max_r_number_rmn;
               console.log(
                 "masterRetailerInsertLog " +
-                  r_number_rmn +
-                  " => " +
-                  temp_r_number_rmn
+                r_number_rmn +
+                " => " +
+                temp_r_number_rmn
               );
               var retailerManuDistMappingInsert = {
                 master_r_number: parseInt(temp_r_number_rmn),
@@ -499,7 +540,7 @@ Retailer.checkRetailerEligibility = function (req) {
 
               max_r_number_rmn =
                 r_number_rmn.MASTER_R_NUMBER === undefined ||
-                r_number_rmn.MASTER_R_NUMBER == null
+                  r_number_rmn.MASTER_R_NUMBER == null
                   ? 1000000
                   : r_number_rmn.MASTER_R_NUMBER;
 
@@ -690,16 +731,33 @@ Retailer.getRetailerByDistributor = function (req) {
           "cr_schema.id",
           "cr_retailer_manu_scheme_mapping.scheme_id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_retailer",
+          "cr_retailer.id",
+          "cr_retailer_manu_scheme_mapping.retailer_id"
+        )
         .where("cr_retailer_manu_scheme_mapping.status", "Active")
         .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
         .select(
           'cr_retailer_manu_scheme_mapping.id',
           'cr_retailer_manu_scheme_mapping.retailer_id',
-          'master_r_number',
-          'ac_number_1rmn',
-          'retailer_code',
-          'scheme_id',
-          'cr_schema.scheme_name'
+          'cr_retailer_manu_scheme_mapping.retailer_code',
+          'cr_retailer_manu_scheme_mapping.scheme_id',
+          'cr_schema.scheme_name',
+          'cr_retailer.retailer_name',
+          'cr_retailer.ac_number_1rn',
+          'cr_retailer.phone',
+          'cr_retailer.retailer_tin',
+          'cr_retailer.trade_license_no',
+          'cr_retailer.outlet_address',
+          'cr_retailer.postal_code',
+          'cr_retailer.post_office',
+          'cr_retailer.thana',
+          'cr_retailer.district',
+          'cr_retailer.division',
+          'cr_retailer.autho_rep_full_name',
+          'cr_retailer.autho_rep_phone',
+          'cr_retailer.region_operation'
         )
         .distinct()
         .paginate({
@@ -717,7 +775,7 @@ Retailer.getRetailerByDistributor = function (req) {
 
 Retailer.getRnRmnMappingById = function (req) {
   const { retailer_id } = req.params;
-  
+
   return new Promise(async (resolve, reject) => {
     try {
       const accountInfo = await knex("APSISIPDC.cr_retailer")
@@ -726,25 +784,66 @@ Retailer.getRnRmnMappingById = function (req) {
           "cr_retailer.id",
           "cr_retailer_manu_scheme_mapping.retailer_id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          "cr_manufacturer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_distributor.id"
+        )
         .where("cr_retailer.status", "Active")
         .where("cr_retailer_manu_scheme_mapping.status", "Active")
         .where("cr_retailer.id", retailer_id)
         .where("cr_retailer_manu_scheme_mapping.retailer_id", retailer_id)
         .select(
           "cr_retailer.ac_number_1rn",
-          "cr_retailer_manu_scheme_mapping.ac_number_1rmn"
+          "cr_retailer.retailer_name",
+          "cr_retailer.retailer_code",
+          "cr_retailer_manu_scheme_mapping.ac_number_1rmn",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_manufacturer.website_link",
+          "cr_manufacturer.official_email",
+          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_distributor.distributor_name",
+          "cr_distributor.registered_office_bangladesh",
+          "cr_distributor.region_of_operation",
+          "cr_retailer_manu_scheme_mapping.system_limit",
+          "cr_retailer_manu_scheme_mapping.propose_limit",
+          "cr_retailer_manu_scheme_mapping.crm_approve_limit"
         );
-      
-      const getRnRmnMapping = {}, accountInfoArray = [];
-      var account_exist = [];
+
+      /* const getRnRmnMapping = {} */
+      const accountInfoArray = [];
+      /* var account_exist = []; */
       for (const [key, value] of Object.entries(accountInfo)) {
-        if(!account_exist.includes(value.ac_number_1rn)) {
+        /*if (!account_exist.includes(value.ac_number_1rn)) {
           account_exist.push(value.ac_number_1rn);
-        }      
-        accountInfoArray.push(value.ac_number_1rmn);
+        }*/
+        accountInfoArray.push({
+          "ac_number_1rn": value.ac_number_1rn,
+          "retailer_name": value.retailer_name,
+          "retailer_code": value.retailer_code,
+          "ac_number_1rn": value.ac_number_1rn,
+          "ac_number_1rmn": value.ac_number_1rmn,
+          "manufacturer_id": value.manufacturer_id,
+          "manufacturer_name": value.manufacturer_name,
+          "manufacturer_website_link": value.website_link,
+          "manufacturer_official_email": value.official_email,
+          "distributor_id": value.distributor_id,
+          "distributor_name": value.distributor_name,
+          "distributor_registered_office_bangladesh": value.registered_office_bangladesh,
+          "distributor_region_of_operation": value.region_of_operation,
+          "system_limit": value.system_limit,
+          "propose_limit": value.propose_limit,
+          "crm_approve_limit": value.crm_approve_limit,
+        });
       }
-      getRnRmnMapping[account_exist[0]] = accountInfoArray;
-      resolve(sendApiResult(true, "RN & RMN Account Info Fetch Successfull.", getRnRmnMapping));
+      /* getRnRmnMapping[account_exist[0]] = accountInfoArray; */
+      resolve(sendApiResult(true, "RN & RMN Account Info Fetch Successfull.", accountInfoArray));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }

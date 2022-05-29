@@ -86,7 +86,7 @@ module.exports.getParameterDetails = async (req, res) => {
   const schemaParameterDeatils = await getParameterDetailsbyID(scheme_id);
   return res.send({
     success: true,
-    message: "Success :: scheme parameter details ",
+    message: schemaParameterDeatils == null? "No details found" : "Success :: scheme parameter details ",
     data: schemaParameterDeatils,
   });
 };
@@ -102,6 +102,5 @@ const getParameterDetailsbyID = async function (scheme_id) {
     .select()
     .where("scheme_id", scheme_id)
     .first();
-
-  return schemaParameterDeatils;
+  return schemaParameterDeatils?schemaParameterDeatils:null;
 };
