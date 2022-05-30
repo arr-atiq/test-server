@@ -3,7 +3,7 @@ const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const knex = require("../config/database");
 
-const FileUpload = function () {};
+const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -82,6 +82,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 agent_nid: data_array[index].Sales_Agent_NID,
                 phone: data_array[index].Phone,
                 manufacturer_id: data_array[index].Manufacturer,
+                distributor_id: data_array[index].Distributor,
                 agent_employee_code:
                   data_array[index].Sales_Agent_Employee_Code,
                 region_of_operation: data_array[index].Region_of_Operation,
@@ -187,7 +188,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             resolve(sendApiResult(true, msg));
           }
         })
-        .then((result) => {})
+        .then((result) => { })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
           logger.info(error);
@@ -230,6 +231,103 @@ FileUpload.getSalesAgentList = function (req) {
     }
   });
 };
+
+FileUpload.getSalesAgentOperationRegion = function (req) {
+  const { id } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_sales_agent")
+        .where("status", "Active")
+        .where("id", id)
+        .select(
+          "region_of_operation"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      const region_of_operation_data = data[0].region_of_operation;
+      const region_of_operation_array = region_of_operation_data.split(",");
+
+      resolve(sendApiResult(true, "Data fetched successfully", region_of_operation_array));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getRetailersByRegionOperation = function (req) {
+  const { salesagent_id } = req.params;
+  const { region_of_operation } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const manufacturer = await knex("APSISIPDC.cr_sales_agent")
+        .where("status", "Active")
+        .where("id", salesagent_id)
+        .select(
+          "manufacturer_id"
+        );
+      if (manufacturer == 0) reject(sendApiResult(false, "Not found."));
+
+      const manufacturer_id = manufacturer[0].manufacturer_id;
+
+      const data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer.id",
+          "cr_retailer_manu_scheme_mapping.retailer_id"
+        )
+        .where("cr_retailer.status", "Active")
+        .where("cr_retailer_manu_scheme_mapping.status", "Active")
+        .where("cr_retailer.region_operation", region_of_operation)
+        .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+        .select(
+          "cr_retailer.ac_number_1rn",
+          "cr_retailer.retailer_name",
+          "cr_retailer.retailer_code",
+          "cr_retailer_manu_scheme_mapping.ac_number_1rmn",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_retailer_manu_scheme_mapping.system_limit",
+          "cr_retailer_manu_scheme_mapping.propose_limit",
+          "cr_retailer_manu_scheme_mapping.crm_approve_limit"
+        );
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+
+
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getSalesAgentListByManufacturerAndSupervisor = function (req) {
+  const { manufacturer_id } = req.params;
+  const { autho_supervisor_employee_code } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_sales_agent")
+        .where("status", "Active")
+        .where("manufacturer_id", manufacturer_id)
+        .where("autho_supervisor_employee_code", autho_supervisor_employee_code)
+        .select(
+          "id",
+          "agent_name",
+          "agent_nid",
+          "phone"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 
 FileUpload.deleteSalesAgent = function ({ id }) {
   return new Promise(async (resolve, reject) => {
