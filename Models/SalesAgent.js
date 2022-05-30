@@ -282,6 +282,7 @@ FileUpload.getRetailersByRegionOperation = function (req) {
         .where("cr_retailer.region_operation", region_of_operation)
         .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
         .select(
+          "cr_retailer.id",
           "cr_retailer.ac_number_1rn",
           "cr_retailer.retailer_name",
           "cr_retailer.retailer_code",
@@ -318,7 +319,8 @@ FileUpload.getSalesAgentListByManufacturerAndSupervisor = function (req) {
           "id",
           "agent_name",
           "agent_nid",
-          "phone"
+          "phone",
+          "agent_employee_code"
         );
       if (data == 0) reject(sendApiResult(false, "Not found."));
       resolve(sendApiResult(true, "Data fetched successfully", data));

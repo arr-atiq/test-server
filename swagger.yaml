@@ -758,7 +758,122 @@ paths:
           description: Menu deleted Successfully
         '400':
           description: Failed to get
-  
+  /supervisor/supervisors/{manufacturer_id}/{distributor_id}:
+    get:
+      tags:
+        - Supervisor
+      summary: Getting Details of Supervisors by Manufacturer ID and Distributor ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: manufacturer_id, distributor_id
+          required: true
+          schema:
+            $ref: '#/definitions/SupervisorDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+  /salesagent/salesagents/{manufacturer_id}:
+    get:
+      tags:
+        - Salesagent
+      summary: Getting Details of Salesagents by Manufacturer ID and Authorized Supervisor Employee Code
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: manufacturer_id, autho_supervisor_employee_code
+          required: true
+          schema:
+            $ref: '#/definitions/SalesagentDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+  /salesagent/retailers/{salesagent_id}:
+    get:
+      tags:
+        - Salesagent
+      summary: Getting Details of Retailers by Salesagent ID and Region Of Operation
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: salesagent_id, region_of_operation
+          required: true
+          schema:
+            $ref: '#/definitions/RetailerDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+  /salesagent/operation-regions/{id}:
+    get:
+      tags:
+        - Salesagent
+      summary: Getting Details of Salesagent Operation Region by ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/OperationRegionDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
 securityDefinitions:
   x-access-token:
     type: apiKey
@@ -1096,6 +1211,23 @@ definitions:
       updated_by:
         type: number
         description: Id of who updated supervisor info
+  SupervisorDetails:
+    properties:
+      id:
+        type: number
+        description: id of the specific supervisor
+      supervisor_name:
+        type: string
+        description: name of the supervisor
+      supervisor_nid:
+        type: number
+        description: NID of the supervisor
+      phone:
+        type: number
+        description: Phone Number of the supervisor
+      supervisor_employee_code:
+        type: number
+        description: Employee Code of the supervisor
   SalesagentGet:
     properties:
       id:
@@ -1135,6 +1267,23 @@ definitions:
       updated_by:
         type: number
         description: Id of who updated salesagent info
+  SalesagentDetails:
+    properties:
+      id:
+        type: number
+        description: id of the specific salesagent
+      agent_name:
+        type: string
+        description: name of the salesagent
+      agent_nid:
+        type: number
+        description: NID of the salesagent
+      phone:
+        type: number
+        description: Phone Number of the salesagent
+      agent_employee_code:
+        type: number
+        description: Employee Code of the salesagent
   Retailer:
     properties:
       id:
@@ -1191,6 +1340,43 @@ definitions:
       region_operation:
         type: string
         description: Region of Operation of the retailer
+  RetailerDetails:
+    properties:
+      id:
+        type: number
+        description: id of the specific retailer
+      ac_number_1rn:
+        type: number
+        description: ac_number_1rn of the retailer
+      retailer_name:
+        type: string
+        description: Name of the retailer
+      retailer_code:
+        type: string
+        description: retailer_code of the retailer
+      ac_number_1rmn:
+        type: number
+        description: ac_number_1rmn of the retailer
+      manufacturer_id:
+        type: number
+        description: Manufacturer ID of the retailer
+      distributor_id:
+        type: number
+        description: Distributor ID of the retailer
+      system_limit:
+        type: number
+        description: System Limit of the retailer
+      propose_limit:
+        type: number
+        description: Propose Limit of the retailer
+      crm_approve_limit:
+        type: number
+        description: CRM Approve Limit of the retailer
+  OperationRegionDetails:
+    properties:
+      data:
+        type: array
+        description: Array of Operation Region of Salesagent
   Mail:
     properties:
       type:
