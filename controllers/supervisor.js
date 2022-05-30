@@ -45,6 +45,15 @@ exports.getSupervisorList = async (req, res) => {
   }
 };
 
+exports.getSupervisorListByManufacturerAndDistributor = async (req, res) => {
+  try {
+    const result = await superModel.getSupervisorListByManufacturerAndDistributor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.deleteSupervisor = async (req, res) => {
   try {
     const supervisor = await superModel.deleteSupervisor(req.params);
