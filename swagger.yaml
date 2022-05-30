@@ -631,7 +631,7 @@ paths:
       summary: Getting list of Retailer
       description: This api will give data in paginated format /* limit & page */
       parameters:
-        - in: body
+        - in: header
           name: bearer-token
           description: Bearer token
         - in: query
@@ -649,7 +649,116 @@ paths:
             $ref: "#/definitions/Retailer"  
         '403':
           description: Forbidden
-
+  /menu/add-menu:
+    post:
+      tags:
+        - Menu
+      summary: Add Menu
+      description: API for creating Menu by Dana Admin.
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: body
+          name: body
+          description: Menu Load
+          required: true
+          schema:
+            $ref: "#/definitions/AddMenu"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Menu Added Successful.
+        "400":
+          description: Bad request
+        "500":
+          description: Internal Server Error
+  /menu/menu-list:
+    post:
+      tags:
+        - Menu
+      summary: Add Menu
+      description: API for Getting All Menu by Dana Admin.
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true        
+        - in: body
+          name: body
+          description: Menu List
+          required: true
+          schema:
+            $ref: "#/definitions/Menulist"
+        - in: query
+          name: page
+          required: true
+        - in: query
+          name: per_page
+          required: true
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Menu Added Successful.
+        "400":
+          description: Bad request
+        "500":
+          description: Internal Server Error
+  /menu/menu-details/{id}:
+    get:
+      tags:
+        - Menu
+      summary: Getting Details of Menu by Menu ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/MenuDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+  /menu/delete-menu/{id):
+    delete:
+      tags:
+        - Menu
+      summary: Delete Menu by ID
+      description: This api will delete a Distributor by id
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/MenuDelete'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Menu deleted Successfully
+        '400':
+          description: Failed to get
+  
 securityDefinitions:
   x-access-token:
     type: apiKey
@@ -1125,3 +1234,47 @@ definitions:
     properties:
       retailer_id:
         type: integer
+  AddMenu:
+    properties:
+      menu_name:
+        type: integer
+        description: name of the specific Menu
+      menu_type:
+        type: integer
+        description: menu type id of the specific Menu
+      parent_menu_id:
+        type: integer
+        description: id of the specific Parent Menu 
+      menu_url:
+        type: string
+        description: url of the specific Menu 
+      menu_icon_class:
+        type: string
+        description: icon class of the specific Menu 
+      created_by:
+        type: integer
+        description: id of the specific User 
+      user_level:
+        type: string
+        description: User Level List of the Menu access. Example [1,2,3]
+      user:
+        type: string
+        description: User List of the Menu access. Example [1,2,3]
+  Menulist:
+    properties:
+      page:
+        type: integer
+        description: limit of page
+      per_page:
+        type: integer
+        description: limit of per page
+  MenuDetails:
+    properties:
+      id:
+        type: integer
+        description: id of the specific Menu
+  MenuDelete:
+    properties:
+      id:
+        type: integer
+        description: id of the specific Menu
