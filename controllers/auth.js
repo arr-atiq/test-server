@@ -56,6 +56,22 @@ exports.login = async (req, res) => {
   if (!userData || !(md5(`++${password}--`) === userData.password)) {
     res.send(sendApiResult(false, "Oops! Invalid email or Password."));
   } else {
+    const userLevel = await knex("APSISIPDC.cr_user_wise_role")
+    .innerJoin(
+      "APSISIPDC.cr_user_roles",
+      "cr_user_roles.id",
+      "cr_user_wise_role.role_id"
+    )
+    .select("cr_user_wise_role.role_id", "cr_user_roles.name")    
+    .where("cr_user_wise_role.user_id", userData.id)
+    .where("cr_user_wise_role.status", 'Active')
+    .where("cr_user_roles.status", 'Active')
+    .first();
+
+    if(userLevel == undefined){
+      res.send(sendApiResult(false, "Oops! User Wise Level Missing."));
+    }
+
     delete userData.password;
     const payload = { userData };
     const options = { expiresIn: process.env.JWT_EXPIRES_IN };
@@ -67,8 +83,9 @@ exports.login = async (req, res) => {
     await knex("APSISIPDC.cr_users").where("id", userData.id).update({
       remember_token: refreshToken,
     });
-
-    // delete userData.id;
+    
+    userData.user_level_id = (userLevel.role_id != undefined) ? userLevel.role_id : null;
+    userData.user_level_name = (userLevel.name != undefined) ? userLevel.name : null;
     userData.token = token;
     userData.refreshToken = refreshToken;
 

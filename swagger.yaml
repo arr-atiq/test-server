@@ -758,7 +758,23 @@ paths:
           description: Menu deleted Successfully
         '400':
           description: Failed to get
-  
+  /user/user-list/:
+    get:
+      tags:
+        - User
+      summary: Get User Level & User List
+      description: User List Fetched Successfully
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: User List Fetched Successfully
+        '400':
+          description: Failed to get
 securityDefinitions:
   x-access-token:
     type: apiKey
