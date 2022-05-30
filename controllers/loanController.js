@@ -3,22 +3,41 @@ const xlsx = require("xlsx");
 const moment = require("moment");
 const { sendApiResult, uploaddir } = require("./helperController");
 const model = require("../Models/RetailerModel");
+const { default: axios } = require("axios");
 
 exports.insertLoanCalculation = async (req, res) => {
       let totalInterest = 0
+      let totalLoan = 0
+      const schemaGetvalue =await axios.get(`http://localhost:5000/scheme/84`,config )
+      const schemavalue = schemaGetvalue.data.data[0]
       const  interestValue = calculateInterest(987, 2, 10, 2);
       const interestValueCharge = calculateInterest(15, 2, 10, 2);
       const interestValueOtherCharge = calculateInterest(20, 2, 10, 2);
       const transscationCost = calculateTransactionCost(987 , 10 , 2)
+      const reimbursmentCost = calculateInterest(87 , 2,  10 , 2)
+      console.log(req.headers)
       
-      totalInterest = (interestValue +  interestValueCharge + interestValueOtherCharge)
+      
+      totalInterest = (parseFloat(interestValue) +  parseFloat(interestValueCharge) + parseFloat(interestValueOtherCharge) + parseFloat(reimbursmentCost)).toFixed(2)
+      totalLoan = 987 + parseFloat(totalInterest) - 100
+      const config = {
+        headers: { 
+            Authorization: `${req.headers.authorization}`,
+            'Content-Type': 'application/json'
+        },
+      };
+      // const schemaGetvalue =await axios.get(`http://localhost:5000/scheme/84`,config )
+      // const schemavalue = schemaGetvalue.data.data[0]
+      // console.log(schemavalue)
 
       let jsonResponse = {
         'interestValue':interestValue,
         'interestValueCharge':interestValueCharge,
         'interestValueOtherCharge':interestValueOtherCharge,
         'totalInterest':totalInterest,
-        'transscationCost':transscationCost
+        'transscationCost':transscationCost,
+        'reimbursmentCost':reimbursmentCost,
+        'totalLoan':parseFloat(totalLoan).toFixed(2)
       }
        
       res.send(jsonResponse)

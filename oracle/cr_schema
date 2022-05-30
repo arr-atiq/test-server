@@ -12,7 +12,8 @@ CREATE TABLE "cr_retailer_loan_calculation" ( "id" NUMBER generated AS identity,
 "1rmn_acc" NUMBER NOT NULL, "principal_outstanding" NUMBER NOT NULL,"transaction_cost" NUMBER NOT NULL,
 "disburshment" NUMBER NOT NULL,"repayment" NUMBER NOT NULL,"repaid_principal" NUMBER NOT NULL,"daily_principal_interest" NUMBER NOT NULL,
 "other_charge" NUMBER NOT NULL,"charge" NUMBER NOT NULL,"total_outstanding" NUMBER NOT NULL,"overdue_amount" NUMBER NOT NULL,"transaction_type" VARCHAR ( 100 ) NOT NULL,
-"created_by" INTEGER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+"processing_fee" NUMBER NOT NULL,
+"interest_reimbursment" NUMBER NOT NULL,"created_by" INTEGER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
 
 
 Table SQl :
