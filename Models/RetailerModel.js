@@ -236,18 +236,45 @@ Retailer.insertExcelData = function (rows, filename, req) {
 };
 
 Retailer.getRetailerList = function (req) {
-  // var query = req;
-  // var per_page = parseInt(req.per_page);
-  // var page = 2;
-
-  // const { page, per_page } = req;
-
+  const { page, per_page } = req;
   return new Promise(async (resolve, reject) => {
     try {
-      //
-    } catch (error) {
-      reject(sendApiResult(false, error.message));
-    }
+      const data = await knex("APSISIPDC.cr_retailer")
+        .innerJoin(
+          "APSISIPDC.cr_retailer_type",
+          "cr_retailer.retailer_type",
+          "cr_retailer_type.id"
+        )
+        .innerJoin(
+          "APSISIPDC.cr_retailer_type_entity AS type_entity",
+          "cr_retailer.type_of_entity",
+          "type_entity.id"
+        )
+        .where("cr_retailer.status", "Active")
+        .select(
+          "cr_retailer.retailer_name",
+          "cr_retailer.retailer_nid",
+          "cr_retailer.phone",
+          "cr_retailer.retailer_code",
+          "cr_retailer.ac_number_1rn",
+          "cr_retailer_type.name AS retailer_type_name",
+          "type_entity.name AS type_entit_name",
+          "cr_retailer.corporate_registration_no",
+          "cr_retailer.trade_license_no",
+          "cr_retailer.autho_rep_full_name",
+          "cr_retailer.autho_rep_phone"
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Retailer List fetched successfully", data));
+  } catch (error) {
+    reject(sendApiResult(false, error.message));
+  }
   });
 };
 
