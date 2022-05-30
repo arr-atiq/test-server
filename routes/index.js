@@ -16,10 +16,10 @@ function authenticateToken(req, res, next) {
 }
 
 module.exports = function (app) {
-
   app.use("/login", require("./login"));
   app.use("/bulk", authenticateToken, require("./bulk"));
   app.use("/menu", authenticateToken, require("./menu"));
+  app.use("/user", authenticateToken, require("./user"));
   app.use("/manufacturer", authenticateToken, require("./manufacturer"));
   app.use("/distributor", authenticateToken, require("./distributor"));
   app.use("/supervisor", authenticateToken, require("./supervisor"));
