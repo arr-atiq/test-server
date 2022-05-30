@@ -16,18 +16,18 @@ Menu.userWiseMenuList = function (req, res) {
         )
         .join(
           "APSISIPDC.cr_menu_access",
-          "APSISIPDC.cr_menu_access.menu_id",
-          "APSISIPDC.cr_menu.menu_id"
+          "cr_menu_access.menu_id",
+          "cr_menu.menu_id"
         )
         .from("APSISIPDC.cr_menu")
-        .where("APSISIPDC.cr_menu.status", "Active")
-        .where("APSISIPDC.cr_menu_access.status", "Active")
+        .where("cr_menu.status", "Active")
+        .where("cr_menu_access.status", "Active")
         .where(function () {
           this.orWhere({
-            "APSISIPDC.cr_menu_access.user_role_id": req.role_id,
-          }).orWhere({ "APSISIPDC.cr_menu_access.user_id": req.user_id });
+            "cr_menu_access.user_role_id": req.role_id,
+          }).orWhere({ "cr_menu_access.user_id": req.user_id });
         })
-        .orderBy("APSISIPDC.cr_menu.menu_order", "asc");
+        .orderBy("cr_menu.menu_order", "asc");
 
       if (Object.keys(menu_list).length != 0) {
         const results = await buildTree(menu_list);
@@ -208,7 +208,7 @@ Menu.menuDelete = function (req) {
         await trx("APSISIPDC.cr_menu_access")
           .where("cr_menu_access.menu_id", req.id)
           .delete();
-          
+
         if (menu_delete <= 0)
           reject(sendApiResult(false, "Could not Found Menu"));
         else
