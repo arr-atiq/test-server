@@ -7,6 +7,20 @@ CREATE TABLE "cr_schema" ( "id" NUMBER generated AS identity, "scheme_name"  VAR
 "created_by" INTEGER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
 
 
+Table SQl :
+CREATE TABLE "cr_retailer_loan_calculation" ( "id" NUMBER generated AS identity, "reatiler_id"  NUMBER NOT NULL, 
+"1rmn_acc" NUMBER NOT NULL, "principal_outstanding" NUMBER NOT NULL,"transaction_cost" NUMBER NOT NULL,
+"disburshment" NUMBER NOT NULL,"repayment" NUMBER NOT NULL,"repaid_principal" NUMBER NOT NULL,"daily_principal_interest" NUMBER NOT NULL,
+"other_charge" NUMBER NOT NULL,"charge" NUMBER NOT NULL,"total_outstanding" NUMBER NOT NULL,"overdue_amount" NUMBER NOT NULL,"transaction_type" VARCHAR ( 100 ) NOT NULL,
+"created_by" INTEGER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+Table SQl :
+CREATE TABLE "cr_loan_record" ( "id" NUMBER generated AS identity, "reatiler_id"  NUMBER NOT NULL, 
+"distributor_id" NUMBER NOT NULL, "manufacture_id" NUMBER NOT NULL,"sales_agent_id" NUMBER NOT NULL,
+"transaction_type" VARCHAR ( 100 ) NOT NULL,"created_by" INTEGER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
 To add updated_at column:
 ALTER TABLE "cr_schema"
 ADD (
@@ -19,3 +33,8 @@ create trigger set_updated_at
 begin
   :new.updated_at := current_timestamp();
 end;
+
+
+
+
+
