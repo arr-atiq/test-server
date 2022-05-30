@@ -50,7 +50,7 @@ exports.login = async (req, res) => {
 
   const userData = await knex("APSISIPDC.cr_users")
     .select("id", "name", "email", "phone", "password")
-    .where({ email, activation_status: "Active" })
+    .where({ email, status: "Active" })
     .first();
 
   if (!userData || !(md5(`++${password}--`) === userData.password)) {

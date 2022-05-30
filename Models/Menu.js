@@ -10,7 +10,7 @@ Menu.menuList = function (req) {
         .select(
           "cr_menu.menu_id",
           "cr_menu.menu_name",
-          "cr_menu.parent",
+          "cr_menu.parent_menu_id AS parent",
           "cr_menu.menu_url",
           "cr_menu.menu_icon_class"
         )
