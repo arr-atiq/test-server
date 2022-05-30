@@ -11,6 +11,10 @@ module.exports.schemaValidation = async (req, res, next) => {
     processing_cost,
     transaction_fee,
     collection_fee_sharing_with_agency,
+    charge,
+    other_charge,
+    overdue_amount,
+    penal_charge,
   } = req.body;
   const { user_id } = req;
   const data = {
@@ -24,6 +28,10 @@ module.exports.schemaValidation = async (req, res, next) => {
     processing_cost,
     transaction_fee,
     collection_fee_sharing_with_agency,
+    charge,
+    other_charge,
+    overdue_amount,
+    penal_charge,
     created_by: user_id,
   };
 
@@ -37,6 +45,10 @@ module.exports.schemaValidation = async (req, res, next) => {
     daily_penalty: Joi.number(),
     processing_cost: Joi.number(),
     transaction_fee: Joi.number(),
+    charge: Joi.number(),
+    other_charge: Joi.number(),
+    overdue_amount: Joi.number(),
+    penal_charge: Joi.number(),
     collection_fee_sharing_with_agency: Joi.number(),
     created_by: Joi.required(),
   });
