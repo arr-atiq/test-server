@@ -23,4 +23,10 @@ npm run dev
 ## For Docker
 Kindly connect with Team Lead.
 
+## Deploy Backend
+`pm2 start npm --name "IPDC-DANA-BACKEND" -- start`
+
+## KIll PORT
+npx kill-port 5000
+
 
