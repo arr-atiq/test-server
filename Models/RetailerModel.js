@@ -875,4 +875,59 @@ Retailer.updateSchemaByRetailers = function (req) {
   });
 };
 
+
+Retailer.updateLimitMapping = async (req, res) => {
+  const {
+   type,
+   limitValue,
+   user_id
+  } = req.body;
+   console.log('req.params.body',req.body)
+   return new Promise(async (resolve, reject) => {
+    try {
+      if(type == 'ProposeLimit' ){
+
+        knex.transaction(async (trx) => {
+          const updateData = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
+            .where({ ac_number_1rmn: req.params.rmnID })
+            .update({
+              propose_limit : limitValue,
+              propose_approve_by:user_id
+            });
+          
+          if (updateData <= 0) (sendApiResult(false, 'Could not Found ac_number_1rmn'));
+          resolve(sendApiResult(
+              true,
+              'Data updated Successfully',
+              updateData,
+          )
+        )
+       })
+
+    //.toSQL().toNative()
+     }
+      else{
+        knex.transaction(async (trx) => {
+          const updateData = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
+            .where({ ac_number_1rmn: req.params.rmnID })
+            .update({
+              crm_approve_limit : limitValue,
+              crm_approve_by:user_id
+            });
+          
+          if (updateData <= 0) res.send(sendApiResult(false, 'Could not Found ac_number_1rmn'));
+          resolve(sendApiResult(
+              true,
+              'Data updated Successfully',
+              updateData,
+          ))
+       })
+      }
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  }); 
+}
+
+
 module.exports = Retailer;

@@ -449,7 +449,14 @@ FileUpload.getDistributorByManufacturer = function (req) {
         )
         .select(
           "cr_retailer_manu_scheme_mapping.distributor_id",
-          "cr_distributor.distributor_name"
+          "cr_distributor.distributor_name",
+          "cr_distributor.official_email",
+          "cr_distributor.official_contact_number",
+          "cr_distributor.ofc_address1",
+          "cr_distributor.ofc_district",
+          "cr_distributor.ofc_division",
+          "cr_distributor.distributor_code"
+          
         )
         .distinct()
         .paginate({
