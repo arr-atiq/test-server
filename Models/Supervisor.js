@@ -85,6 +85,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 supervisor_nid: data_array[index].Supervisor_NID,
                 phone: data_array[index].Phone,
                 manufacturer_id: data_array[index].Manufacturer,
+                distributor_id: data_array[index].Distributor,
                 supervisor_employee_code:
                   data_array[index].Supervisor_Employee_Code,
                 region_of_operation: data_array[index].Region_of_Operation,
@@ -231,6 +232,31 @@ FileUpload.getSupervisorList = function (req) {
     }
   });
 };
+
+FileUpload.getSupervisorListByManufacturerAndDistributor = function (req) {
+  const { manufacturer_id, distributor_id } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_supervisor")
+        .where("status", "Active")
+        .where("manufacturer_id", manufacturer_id)
+        .where("distributor_id", distributor_id)
+        .select(
+          "id",
+          "supervisor_name",
+          "supervisor_nid",
+          "phone",
+          "supervisor_employee_code"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 
 FileUpload.deleteSupervisor = function ({ id }) {
   return new Promise(async (resolve, reject) => {

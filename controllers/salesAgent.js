@@ -45,6 +45,33 @@ exports.getSalesAgentList = async (req, res) => {
   }
 };
 
+exports.getSalesAgentOperationRegion = async (req, res) => {
+  try {
+    const result = await model.getSalesAgentOperationRegion(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getRetailersByRegionOperation = async (req, res) => {
+  try {
+    const result = await model.getRetailersByRegionOperation(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getSalesAgentListByManufacturerAndSupervisor = async (req, res) => {
+  try {
+    const result = await model.getSalesAgentListByManufacturerAndSupervisor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.deleteSalesAgent = async (req, res) => {
   try {
     const salesagent = await model.deleteSalesAgent(req.params);
