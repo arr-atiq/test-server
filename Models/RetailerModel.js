@@ -32,6 +32,11 @@ Retailer.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < rows.length; index++) {
               const retailerData = {
                 retailer_upload_id: retailerUploadId,
+                sales_agent_id:
+                  rows[index].Sales_Agent_ID
+                  !== undefined
+                    ? rows[index].Sales_Agent_ID
+                    : null,
                 retailer_name:
                   rows[index].Retailer_Name !== undefined
                     ? rows[index].Retailer_Name
@@ -461,6 +466,13 @@ Retailer.checkRetailerEligibility = function (req) {
               )
                 .insert(masterRetailerData)
                 .returning("id");
+              
+              const sales_agent_mapping = {
+                'retailer_id' : parseInt(masterRetailerInsertLog[0]),
+                'retailer_code' : value.retailer_code,
+                'sales_agent_id' : value.sales_agent_id,
+              };
+              await knex("APSISIPDC.cr_retailer_vs_sales_agent").insert(sales_agent_mapping);
 
               var max_r_number_rmn = 0;
               var r_number_rmn = await knex(
@@ -613,6 +625,7 @@ Retailer.schemeWiseLimitConfigure = async function (req) {
           var schemaParameterDeatils = await getSchemeDetailsById(
             value.scheme_id
           );
+
           const salesArray = JSON.parse(value.sales_array);
           const systemLimit = await creditLimit(
             schemaParameterDeatils.uninterrupted_sales,
@@ -882,7 +895,7 @@ Retailer.updateLimitMapping = async (req, res) => {
    limitValue,
    user_id
   } = req.body;
-   console.log('req.params.body',req.body)
+   
    return new Promise(async (resolve, reject) => {
     try {
       if(type == 'ProposeLimit' ){
