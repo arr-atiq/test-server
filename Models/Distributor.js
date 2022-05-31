@@ -112,6 +112,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < data_array.length; index++) {
               const team_distributor = {
                 distributor_name: data_array[index].Distributor_Name,
+                manufacturer_id: rows[index].Manufacturer_id,
                 distributor_code: data_array[index].Distributor_Code,
                 distributor_tin: data_array[index].Distributor_TIN,
                 official_email: data_array[index].Official_Email,
@@ -295,6 +296,7 @@ FileUpload.getDistributorList = function (req) {
         .select(
           "id",
           "distributor_name",
+          "manufacturer_id",
           "distributor_code",
           "distributor_tin",
           "official_email",

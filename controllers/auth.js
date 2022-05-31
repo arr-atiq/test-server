@@ -84,8 +84,8 @@ exports.login = async (req, res) => {
       remember_token: refreshToken,
     });
     
-    userData.user_level_id = (userLevel.role_id != undefined) ? userLevel.role_id : null;
-    userData.user_level_name = (userLevel.name != undefined) ? userLevel.name : null;
+    userData.user_level_id = (userLevel?.role_id != undefined) ? userLevel?.role_id : null;
+    userData.user_level_name = (userLevel?.name != undefined) ? userLevel?.name : null;
     userData.token = token;
     userData.refreshToken = refreshToken;
 

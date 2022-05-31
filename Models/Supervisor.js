@@ -28,30 +28,39 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           const data_array = [];
           if (Object.keys(rows).length != 0) {
             for (let index = 0; index < rows.length; index++) {
-              const supervisor_nid = rows[index].Supervisor_NID;
-              const duplication_check = await knex
-                .count("cr_supervisor.supervisor_nid as count")
-                .from("APSISIPDC.cr_supervisor")
-                .where(
-                  "APSISIPDC.cr_supervisor.supervisor_nid",
-                  supervisor_nid
-                );
-              const duplication_check_val = parseInt(
-                duplication_check[0].count
+
+              const checkNidSalesAgent = await knex("APSISIPDC.cr_sales_agent")
+              .where("agent_nid",rows[index].Supervisor_NID )
+              .select(
+                "id",
               );
-              if (duplication_check_val == 0) {
-                const temp_data = {
-                  Supervisor_Name: rows[index].Supervisor_Name,
-                  Supervisor_NID: rows[index].Supervisor_NID,
-                  Phone: rows[index].Phone,
-                  Manufacturer: rows[index].Manufacturer,
-                  Supervisor_Employee_Code:
-                    rows[index].Supervisor_Employee_Code,
-                  Region_of_Operation: rows[index].Region_of_Operation,
-                  Distributor: rows[index].Distributor,
-                };
-                data_array.push(temp_data);
+              if(checkNidSalesAgent.length == 0){
+                const supervisor_nid = rows[index].Supervisor_NID;
+                const duplication_check = await knex
+                  .count("cr_supervisor.supervisor_nid as count")
+                  .from("APSISIPDC.cr_supervisor")
+                  .where(
+                    "APSISIPDC.cr_supervisor.supervisor_nid",
+                    supervisor_nid
+                  );
+                const duplication_check_val = parseInt(
+                  duplication_check[0].count
+                );
+                if (duplication_check_val == 0) {
+                  const temp_data = {
+                    Supervisor_Name: rows[index].Supervisor_Name,
+                    Supervisor_NID: rows[index].Supervisor_NID,
+                    Phone: rows[index].Phone,
+                    Manufacturer: rows[index].Manufacturer,
+                    Supervisor_Employee_Code:
+                      rows[index].Supervisor_Employee_Code,
+                    Region_of_Operation: rows[index].Region_of_Operation,
+                    Distributor: rows[index].Distributor,
+                  };
+                  data_array.push(temp_data);
+                }                
               }
+
             }
           }
           if (
@@ -92,7 +101,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 created_by: req.user_id,
               };
               distributor_ids.push(data_array[index].Distributor);
-              const insert_supervisor = await knex("APSISIPDC.cr_supervisor")
+              
+                const insert_supervisor = await knex("APSISIPDC.cr_supervisor")
                 .insert(team_supervisor)
                 .returning("id");
               if (insert_supervisor) {
@@ -112,6 +122,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (insert_user) {
                 user_insert_ids.push(insert_user[0]);
               }
+            
+
+             
             }
 
             let is_user_wise_role_insert = 0;

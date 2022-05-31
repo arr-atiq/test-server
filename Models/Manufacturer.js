@@ -2,6 +2,7 @@ const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const knex = require("../config/database");
+const { default: axios } = require("axios");
 
 const FileUpload = function () {};
 require("dotenv").config();
@@ -25,6 +26,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .select("id")
             .where("status", "Active")
             .whereIn("user_type", folder_name);
+
           const user_role_id = user_roles[0].id;
 
           // Type of entity scope - start
@@ -35,9 +37,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .where("status", "Active");
           if (Object.keys(type_entity).length != 0) {
             for (let i = 0; i < type_entity.length; i++) {
-              type_entity_arr[type_entity[i].name] = type_entity[i].id;
+              type_entity_arr[type_entity[i].name.trim()] = type_entity[i].id;
             }
           }
+
           // Type of entity scope - end
 
           // Nature of business scope - start
@@ -62,14 +65,15 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .count("cr_manufacturer.registration_no as count")
                 .from("APSISIPDC.cr_manufacturer")
                 .where("APSISIPDC.cr_manufacturer.registration_no", reg_no);
+
               const duplication_check_val = parseInt(
                 duplication_check[0].count
               );
               if (duplication_check_val == 0) {
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
-                  Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity],
-                  Name_of_Scheme: rows[index].Name_of_Scheme,
+                  Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],
+                  Name_of_Scheme: rows[index]?.Name_of_Scheme ?? null,
                   Manufacturer_Registration_No:
                     rows[index].Manufacturer_Registration_No,
                   Manufacturer_TIN: rows[index].Manufacturer_TIN,
@@ -154,7 +158,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const team_manufacture = {
                 manufacturer_name: data_array[index].Manufacturer_Name,
                 type_of_entity: data_array[index].Type_of_Entity,
-                name_of_scheme: data_array[index].Name_of_Scheme,
+                name_of_scheme: data_array[index]?.Name_of_Scheme ?? 'hello',
                 registration_no: data_array[index].Manufacturer_Registration_No,
                 manufacturer_tin: data_array[index].Manufacturer_TIN,
                 manufacturer_bin: data_array[index].Manufacturer_BIN,
@@ -204,13 +208,27 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   data_array[index].Authorized_Representative_Official_Email_ID,
                 created_by: req.user_id,
               };
+              console.log('team_manufacture',team_manufacture);
+
               const insert_manufacture = await knex("APSISIPDC.cr_manufacturer")
                 .insert(team_manufacture)
                 .returning("id");
 
-              console.log(insert_manufacture);
+              console.log('insert_manufacture',insert_manufacture);
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
+                try{
+                  const sendMail =await axios.post(`http://localhost:5000/mail/tempSendmail`,{
+                    "email": data_array[index].Official_Email_ID,
+                    "mail_subject": "Manufacture Onbaording",
+                    "mail_body": `Your userName is ${data_array[index].Official_Email_ID} and your password is 123456`
+                  }  )
+                  console.log('sendMailsendMailsendMail',sendMail)
+                }
+                catch(err){
+                  console.log('errorerrorerrorerrorerror',err)
+                }
+                
               }
 
               const temp_user = {
@@ -297,13 +315,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
         .then((result) => {})
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
-          logger.info(error);
+          // logger.info(error);
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    logger.info(error, "Promise error");
+    console.log('--------------------------------2nd error', error);
   });
 };
 
@@ -322,7 +340,7 @@ FileUpload.getManufacturerList = function (req) {
           "cr_manufacturer.id",
           "manufacturer_name",
           knex.raw('"cr_manufacturer_type_entity"."name" as "type_of_entity"'),
-          "name_of_scheme",
+          // "name_of_scheme",
           "registration_no",
           "manufacturer_tin",
           "manufacturer_bin",
