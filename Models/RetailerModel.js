@@ -470,6 +470,7 @@ Retailer.checkRetailerEligibility = function (req) {
               const sales_agent_mapping = {
                 'retailer_id' : parseInt(masterRetailerInsertLog[0]),
                 'retailer_code' : value.retailer_code,
+                'manufacturer_id' : value.manufacturer,
                 'sales_agent_id' : value.sales_agent_id,
               };
               await knex("APSISIPDC.cr_retailer_vs_sales_agent").insert(sales_agent_mapping);
