@@ -633,7 +633,7 @@ Retailer.schemeWiseLimitConfigure = async function (req) {
           var schemaParameterDeatils = await getSchemeDetailsById(
             value.scheme_id
           );
-
+          
           const salesArray = JSON.parse(value.sales_array);
           const systemLimit = await creditLimit(
             schemaParameterDeatils.uninterrupted_sales,
@@ -643,6 +643,8 @@ Retailer.schemeWiseLimitConfigure = async function (req) {
             salesArray,
             schemaParameterDeatils.interval_checking_avg_sales_duration
           );
+          console.log('systemLimit');
+          console.log(systemLimit);
           await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
             .where({ id: value.id })
             .update({
