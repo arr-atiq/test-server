@@ -218,7 +218,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
                 try{
-                  const sendMail =await axios.post(`http://localhost:5000/mail/tempSendmail`,{
+                  const sendMail =await axios.post(`http://202.53.174.1:4002/mail/tempSendmail`,{
                     "email": data_array[index].Official_Email_ID,
                     "mail_subject": "Manufacture Onbaording",
                     "mail_body": `Your userName is ${data_array[index].Official_Email_ID} and your password is 123456`
