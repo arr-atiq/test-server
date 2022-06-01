@@ -217,7 +217,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               console.log('insert_manufacture',insert_manufacture);
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
-                try{
+                /* try{
                   const sendMail =await axios.post(`http://202.53.174.1:4002/mail/tempSendmail`,{
                     "email": data_array[index].Official_Email_ID,
                     "mail_subject": "Manufacture Onbaording",
@@ -227,7 +227,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 }
                 catch(err){
                   console.log('errorerrorerrorerrorerror',err)
-                }
+                }*/
                 
               }
 
