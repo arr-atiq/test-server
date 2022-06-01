@@ -31,13 +31,38 @@ exports.sendEmail = async (req, res) => {
       pass: process.env.EMAIL_PASS,
     },
   });
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      informationLog.error(error);
+    } else {
+      informationLog.info({
+        message: "Email sent" + info.response,
+        time: Date.now(),
+      });
+    }
+  });
+};
 
-  const mailOptions = {
-    from: process.env.EMAIL,
-    to: email,
-    subject: mail_subject,
-    html: mail_body,
-  };
+
+ 
+exports.sendEmailTemp = async (req, res) => {
+  const transporter = nodemailer.createTransport({
+    service: process.env.EMAIL_SERVICE,
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+ console.log('mailbody',req.body)
+
+const mailOptions = {
+  from: process.env.EMAIL,
+  to: req.body.email,
+  subject: req.body.mail_subject,
+  html: req.body.mail_body,
+};
+
+console.log('mailOptions',mailOptions)
 
   transporter.sendMail(mailOptions, function (error, info) {
     if (error) {
@@ -50,3 +75,6 @@ exports.sendEmail = async (req, res) => {
     }
   });
 };
+
+
+

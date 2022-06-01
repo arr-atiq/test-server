@@ -41,6 +41,10 @@ Retailer.insertExcelData = function (rows, filename, req) {
                   rows[index].Retailer_Name !== undefined
                     ? rows[index].Retailer_Name
                     : null,
+                sales_agent_id:
+                rows[index].Sales_Agent_ID !== undefined
+                  ? rows[index].Sales_Agent_ID
+                  : null,
                 retailer_nid:
                   rows[index].Retailer_NID !== undefined
                     ? rows[index].Retailer_NID
@@ -158,7 +162,7 @@ Retailer.insertExcelData = function (rows, filename, req) {
                 scheme_id:
                   rows[index].Scheme_ID !== undefined
                     ? rows[index].Scheme_ID
-                    : null,
+                    : 102,
                 start_date:
                   rows[index].Start_Date !== undefined
                     ? getJsDateFromExcel(rows[index].Start_Date)
@@ -195,10 +199,12 @@ Retailer.insertExcelData = function (rows, filename, req) {
               };
               retailerList.push(retailerData);
             }
-
+            console.log('retailerList',retailerList)
             const insertRetailerList = await knex(
               "APSISIPDC.cr_retailer_temp"
             ).insert(retailerList);
+            console.log('insertRetailerList',insertRetailerList)
+
             if (insertRetailerList == true) {
               const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
               const insertLog = {
@@ -230,9 +236,10 @@ Retailer.insertExcelData = function (rows, filename, req) {
         })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
-          // console.log(error);
+          console.log('eroorrrrrrrrrr',error);
         });
     } catch (error) {
+      console.log('eroorrrrrrrrrr',error);
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {

@@ -23,3 +23,12 @@ exports.sendMail = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.sendMailTemp = async (req, res) => {
+  try {
+    const result = await mailModel.sendEmailTemp(req, res);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
