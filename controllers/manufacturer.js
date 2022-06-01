@@ -35,6 +35,7 @@ const importExcelData2DB = async function (filename, req) {
     }
     return insert;
   } catch (error) {
+    console.log("-------------------",error)
     return sendApiResult(false, "File not uploaded");
   }
 };
