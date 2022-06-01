@@ -32,10 +32,19 @@ Retailer.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < rows.length; index++) {
               const retailerData = {
                 retailer_upload_id: retailerUploadId,
+                sales_agent_id:
+                  rows[index].Sales_Agent_ID
+                  !== undefined
+                    ? rows[index].Sales_Agent_ID
+                    : null,
                 retailer_name:
                   rows[index].Retailer_Name !== undefined
                     ? rows[index].Retailer_Name
                     : null,
+                sales_agent_id:
+                rows[index].Sales_Agent_ID !== undefined
+                  ? rows[index].Sales_Agent_ID
+                  : null,
                 retailer_nid:
                   rows[index].Retailer_NID !== undefined
                     ? rows[index].Retailer_NID
@@ -71,8 +80,8 @@ Retailer.insertExcelData = function (rows, filename, req) {
                     ? rows[index].Repayment
                     : null,
                 manufacturer:
-                  rows[index].Corresponding_manufacturer_code !== undefined
-                    ? rows[index].Corresponding_manufacturer_code
+                  rows[index].Corresponding_manufacturer !== undefined
+                    ? rows[index].Corresponding_manufacturer
                     : null,
                 distributor_code:
                   rows[index].Corresponding_distributor_code !== undefined
@@ -153,7 +162,7 @@ Retailer.insertExcelData = function (rows, filename, req) {
                 scheme_id:
                   rows[index].Scheme_ID !== undefined
                     ? rows[index].Scheme_ID
-                    : null,
+                    : 102,
                 start_date:
                   rows[index].Start_Date !== undefined
                     ? getJsDateFromExcel(rows[index].Start_Date)
@@ -190,10 +199,12 @@ Retailer.insertExcelData = function (rows, filename, req) {
               };
               retailerList.push(retailerData);
             }
-
+            console.log('retailerList',retailerList)
             const insertRetailerList = await knex(
               "APSISIPDC.cr_retailer_temp"
             ).insert(retailerList);
+            console.log('insertRetailerList',insertRetailerList)
+
             if (insertRetailerList == true) {
               const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
               const insertLog = {
@@ -225,9 +236,10 @@ Retailer.insertExcelData = function (rows, filename, req) {
         })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
-          // console.log(error);
+          console.log('eroorrrrrrrrrr',error);
         });
     } catch (error) {
+      console.log('eroorrrrrrrrrr',error);
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
@@ -235,48 +247,48 @@ Retailer.insertExcelData = function (rows, filename, req) {
   });
 };
 
-Retailer.getRetailerList = function (req) {
-  const { page, per_page } = req;
-  return new Promise(async (resolve, reject) => {
-    try {
-      const data = await knex("APSISIPDC.cr_retailer")
-        .innerJoin(
-          "APSISIPDC.cr_retailer_type",
-          "cr_retailer.retailer_type",
-          "cr_retailer_type.id"
-        )
-        .innerJoin(
-          "APSISIPDC.cr_retailer_type_entity AS type_entity",
-          "cr_retailer.type_of_entity",
-          "type_entity.id"
-        )
-        .where("cr_retailer.status", "Active")
-        .select(
-          "cr_retailer.retailer_name",
-          "cr_retailer.retailer_nid",
-          "cr_retailer.phone",
-          "cr_retailer.retailer_code",
-          "cr_retailer.ac_number_1rn",
-          "cr_retailer_type.name AS retailer_type_name",
-          "type_entity.name AS type_entit_name",
-          "cr_retailer.corporate_registration_no",
-          "cr_retailer.trade_license_no",
-          "cr_retailer.autho_rep_full_name",
-          "cr_retailer.autho_rep_phone"
-        )
-        .paginate({
-          perPage: per_page,
-          currentPage: page,
-          isLengthAware: true,
-        });
-        if (data == 0) reject(sendApiResult(false, "Not found."));
+// Retailer.getRetailerList = function (req) {
+//   const { page, per_page } = req;
+//   return new Promise(async (resolve, reject) => {
+//     try {
+//       const data = await knex("APSISIPDC.cr_retailer")
+//         .innerJoin(
+//           "APSISIPDC.cr_retailer_type",
+//           "cr_retailer.retailer_type",
+//           "cr_retailer_type.id"
+//         )
+//         .innerJoin(
+//           "APSISIPDC.cr_retailer_type_entity AS type_entity",
+//           "cr_retailer.type_of_entity",
+//           "type_entity.id"
+//         )
+//         .where("cr_retailer.status", "Active")
+//         .select(
+//           "cr_retailer.retailer_name",
+//           "cr_retailer.retailer_nid",
+//           "cr_retailer.phone",
+//           "cr_retailer.retailer_code",
+//           "cr_retailer.ac_number_1rn",
+//           "cr_retailer_type.name AS retailer_type_name",
+//           "type_entity.name AS type_entit_name",
+//           "cr_retailer.corporate_registration_no",
+//           "cr_retailer.trade_license_no",
+//           "cr_retailer.autho_rep_full_name",
+//           "cr_retailer.autho_rep_phone"
+//         )
+//         .paginate({
+//           perPage: per_page,
+//           currentPage: page,
+//           isLengthAware: true,
+//         });
+//         if (data == 0) reject(sendApiResult(false, "Not found."));
 
-      resolve(sendApiResult(true, "Retailer List fetched successfully", data));
-  } catch (error) {
-    reject(sendApiResult(false, error.message));
-  }
-  });
-};
+//       resolve(sendApiResult(true, "Retailer List fetched successfully", data));
+//   } catch (error) {
+//     reject(sendApiResult(false, error.message));
+//   }
+//   });
+// };
 
 Retailer.getRetailerList = function (req) {
   const { page, per_page } = req.query;
@@ -461,6 +473,13 @@ Retailer.checkRetailerEligibility = function (req) {
               )
                 .insert(masterRetailerData)
                 .returning("id");
+              
+              const sales_agent_mapping = {
+                'retailer_id' : parseInt(masterRetailerInsertLog[0]),
+                'retailer_code' : value.retailer_code,
+                'sales_agent_id' : value.sales_agent_id,
+              };
+              await knex("APSISIPDC.cr_retailer_vs_sales_agent").insert(sales_agent_mapping);
 
               var max_r_number_rmn = 0;
               var r_number_rmn = await knex(
@@ -613,6 +632,7 @@ Retailer.schemeWiseLimitConfigure = async function (req) {
           var schemaParameterDeatils = await getSchemeDetailsById(
             value.scheme_id
           );
+
           const salesArray = JSON.parse(value.sales_array);
           const systemLimit = await creditLimit(
             schemaParameterDeatils.uninterrupted_sales,
@@ -882,7 +902,7 @@ Retailer.updateLimitMapping = async (req, res) => {
    limitValue,
    user_id
   } = req.body;
-   console.log('req.params.body',req.body)
+   
    return new Promise(async (resolve, reject) => {
     try {
       if(type == 'ProposeLimit' ){
