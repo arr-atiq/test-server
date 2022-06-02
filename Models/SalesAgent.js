@@ -294,9 +294,39 @@ FileUpload.getRetailersByRegionOperation = function (req) {
           "cr_retailer_manu_scheme_mapping.crm_approve_limit"
         );
 
-        if (data == 0) reject(sendApiResult(false, "Not found."));
+      if (data == 0) reject(sendApiResult(false, "Not found."));
 
 
+
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getRetailerbySalesAgent = function (req) {
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const { salesagent_id } = req.params;
+      const data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_vs_sales_agent",
+          "cr_retailer.id",
+          "cr_retailer_vs_sales_agent.retailer_id"
+        )
+        .where("cr_retailer.status", "Active")
+        .where("cr_retailer_vs_sales_agent.status", "Active")
+        .where("cr_retailer_vs_sales_agent.sales_agent_id", salesagent_id)
+        .select(
+          "cr_retailer.id",
+          "cr_retailer.retailer_name",
+          "cr_retailer.retailer_code",
+          "cr_retailer_vs_sales_agent.sales_agent_id"
+        );
+
+      if (data == 0) reject(sendApiResult(false, "Not found."));
 
       resolve(sendApiResult(true, "Data fetched successfully", data));
     } catch (error) {
