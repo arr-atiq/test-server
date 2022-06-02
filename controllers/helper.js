@@ -6,6 +6,7 @@ const axios = require("axios");
 const moment = require("moment");
 const excel = require("excel4node");
 const knex = require("../config/database");
+const jwt = require("jsonwebtoken");
 
 exports.sendApiResult = function (success, message, data = {}) {
   var data = {
@@ -13,6 +14,8 @@ exports.sendApiResult = function (success, message, data = {}) {
     message,
     data,
   };
+  console.log('success',data)
+
   return data;
 };
 
@@ -612,9 +615,12 @@ exports.uploadDynamicBulkConfig = function (name) {
   });
   return storage;
 };
-// @kamruzzaman - end
 
-// @Arfin
+exports.decodeToken = async (token) => {
+  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  return decoded.userData.id;
+};
+
 exports.ValidatePhoneNumber = function (phoneNumber) {
   const validatePhnRegex = /(^(01))[2|3-9]{1}(\d){8}$/;
   if (phoneNumber.match(validatePhnRegex)) {
@@ -635,14 +641,8 @@ exports.ValidateNID = function (nid) {
   return false;
 };
 
-exports.ValidateTIN = function (tin) {
-  if (!isNaN(tin)) {
-    const tinLength = tin.toString().length;
-    const tinValidLengthArr = [13];
-    if (tinValidLengthArr.includes(tinLength)) {
-      return true;
-    }
-    return false;
-  }
-  return false;
+exports.UpdatedTime = function () {
+  const updatedTime = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+  console.log(updatedTime);
+  return new Date(updatedTime);
 };

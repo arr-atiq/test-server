@@ -1,9 +1,12 @@
-const express = require('express');
+const express = require("express");
 
 const router = express.Router();
-const salesagent = require('../controllers/salesAgentController');
+const salesagent = require("../controllers/salesAgent");
 
-router.get('/salesagents', salesagent.getSalesAgentList);
+router.get("/salesagents", salesagent.getSalesAgentList);
+router.get("/operation-regions/:id", salesagent.getSalesAgentOperationRegion);
+router.get("/retailers/:salesagent_id", salesagent.getRetailersByRegionOperation);
+router.get("/salesagents/:manufacturer_id", salesagent.getSalesAgentListByManufacturerAndSupervisor);
 router.put("/salesagent/:id", salesagent.editSalesAgent);
 router.delete("/salesagent/:id", salesagent.deleteSalesAgent);
 

@@ -1,12 +1,13 @@
-const fs = require('fs');
-const express = require('express');
-const readXlsxFile = require('read-excel-file/node');
-const xlsx = require('xlsx');
-const moment = require('moment');
-const { sendApiResult, uploaddir } = require('./helperController');
-const distModel = require('../Models/DistributorModel');
+const fs = require("fs");
+const express = require("express");
+const readXlsxFile = require("read-excel-file/node");
+const xlsx = require("xlsx");
+const moment = require("moment");
+const { sendApiResult, uploaddir } = require("./helper");
+const distModel = require("../Models/Distributor");
 
 exports.uploadDistributorOnboardingFile = async (req, res) => {
+  req.body.user_id = req.user_id;
   const upload = await importExcelData2DB(req.file.filename, req.body);
   res.status(200).send(upload);
 };
@@ -17,7 +18,7 @@ const importExcelData2DB = async function (filename, req) {
     const folder_name = req.file_for;
     const workbook = xlsx.readFile(
       `./public/configuration_file/${folder_name}/${filename}`,
-      { type: 'array' },
+      { type: "array" }
     );
     const sheetnames = Object.keys(workbook.Sheets);
     let i = sheetnames.length;
@@ -29,15 +30,13 @@ const importExcelData2DB = async function (filename, req) {
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, 'File not uploaded');
+    return sendApiResult(false, "File not uploaded");
   }
 };
 
-// @Arfin
-
 exports.getDistributorList = async (req, res) => {
   try {
-    const result = await distModel.getDistributorList(req.body);
+    const result = await distModel.getDistributorList(req);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
@@ -51,7 +50,7 @@ exports.deleteDistributor = async (req, res) => {
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
-}
+};
 
 exports.editDistributor = async (req, res) => {
   try {
@@ -60,4 +59,13 @@ exports.editDistributor = async (req, res) => {
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
-}
+};
+
+exports.getDistributorByManufacturer = async (req, res) => {
+  try {
+    const result = await distModel.getDistributorByManufacturer(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};

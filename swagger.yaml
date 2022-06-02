@@ -1,14 +1,14 @@
-swagger: '2.0'
+swagger: "2.0"
 info:
-  version: '1.0.0'
+  version: "1.0.0"
   title: Dana Api Documentation
   description: Swagger documentation for the Dana project phase-1
-  termsOfService: 'http://swagger.io/terms/'
+  termsOfService: "http://swagger.io/terms/"
   contact:
     email: asad.zaman@apsissolutions.com
   license:
     name: Apache 2.0
-    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 schemes:
   - http
 paths:
@@ -24,19 +24,869 @@ paths:
           description: Login Payload
           required: true
           schema:
-            $ref: '#/definitions/Login'
+            $ref: "#/definitions/Login"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Login Success
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "400":
+          description: Invalid Fields
+        '500':
+          description: Internal Server Error  
+  /manufacturer/manufacturers:
+    get:
+      tags:
+        - Manufacturer
+      summary: Getting list of Manufacturer
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: body
+          name: bearer-token
+          description: Bearer token
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
       produces:
         - application/json
       responses:
         '200':
-          description: Login Success
+          description: Total available manufacturers and list of manufacturer per page
           schema:
-            $ref: '#/definitions/ApiResponse'
+            $ref: "#/definitions/Manufacturer"  
+        '403':
+          description: Forbidden
+  /manufacturer/manufacturer/{id}:
+    put:
+      tags:
+        - Manufacturer
+      summary: Update manufacturer information by ID
+      description: This api will update the manufacturer info
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/Manufacturer'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Manufacturer updated Successfully
+        '500':
+          description: Failed
+  /manufacturer/manufacturer/{id):
+    delete:
+      tags:
+        - Manufacturer
+      summary: Delete Manufacturer by ID
+      description: This api will delete a manufacturer by id
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/ManufacturerDelete'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Mafacturer deleted Successfully
         '400':
+          description: Failed to get
+  /manufacturer/schema:
+    put:
+      tags:
+        - Manufacturer
+      summary: Update All Schema ID by Manufacturer ID
+      description: This api will update the Schema ID
+      parameters:
+        - in: body
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: manufacturer_id
+          required: true
+          schema:
+            $ref: '#/definitions/AllSchemaIDUpdate'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Schema ID updated Successfully
+        '500':
+          description: Failed
+  /distributor/distributors:
+    get:
+      tags:
+        - Distributor
+      summary: Getting list of Distributor
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: body
+          name: bearer-token
+          description: Bearer token
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Total available Distributor and list of Distributor per page
+          schema:
+            $ref: "#/definitions/Distributor"  
+        '403':
+          description: Forbidden
+  /distributor/distributors/{manufacturer_id}:
+    get:
+      tags:
+        - Distributor
+      summary: Getting list of Distributor by Manufacturer ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: manufacturer_id
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Total available Distributor and list of Distributor per page by Manufacturer ID  
+        '403':
+          description: Forbidden
+  /distributor/distributor/{id}:
+    put:
+      tags:
+        - Distributor
+      summary: Update Distributor information by ID
+      description: This api will update the Distributor info
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/Distributor'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Distributor updated Successfully
+        '500':
+          description: Failed
+  /distributor/distributor/{id):
+    delete:
+      tags:
+        - Distributor
+      summary: Delete Distributor by ID
+      description: This api will delete a Distributor by id
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/DistributorDelete'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Distributor deleted Successfully
+        '400':
+          description: Failed to get
+  /supervisor/supervisors:
+    get:
+      tags:
+        - Supervisor
+      summary: Getting list of Supervisor
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: body
+          name: bearer-token
+          description: Bearer token
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Total available Supervisor and list of Supervisor per page
+          schema:
+            $ref: "#/definitions/Supervisor"  
+        '403':
+          description: Forbidden
+  /supervisor/supervisor/{id}:
+    put:
+      tags:
+        - Supervisor
+      summary: Update Supervisor information by ID
+      description: This api will update the Supervisor info
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/Supervisor'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Supervisor updated Successfully
+        '500':
+          description: Failed
+  /supervisor/supervisor/{id):
+    delete:
+      tags:
+        - Supervisor
+      summary: Delete Supervisor by ID
+      description: This api will delete a Supervisor by id
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/SupervisorDelete'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Supervisor deleted Successfully
+        '400':
+          description: Failed to get
+  /salesagent/salesagents:
+    get:
+      tags:
+        - Salesagent
+      summary: Getting list of Salesagent
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: body
+          name: bearer-token
+          description: Bearer token
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Total available Salesagent and list of Salesagent per page
+          schema:
+            $ref: "#/definitions/Salesagent"  
+        '403':
+          description: Forbidden
+  /salesagent/salesagent/{id}:
+    put:
+      tags:
+        - Salesagent
+      summary: Update Salesagent information by ID
+      description: This api will update the Salesagent info
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/Salesagent'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Salesagent updated Successfully
+        '500':
+          description: Failed
+  /salesagent/salesagent/{id):
+    delete:
+      tags:
+        - Salesagent
+      summary: Delete Salesagent by ID
+      description: This api will delete a Salesagent by id
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/SalesagentDelete'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Salesagent deleted Successfully
+        '400':
+          description: Failed to get
+  /retailer/retailers/{distributor_id}:
+    get:
+      tags:
+        - Retailer
+      summary: Getting list of Retailer by Distributor ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: distributor_id
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Total available Retailer and list of Retailer per page by Manufacturer ID  
+        '403':
+          description: Forbidden
+  /retailer/schema:
+    put:
+      tags:
+        - Retailer
+      summary: Update Schema ID by Retailer IDs
+      description: This api will update the Schema ID
+      parameters:
+        - in: body
+          name: bearer-token
+          description: Bearer token
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: '#/definitions/SchemaIDUpdate'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Schema ID updated Successfully
+        '500':
+          description: Failed
+  /scheme:
+    post:
+      tags:
+        - Scheme
+      summary: Create Scheme
+      description: API for creating scheme by Dana Admin.
+      parameters:
+        - in: body
+          name: body
+          description: Scheme Payload
+          required: true
+          schema:
+            $ref: "#/definitions/Scheme"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Scheme created Successfull
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "400":
+          description: Bad request
+        "500":
+          description: Internal Server Error
+  /scheme/list:
+    get:
+      tags:
+        - Scheme
+      summary: Schemes list
+      description: API for getting schemes list
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: List of available schemes.
+  /scheme/{id}:
+    get:
+      tags:
+        - Scheme
+      summary: Scheme details by ID
+      description: API for getting scheme details
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: id
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Scheme's details.
+  /scheme/parameter:
+    post:
+      tags:
+        - Scheme
+      summary: Create Scheme Parameter
+      description: API for creating scheme parameter by Dana Admin.
+      parameters:
+        - in: body
+          name: body
+          description: Scheme Payload
+          required: true
+          schema:
+            $ref: "#/definitions/SchemeParameter"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Scheme created Successfull
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "400":
+          description: Bad request
+  /scheme/{scheme_id}/parameter:
+    get:
+      tags:
+        - Scheme
+      summary: Scheme parameter details by scheme_id
+      description: API for getting scheme pameter details
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: scheme_id
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Scheme's parameter details.
+  /mail/sendmail:
+    post:
+      tags:
+        - Mail
+      summary: Save Mail in database with type
+      description: API for saving mail details
+      parameters:
+        - in: body
+          name: body
+          description: Mail Payload
+          required: true
+          schema:
+            $ref: '#/definitions/Mail'            
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Mail details save successfully.
+  /mail/sendmail/{id}:
+    get:
+      tags:
+        - Mail
+      summary: Mail details get by id
+      description: API for getting Mail and send details
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: id            
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Mail details.                           
+        "200":
+          description: Scheme's parameter details.
+  /bulk/upload-retailer-onboarding-data:
+    post:
+      tags:
+        - Bulk Upload
+      summary: upload retailer bulk data
+      description: upload retailer onboarding bulk excel data.
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: body
+          name: body
+          description: Retailer Onboarding Payload
+          required: true
+          schema:
+            $ref: "#/definitions/Retailer_Onboarding"
+        - in: formData
+          name: file
+          type: file
+          description: upload retailer_onboarding sample file 
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: File Uploaded successfully
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "400":
           description: Invalid Fields
         '500':
-          description: Internal Server Error    
-
+          description: Internal Server Error 
+  /job/check-retailer-eligibility/:
+    get:
+      tags:
+        - Cron job
+      summary: Retailer Eligibility Check
+      description: Filter eligible master retailer database and retailer wise maufacturer mapping      
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Retailer Eligibility Check Successful 
+        '403':
+          description: Forbidden 
+  /job/scheme-wise-credit-limit-configure/:
+    get:
+      tags:
+        - Cron job
+      summary: Scheme wise limit configure
+      description: check sales data and set system limit based on sales data     
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Scheme Wise Limit Configure Successful.
+        '403':
+          description: Forbidden
+  /retailer/rn_rmn_mapping/{retailer_id}:  
+    get:
+      tags:
+        - Retailer
+      summary: Get 1RN & 1RMN Account
+      description: Get 1RN & 1RMN Account using Retailer ID 
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: retailer_id
+          schema:
+            $ref: "#/definitions/rn_rmn_mapping"
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: RN & RMN Account Info Fetch Successfull 
+        '403':
+          description: Forbidden 
+  /retailer/retailers:
+    get:
+      tags:
+        - Retailer
+      summary: Getting list of Retailer
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Total available Retailers and list of Retailer per page
+          schema:
+            $ref: "#/definitions/Retailer"  
+        '403':
+          description: Forbidden
+  /menu/add-menu:
+    post:
+      tags:
+        - Menu
+      summary: Add Menu
+      description: API for creating Menu by Dana Admin.
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: body
+          name: body
+          description: Menu Load
+          required: true
+          schema:
+            $ref: "#/definitions/AddMenu"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Menu Added Successful.
+        "400":
+          description: Bad request
+        "500":
+          description: Internal Server Error
+  /menu/menu-list:
+    post:
+      tags:
+        - Menu
+      summary: Add Menu
+      description: API for Getting All Menu by Dana Admin.
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true        
+        - in: body
+          name: body
+          description: Menu List
+          required: true
+          schema:
+            $ref: "#/definitions/Menulist"
+        - in: query
+          name: page
+          required: true
+        - in: query
+          name: per_page
+          required: true
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Menu Added Successful.
+        "400":
+          description: Bad request
+        "500":
+          description: Internal Server Error
+  /menu/menu-details/{id}:
+    get:
+      tags:
+        - Menu
+      summary: Getting Details of Menu by Menu ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/MenuDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+  /menu/delete-menu/{id):
+    delete:
+      tags:
+        - Menu
+      summary: Delete Menu by ID
+      description: This api will delete a Distributor by id
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/MenuDelete'
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Menu deleted Successfully
+        '400':
+          description: Failed to get
+  /supervisor/supervisors/{manufacturer_id}/{distributor_id}:
+    get:
+      tags:
+        - Supervisor
+      summary: Getting Details of Supervisors by Manufacturer ID and Distributor ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: manufacturer_id, distributor_id
+          required: true
+          schema:
+            $ref: '#/definitions/SupervisorDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+  /user/user-list/:
+    get:
+      tags:
+        - User
+      summary: Get User Level & User List
+      description: User List Fetched Successfully
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+  /salesagent/salesagents/{manufacturer_id}:
+    get:
+      tags:
+        - Salesagent
+      summary: Getting Details of Salesagents by Manufacturer ID and Authorized Supervisor Employee Code
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: manufacturer_id, autho_supervisor_employee_code
+          required: true
+          schema:
+            $ref: '#/definitions/SalesagentDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+  /salesagent/retailers/{salesagent_id}:
+    get:
+      tags:
+        - Salesagent
+      summary: Getting Details of Retailers by Salesagent ID and Region Of Operation
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: salesagent_id, region_of_operation
+          required: true
+          schema:
+            $ref: '#/definitions/RetailerDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+  /salesagent/operation-regions/{id}:
+    get:
+      tags:
+        - Salesagent
+      summary: Getting Details of Salesagent Operation Region by ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/definitions/OperationRegionDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+          description: User List Fetched Successfully
+        '400':
+          description: Failed to get
 securityDefinitions:
   x-access-token:
     type: apiKey
@@ -52,6 +902,76 @@ definitions:
       password:
         type: string
         description: Pasword of the user
+  Scheme:
+    properties:
+      scheme_name:
+        type: string
+        description: Scheme name
+      rate_of_interest:
+        type: number
+        description: Rate of interest (%)
+      loan_tenor_in_days:
+        type: integer
+        description: Loan Tenor (days)
+      expiry_date:
+        type: string
+        description: Expiry (day/month/year) for sanction limi
+      grace_periods_in_days:
+        type: integer
+        description: Grace period (days)
+      penalty_periods:
+        type: integer
+        description: Penal period (days)
+      daily_penalty:
+        type: number
+        description: Daily penalty (%)
+      processing_cost:
+        type: number
+        description: Processing fee (BDT)
+      transaction_fee:
+        type: number
+        description: Transaction cost (BDT)
+      collection_fee_sharing_with_agency:
+        type: number
+        description: Collection fee sharing with agency (%)
+  SchemeParameter:
+    properties:
+      scheme_id:
+        type: integer
+        description: Scheme ID
+      uninterrupted_sales:
+        type: number
+        description: Duration for uninterrupted sales with manufacturer (days/months)
+      intrvl_check_uninterrupt_sales:
+        type: number
+        description: Interval for checking uninterrupted sales with manufacturer (monthly/quarterly/biannually/annually)
+      max_credit_limit_all:
+        type: number
+        description: Maximum allowable credit limit (BDT) across all manufacturers
+      max_credit_limit_by_manufacturer:
+        type: number
+        description: Maximum allowable credit limit (BDT) for each manufacturer
+      min_avg_sales_manufacturer:
+        type: number
+        description: Minimum average sales value with manufacturer (BDT)
+      avg_sales_duration:
+        type: number
+        description: Duration for calculating average sales value (days/months)
+      interval_checking_avg_sales_duration:
+        type: number
+        description: Interval for calculating average sales value (month/quarter/semester/year)
+      max_limit_no_trade_license:
+        type: number
+        description: Maximum limit that can be issued without trade license (BDT)
+      max_limit_no_security_cheque:
+        type: number
+        description: Maximum allowable limit without security cheque
+      multiplying_factor:
+        type: number
+        description: Multiplying factor for credit limit assignment
+      interest_capitalisaion_period:
+        type: number
+        description: Period for interest capitalisation (daily, weekly, monthly/quarterly/bi-annually/annually)
   ApiResponse:
     type: object
     properties:
@@ -60,6 +980,500 @@ definitions:
       message:
         type: string
       body:
-        type: object   
-
-        
+        type: object
+  ManufacturerGet:
+    properties:
+      id:
+        type: number
+        description: id of the specific manufacturer
+  ManufacturerDelete:
+    properties:
+      id:
+        type: number
+        description: id of the specific manufacturer
+  Manufacturer:
+    properties:
+      id:
+        type: number
+        description: id of the specific manufacturer
+      manufacturer_name:
+        type: string
+        description: name of the manufacturer
+      type_of_entity:
+        type: string
+        description: Type Of Entity name of the manufacturer
+      name_of_scheme:
+        type: string
+        description: name of scheme the manufacturer
+      registration_no:
+        type: number
+        description: Registration Number of the manufacturer
+      manufacturer_tin:
+        type: number
+        description: TIN certificate number of the manufacturer
+      manufacturer_bin:
+        type: number
+        description: BIN Number of the manufacturer
+      website_link:
+        type: string
+        description: WebSite URL of the manufacturer
+      corporate_ofc_address:
+        type: string
+        description: Corporate office address of the manufacturer
+      corporate_ofc_address_1:
+        type: string
+        description: Corporate office address 1 of the manufacturer
+      corporate_ofc_address_2:
+        type: string
+        description: Corporate office address 2 of the manufacturer
+      corporate_ofc_postal_code:
+        type: number
+        description: Corporate Office Postal Code of the manufacturer
+      corporate_ofc_post_office:
+        type: string
+        description: Corporate Office Post Office of the manufacturer
+      corporate_ofc_thana:
+        type: string
+        description: Corporate Office Thana of the manufacturer
+      corporate_ofc_district:
+        type: string
+        description: Corporate Office District of the manufacturer
+      corporate_ofc_division:
+        type: string
+        description: Corporate Office Division of the manufacturer
+      nature_of_business:
+        type: string
+        description: Name of Nature of business of the manufacturer
+      alternative_ofc_address:
+        type: string
+        description: Alternative office address of the manufacturer
+      alternative_address_1:
+        type: string
+        description: Alternative office address 1 of the manufacturer
+      alternative_address_2:
+        type: string
+        description: Alternative office address 2 of the manufacturer
+      alternative_postal_code:
+        type: number
+        description: Alternative Postal Code of the manufacturer
+      alternative_post_office:
+        type: string
+        description: Alternative Post Office of the manufacturer
+      alternative_thana:
+        type: string
+        description: Alternative Thana of the manufacturer
+      alternative_district:
+        type: string
+        description: Alternative District of the manufacturer
+      alternative_division:
+        type: string
+        description: Alternative Division of the manufacturer
+      official_phone:
+        type: string
+        description: Official Phone of the manufacturer
+      official_email:
+        type: string
+        description: Official Email of the manufacturer
+      name_of_authorized_representative:
+        type: string
+        description: Name of the Authorized Representative of the manufacturer
+      autho_rep_full_name:
+        type: string
+        description: Full Name of the Authorized Representative of the manufacturer
+      autho_rep_nid:
+        type: number
+        description: Authorized Representative NID of the manufacturer
+      autho_rep_nid:
+        type: number
+        description: Authorized Representative NID of the manufacturer
+      autho_rep_designation:
+        type: string
+        description: Authorized Representative Designation of the manufacturer
+      autho_rep_phone:
+        type: string
+        description: Authorized Representative Phone of the manufacturer
+      autho_rep_email:
+        type: string
+        description: Authorized Representative Email of the manufacturer
+      updated_by:
+        type: number
+        description: Id of who updated manufacturer info
+  DistributorGet:
+    properties:
+      id:
+        type: number
+        description: id of the specific distributor
+  DistributorDelete:
+    properties:
+      id:
+        type: number
+        description: id of the specific distributor
+  Distributor:
+    properties:
+      id:
+        type: number
+        description: id of the specific distributor
+      distributor_name:
+        type: string
+        description: name of the distributor
+      distributor_code:
+        type: string
+        description: Code of the distributor
+      distributor_tin:
+        type: number
+        description: TIN certificate of the distributor
+      official_email:
+        type: string
+        description: Official Email of the distriutor
+      official_contact_number:
+        type: number
+        description: Official Contact Number of the distriutor
+      is_distributor_or_third_party_agency:
+        type: string
+        description: The entity is distributor or third party agency
+      corporate_registration_no:
+        type: number
+        description: Corporate Registration Number of the distriutor
+      trade_license_no:
+        type: number
+        description: Trade License Number of the distriutor
+      registered_office_bangladesh:
+        type: string
+        description: Registered office address in Bangladesh of the distributor
+      ofc_address1:
+        type: string
+        description: Office address 1 of the distributor
+      ofc_address2:
+        type: string
+        description: Office address 2 of the distributor
+      ofc_postal_code:
+        type: number
+        description: Office Postal Code of the distributor
+      ofc_post_office:
+        type: string
+        description: Office Post Office of the distributor
+      ofc_thana:
+        type: string
+        description: Office Thana of the distributor
+      ofc_district:
+        type: string
+        description: Office District of the distributor
+      ofc_division:
+        type: string
+        description: Office Division of the distributor
+      name_of_authorized_representative:
+        type: string
+        description: Name of the Authorized Representative of the distributor
+      autho_rep_full_name:
+        type: string
+        description: Full Name of the Authorized Representative of the distributor
+      autho_rep_nid:
+        type: number
+        description: Authorized Representative NID of the distributor
+      autho_rep_nid:
+        type: number
+        description: Authorized Representative NID of the distributor
+      autho_rep_designation:
+        type: string
+        description: Authorized Representative Designation of the distributor
+      autho_rep_phone:
+        type: string
+        description: Authorized Representative Phone of the distributor
+      autho_rep_email:
+        type: string
+        description: Authorized Representative Email of the distributor
+      region_of_operation:
+        type: string
+        description: Region of operation of the distributor
+      updated_by:
+        type: number
+        description: Id of who updated distributor info
+  SupervisorGet:
+    properties:
+      id:
+        type: number
+        description: id of the specific supervisor
+  SupervisorDelete:
+    properties:
+      id:
+        type: number
+        description: id of the specific supervisor
+  Supervisor:
+    properties:
+      id:
+        type: number
+        description: id of the specific supervisor
+      supervisor_name:
+        type: string
+        description: name of the supervisor
+      supervisor_nid:
+        type: number
+        description: NID of the supervisor
+      phone:
+        type: number
+        description: Phone Number of the supervisor
+      manufacturer_name:
+        type: string
+        description: Manufacturer Name of the supervisor
+      supervisor_employee_code:
+        type: number
+        description: Employee Code of the supervisor
+      region_of_operation:
+        type: string
+        description: Region of operation of the supervisor
+      updated_by:
+        type: number
+        description: Id of who updated supervisor info
+  SupervisorDetails:
+    properties:
+      id:
+        type: number
+        description: id of the specific supervisor
+      supervisor_name:
+        type: string
+        description: name of the supervisor
+      supervisor_nid:
+        type: number
+        description: NID of the supervisor
+      phone:
+        type: number
+        description: Phone Number of the supervisor
+      supervisor_employee_code:
+        type: number
+        description: Employee Code of the supervisor
+  SalesagentGet:
+    properties:
+      id:
+        type: number
+        description: id of the specific salesagent
+  SalesagentDelete:
+    properties:
+      id:
+        type: number
+        description: id of the specific salesagent
+  Salesagent:
+    properties:
+      id:
+        type: number
+        description: id of the specific salesagent
+      agent_name:
+        type: string
+        description: name of the salesagent
+      agent_nid:
+        type: number
+        description: NID of the salesagent
+      phone:
+        type: number
+        description: Phone Number of the salesagent
+      manufacturer_name:
+        type: string
+        description: Manufacturer Name of the salesagent
+      agent_employee_code:
+        type: number
+        description: Employee Code of the salesagent
+      autho_supervisor_employee_code:
+        type: number
+        description: Supervisor Employee Code of the salesagent
+      region_of_operation:
+        type: string
+        description: Region of operation of the salesagent
+      updated_by:
+        type: number
+        description: Id of who updated salesagent info
+  SalesagentDetails:
+    properties:
+      id:
+        type: number
+        description: id of the specific salesagent
+      agent_name:
+        type: string
+        description: name of the salesagent
+      agent_nid:
+        type: number
+        description: NID of the salesagent
+      phone:
+        type: number
+        description: Phone Number of the salesagent
+      agent_employee_code:
+        type: number
+        description: Employee Code of the salesagent
+  Retailer:
+    properties:
+      id:
+        type: number
+        description: id of the specific retailer
+      master_r_number:
+        type: number
+        description: master_r_number of the retailer
+      retailer_name:
+        type: string
+        description: Name of the retailer
+      retailer_nid:
+        type: number
+        description: NID of the retailer
+      phone:
+        type: number
+        description: Phone Number of the retailer
+      retailer_code:
+        type: string
+        description: retailer_code of the retailer
+      retailer_tin:
+        type: number
+        description: TIN certificate of the retailer
+      corporate_registration_no:
+        type: number
+        description: Corporate Registration Number of the retailer
+      trade_license_no:
+        type: number
+        description: Trade License Number of the retailer
+      outlet_address:
+        type: string
+        description: Outlet Address of the retailer
+      postal_code:
+        type: number
+        description: Postal Code of the retailer
+      post_office:
+        type: string
+        description: Post Office Address of the retailer
+      thana:
+        type: string
+        description: Thana Address of the retailer
+      district:
+        type: string
+        description: District Address of the retailer
+      division:
+        type: string
+        description: Division Address of the retailer
+      autho_rep_full_name:
+        type: string
+        description: Authorized representative Full Name of the retailer
+      autho_rep_phone:
+        type: number
+        description: Authorized representative Phone Number of the retailer
+      region_operation:
+        type: string
+        description: Region of Operation of the retailer
+  RetailerDetails:
+    properties:
+      id:
+        type: number
+        description: id of the specific retailer
+      ac_number_1rn:
+        type: number
+        description: ac_number_1rn of the retailer
+      retailer_name:
+        type: string
+        description: Name of the retailer
+      retailer_code:
+        type: string
+        description: retailer_code of the retailer
+      ac_number_1rmn:
+        type: number
+        description: ac_number_1rmn of the retailer
+      manufacturer_id:
+        type: number
+        description: Manufacturer ID of the retailer
+      distributor_id:
+        type: number
+        description: Distributor ID of the retailer
+      system_limit:
+        type: number
+        description: System Limit of the retailer
+      propose_limit:
+        type: number
+        description: Propose Limit of the retailer
+      crm_approve_limit:
+        type: number
+        description: CRM Approve Limit of the retailer
+  OperationRegionDetails:
+    properties:
+      data:
+        type: array
+        description: Array of Operation Region of Salesagent
+  Mail:
+    properties:
+      type:
+        type: string
+        description: type of specific mail
+      mail_subject:
+        type: string
+        description: subject of specific mail
+      mail_body:
+        type: string
+        description: Body and description of specific mail
+  AllSchemaIDUpdate:
+    properties:
+      manufacturer_id:
+        type: number
+        description: manufacturer_id for schema Id
+      schema_id:
+        type: number
+        description: Updated schema Id
+      updateType:
+        type: string
+        description: Update Type of Schema
+  SchemaIDUpdate:
+    properties:
+      ids:
+        type: number
+        description: Array of Retailer IDs
+      schema_id:
+        type: number
+        description: Updated schema Id
+  Retailer_Onboarding:    
+    properties:
+      user_id:
+        type: integer
+      file_for:
+        type: string
+        description: Retailer Sample File
+      file:
+        type: file
+  rn_rmn_mapping:    
+    properties:
+      retailer_id:
+        type: integer
+  AddMenu:
+    properties:
+      menu_name:
+        type: integer
+        description: name of the specific Menu
+      menu_type:
+        type: integer
+        description: menu type id of the specific Menu
+      parent_menu_id:
+        type: integer
+        description: id of the specific Parent Menu 
+      menu_url:
+        type: string
+        description: url of the specific Menu 
+      menu_icon_class:
+        type: string
+        description: icon class of the specific Menu 
+      created_by:
+        type: integer
+        description: id of the specific User 
+      user_level:
+        type: string
+        description: User Level List of the Menu access. Example [1,2,3]
+      user:
+        type: string
+        description: User List of the Menu access. Example [1,2,3]
+  Menulist:
+    properties:
+      page:
+        type: integer
+        description: limit of page
+      per_page:
+        type: integer
+        description: limit of per page
+  MenuDetails:
+    properties:
+      id:
+        type: integer
+        description: id of the specific Menu
+  MenuDelete:
+    properties:
+      id:
+        type: integer
+        description: id of the specific Menu
