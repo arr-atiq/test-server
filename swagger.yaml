@@ -887,6 +887,68 @@ paths:
           description: User List Fetched Successfully
         '400':
           description: Failed to get
+  /salesagent/retailer-details/{salesagent_id}:
+    get:
+      tags:
+        - Salesagent
+      summary: Getting Details of Retailer by Salesagent
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: salesagent_id
+          required: true
+          schema:
+            $ref: '#/definitions/RetailerDetails'
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+          description: User List Fetched Successfully
+        '400':
+          description: Failed to get
+  /retailer/retailer/{retailer_id}:
+    get:
+      tags:
+        - Retailer
+      summary: Getting Details of Retailer by Retailer ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: retailer_id
+          required: true
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+          description: User List Fetched Successfully
+        '400':
+          description: Failed to get
 securityDefinitions:
   x-access-token:
     type: apiKey

@@ -103,9 +103,9 @@ Menu.menuList = function (req) {
           "parent_menu.menu_id",
           "cr_menu.parent_menu_id"
         )
-        .where(function() {
-          this.where({ 'parent_menu.status': 'Active' })                                
-        })
+        // .where(function() {
+           // this.where({ 'parent_menu.status': 'Active' })                                
+        // })
         .where("cr_menu.status", "Active")
         .select(
           'cr_menu.menu_name',
