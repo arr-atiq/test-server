@@ -12,6 +12,8 @@ const knex = require("../config/database");
  * NOTE  Transaction Type : disbursment , repayment , INTERESTANDOTHERS , EXPIRYINTEREST , TRANSACTION
  * 
 */
+
+
 const {HOSTIP} = process.env;
 
 exports.insertLoanCalculation = async (req, res) => {
