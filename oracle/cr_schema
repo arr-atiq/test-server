@@ -11,6 +11,11 @@ CREATE TABLE "cr_disbursement" ( "id" NUMBER generated AS identity, "retailer_id
 "disbursement_amount"  NUMBER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
 
 
+Table SQl : 
+CREATE TABLE "cr_slab" ( "id" NUMBER generated AS identity, "lower_limit"  NUMBER NOT NULL, "upper_limit"  NUMBER NOT NULL, "transaction_fee"  NUMBER NOT NULL, 
+"day_dis_lower_limit"  NUMBER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
 Table SQl :
 CREATE TABLE "cr_retailer_loan_calculation" ( "id" NUMBER generated AS identity, "reatiler_id"  NUMBER   DEFAULT 0, 
 "1rmn_acc" NUMBER   DEFAULT 0, "principal_outstanding" NUMBER   DEFAULT 0,"transaction_cost" NUMBER   DEFAULT 0,
