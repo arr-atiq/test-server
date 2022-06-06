@@ -54,7 +54,7 @@ exports.insertLoanCalculation = async (req, res) => {
           'principal_outstanding':parseFloat(principalAmount.principal_outstanding),
           'retailer_id': principalAmount.retailer_id,
           'onermn_acc': principalAmount.onermn_acc,
-          'disbursement_id': principalAmount.disbursement_id,
+          // 'disbursement_id': principalAmount.disbursement_id,
           'total_outstanding':totalLoan,
           'transaction_cost_type':principalAmount.transaction_cost_type,
           'transaction_type':'EXPIRYINTEREST'
@@ -76,7 +76,13 @@ exports.insertLoanCalculation = async (req, res) => {
         totalLoan = parseFloat(principalAmount.total_outstanding) + parseFloat(totalInterest) + parseFloat(interestOfreimbursment)
         
   
-       let dailyInterestValue = {...principalAmount,
+       let dailyInterestValue = {
+        //  ...principalAmount,
+        'retailer_id':principalAmount.retailer_id,
+        'onermn_acc':principalAmount.onermn_acc,
+        'retailer_id':principalAmount.retailer_id,
+        'retailer_id':principalAmount.retailer_id,
+        'principal_outstanding':principalAmount.principal_outstanding,
         'daily_principal_interest': dailyInterest,
         'interest_reimbursment':interestOfreimbursment,
         'other_charge': interestOftherCharge,
@@ -152,6 +158,7 @@ exports.disbursement = async (req, res) => {
       var loan = {
         'retailer_id' : retailer_id,
         'principal_outstanding' : disbursement_amount,
+        'disburshment' : disbursement_amount,
         'onermn_acc' : onermn_acc,
         'transaction_type' : 'DISBURSEMENT',
         'disbursement_id': createDisbursment[0],
@@ -172,6 +179,7 @@ exports.disbursement = async (req, res) => {
         'total_outstanding':outstanding + processingFeeValue + disbursement_amount,
         'transaction_cost_type':transaction_cost_type
       }
+
 
       // var transsactionFee = {
       //   'retailer_id' : retailer_id,
@@ -203,7 +211,7 @@ exports.disbursement = async (req, res) => {
     
       }
       return res.send(
-        sendApiResult(true, "You have Successfully Add Credit.", createDisbursment)
+        sendApiResult(true, "You have Successfully Add Credit.", processingFee)
       );
      }else{
       return res.send(
@@ -225,6 +233,16 @@ exports.repayment = async (req, res) => {
   const dateSlab = getSlabDateValue?.created_at
   
   if(principalAmount?.total_outstanding >= repayment ){
+    let repaymentType = {
+      'retailer_id' : retailer_id,
+      'sales_agent_id' : sales_agent_id,
+      'disbursement_amount':0,
+      'transaction_fee':0,
+      'repayment' : repayment,
+    }
+  
+    const createRepayment = await knex("APSISIPDC.cr_disbursement").insert(repaymentType).returning('id');
+    if(createRepayment) {
     if(principalAmount?.transaction_cost_type == 'slab'){
       const now = moment.utc();
       var end = moment(dateSlab); 
@@ -255,7 +273,7 @@ exports.repayment = async (req, res) => {
     }
   
     // let dailyInterestValue = {...principalAmount,
-    let dailyInterestValue = {
+    let repaymentValueAll = {
        'principal_outstanding': calculateRepaymentInterest > repayment ? (parseFloat(principalAmount.principal_outstanding)) :
        (parseFloat(principalAmount.principal_outstanding) - parseFloat(intersetPaid)),
        'retailer_id': principalAmount.retailer_id,
@@ -271,7 +289,7 @@ exports.repayment = async (req, res) => {
       (parseFloat(principalAmount.principal_outstanding) - parseFloat(intersetPaid)),
       'retailer_id': principalAmount.retailer_id,
       'onermn_acc': principalAmount.onermn_acc,
-      'disbursement_id': principalAmount.disbursement_id,
+      'disbursement_id': createRepayment[0],
       'total_outstanding': (parseFloat(principalAmount.total_outstanding) - repayment) + parseFloat(transaction_cost) ,
       'transaction_cost_type':principalAmount.transaction_cost_type,
       'transaction_cost':parseFloat(transaction_cost),
@@ -282,7 +300,7 @@ exports.repayment = async (req, res) => {
       current_limit: parseFloat(getLimitAmountValue[0]?.current_limit) + parseFloat(repayment)
     }
   
-      await knex("APSISIPDC.cr_retailer_loan_calculation").insert(dailyInterestValue).then(async ()=>{
+      await knex("APSISIPDC.cr_retailer_loan_calculation").insert(repaymentValueAll).then(async ()=>{
         await knex("APSISIPDC.cr_retailer_loan_calculation").insert(transactionCost).then(async ()=>{
           await knex.transaction(async (trx) => {
             const limit_update = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
@@ -296,9 +314,9 @@ exports.repayment = async (req, res) => {
              }
             });
            });
-           return res.send((sendApiResult(true, "Sucessly Repayment")));
+           return res.send((sendApiResult(true, "Sucessly Repayment",repaymentValueAll)));
       });
-      
+    }
   
     let totalLimit = parseInt(getLimitAmountValue[0]?.crm_approve_limit) - parseInt(getLimitAmountValue[0]?.current_limit)
   }else{
