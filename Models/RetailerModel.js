@@ -953,10 +953,9 @@ Retailer.getRetailerDetailsById = function (req) {
             "system_limit": value.system_limit,
             "propose_limit": value.propose_limit,
             "crm_approve_limit": value.crm_approve_limit,
-            "scheme_id":value.scheme_id,
-            "scheme_transaction_fee":value.transaction_fee,
-            "scheme_transaction_type":value.transaction_type    
-
+            "scheme_id": value.scheme_id,
+            "scheme_transaction_type": value.transaction_type,
+            "scheme_transaction_fee": value.transaction_type == "SLAB" ? null : value.transaction_fee
           },
           "distributor": {
             "id": value.distributor_id,
