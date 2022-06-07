@@ -457,11 +457,11 @@ exports.OutletCreditInfo = async function (retailer_id) {
       Number(e.due_amount) +
       Number(e.total_sys_interest_amount) +
       (Number(e.due_amount) + Number(e.total_sys_interest_amount)) *
-        howManyDays *
-        ((Number(e.interest_rate_percentage) +
-          Number(e.service_charge_rate_percentage) +
-          Number(e.penalty_rate_percentage) * Number(e.is_penalty_interest)) /
-          100);
+      howManyDays *
+      ((Number(e.interest_rate_percentage) +
+        Number(e.service_charge_rate_percentage) +
+        Number(e.penalty_rate_percentage) * Number(e.is_penalty_interest)) /
+        100);
   }
 
   let outlet_credit = {};
@@ -631,6 +631,14 @@ exports.ValidateNID = function (nid) {
       return true;
     }
     return false;
+  }
+  return false;
+};
+
+exports.ValidateEmail = function (email) {
+  var reg = /\S+@\S+\.\S+/;
+  if (reg.test(email)) {
+    return true;
   }
   return false;
 };

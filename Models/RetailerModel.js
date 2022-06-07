@@ -894,6 +894,11 @@ Retailer.getRetailerDetailsById = function (req) {
           "cr_retailer_manu_scheme_mapping.distributor_id",
           "cr_distributor.id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_schema",
+          "cr_retailer_manu_scheme_mapping.scheme_id",
+          "cr_schema.id"
+        )
         .where("cr_retailer.status", "Active")
         .where("cr_retailer_manu_scheme_mapping.status", "Active")
         .where("cr_retailer.id", retailer_id)
@@ -928,7 +933,10 @@ Retailer.getRetailerDetailsById = function (req) {
           "cr_distributor.region_of_operation",
           "cr_retailer_manu_scheme_mapping.system_limit",
           "cr_retailer_manu_scheme_mapping.propose_limit",
-          "cr_retailer_manu_scheme_mapping.crm_approve_limit"
+          "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+          "cr_retailer_manu_scheme_mapping.scheme_id",
+          "cr_schema.transaction_fee",
+          "cr_schema.transaction_type"
         );
 
       const RetailerInfoArray = [];
@@ -945,7 +953,9 @@ Retailer.getRetailerDetailsById = function (req) {
             "system_limit": value.system_limit,
             "propose_limit": value.propose_limit,
             "crm_approve_limit": value.crm_approve_limit,
-
+            "scheme_id": value.scheme_id,
+            "scheme_transaction_type": value.transaction_type,
+            "scheme_transaction_fee": value.transaction_type == "SLAB" ? null : value.transaction_fee
           },
           "distributor": {
             "id": value.distributor_id,
