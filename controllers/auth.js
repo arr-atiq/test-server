@@ -83,6 +83,17 @@ exports.login = async (req, res) => {
 
     }
 
+    if (userLevel.role_id == 11) {
+      const supervisorUser = await knex("APSISIPDC.cr_supervisor_user")
+        .select("cr_supervisor_user.supervisor_id")
+        .where("cr_supervisor_user.user_id", userData.id)
+        .where("cr_supervisor_user.status", 'Active')
+        .first();
+
+      userData.supervisor_id = (supervisorUser?.supervisor_id != undefined) ? supervisorUser?.supervisor_id : null;
+
+    }
+
     delete userData.password;
     const payload = { userData };
     const options = { expiresIn: process.env.JWT_EXPIRES_IN };

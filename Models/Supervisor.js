@@ -268,6 +268,40 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
   });
 };
 
+FileUpload.getAllManufacturerOfSalesagentUnderSupervisor = function (req) {
+  const { supervisor_id } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const supervisor_employee_code_data = await knex("APSISIPDC.cr_supervisor")
+        .where("id", supervisor_id)
+        .where("status", "Active")
+        .select(
+          "supervisor_employee_code"
+        );
+      if (supervisor_employee_code_data == 0) reject(sendApiResult(false, "Supervisor Not found."));
+      const supervisor_code = supervisor_employee_code_data[0].supervisor_employee_code;
+      console.log(supervisor_code);
+      const manufacturer = await knex("APSISIPDC.cr_sales_agent")
+        .leftJoin("APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_sales_agent.manufacturer_id")
+        .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
+        .where("cr_sales_agent.status", "Active")
+        .where("cr_manufacturer.status", "Active")
+        .select(
+          "cr_sales_agent.manufacturer_id",
+          "cr_manufacturer.manufacturer_name"
+        );
+      if (manufacturer == 0) reject(sendApiResult(false, "Manufacturer Not found."));
+
+      resolve(sendApiResult(true, "Data fetched successfully", manufacturer));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 FileUpload.getSupervisorList = function (req) {
   const { page, per_page } = req.query;
 
@@ -321,6 +355,79 @@ FileUpload.getSupervisorListByManufacturerAndDistributor = function (req) {
   });
 };
 
+FileUpload.getSalesAgentListByManufacturerAndSupervisor = function (req) {
+  const { manufacturer_id, supervisor_code } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_sales_agent")
+        .where("status", "Active")
+        .where("manufacturer_id", manufacturer_id)
+        .where("autho_supervisor_employee_code", supervisor_code)
+        .select(
+          "id",
+          "agent_name",
+          "agent_nid",
+          "phone",
+          "agent_employee_code"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getRetailerListByManufacturerAndSalesagent = function (req) {
+  const { manufacturer_id, salesagent_id } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_retailer_vs_sales_agent")
+        .where("status", "Active")
+        .where("manufacturer_id", manufacturer_id)
+        .where("sales_agent_id", salesagent_id)
+        .select(
+          "retailer_id",
+          "retailer_code"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
+  const { salesagent_id, retailer_id } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_disbursement")
+        .leftJoin("APSISIPDC.cr_retailer",
+          "cr_retailer.id",
+          "cr_disbursement.retailer_id")
+        //.where("cr_retailer.status", "Active")
+        .where("sales_agent_id", salesagent_id)
+        .where("retailer_id", retailer_id)
+        .select(
+          "cr_disbursement.id",
+          "cr_disbursement.retailer_id",
+          "cr_disbursement.disbursement_amount",
+          "cr_disbursement.transaction_fee",
+          "cr_retailer.retailer_name",
+          "cr_retailer.phone",
+          "cr_retailer.email"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 
 FileUpload.deleteSupervisor = function ({ id }) {
   return new Promise(async (resolve, reject) => {
