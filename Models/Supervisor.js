@@ -3,7 +3,7 @@ const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const knex = require("../config/database");
 
-const FileUpload = function () {};
+const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -26,15 +26,16 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           const user_role_id = user_roles[0].id;
 
           const data_array = [];
+          const unuploaded_data_array = [];
           if (Object.keys(rows).length != 0) {
             for (let index = 0; index < rows.length; index++) {
 
               const checkNidSalesAgent = await knex("APSISIPDC.cr_sales_agent")
-              .where("agent_nid",rows[index].Supervisor_NID )
-              .select(
-                "id",
-              );
-              if(checkNidSalesAgent.length == 0){
+                .where("agent_nid", rows[index].Supervisor_NID)
+                .select(
+                  "id",
+                );
+              if (checkNidSalesAgent.length == 0) {
                 const supervisor_nid = rows[index].Supervisor_NID;
                 const duplication_check = await knex
                   .count("cr_supervisor.supervisor_nid as count")
@@ -58,7 +59,19 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     Distributor: rows[index].Distributor,
                   };
                   data_array.push(temp_data);
-                }                
+                } else {
+                  const temp_data = {
+                    Supervisor_Name: rows[index].Supervisor_Name,
+                    Supervisor_NID: rows[index].Supervisor_NID,
+                    Phone: rows[index].Phone,
+                    Manufacturer: rows[index].Manufacturer,
+                    Supervisor_Employee_Code:
+                      rows[index].Supervisor_Employee_Code,
+                    Region_of_Operation: rows[index].Region_of_Operation,
+                    Distributor: rows[index].Distributor,
+                  };
+                  unuploaded_data_array.push(temp_data);
+                }
               }
 
             }
@@ -84,6 +97,25 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             resolve(sendApiResult(true, msg, empty_insert_log));
           }
 
+          if (Object.keys(unuploaded_data_array).length != 0) {
+            for (let index = 0; index < unuploaded_data_array.length; index++) {
+              const unuploaded_supervisor = {
+                supervisor_name: unuploaded_data_array[index].Supervisor_Name,
+                supervisor_nid: unuploaded_data_array[index].Supervisor_NID,
+                phone: unuploaded_data_array[index].Phone,
+                manufacturer_id: unuploaded_data_array[index].Manufacturer,
+                distributor_id: unuploaded_data_array[index].Distributor,
+                supervisor_employee_code:
+                  unuploaded_data_array[index].Supervisor_Employee_Code,
+                region_of_operation: unuploaded_data_array[index].Region_of_Operation,
+                created_by: req.user_id,
+              };
+
+              await knex("APSISIPDC.cr_supervisor_unuploaded_data")
+                .insert(unuploaded_supervisor);
+            }
+          }
+
           if (Object.keys(data_array).length != 0) {
             const supervisor_insert_ids = [];
             const user_insert_ids = [];
@@ -101,8 +133,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 created_by: req.user_id,
               };
               distributor_ids.push(data_array[index].Distributor);
-              
-                const insert_supervisor = await knex("APSISIPDC.cr_supervisor")
+
+              const insert_supervisor = await knex("APSISIPDC.cr_supervisor")
                 .insert(team_supervisor)
                 .returning("id");
               if (insert_supervisor) {
@@ -122,9 +154,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (insert_user) {
                 user_insert_ids.push(insert_user[0]);
               }
-            
 
-             
+
+
             }
 
             let is_user_wise_role_insert = 0;
@@ -204,7 +236,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             resolve(sendApiResult(true, msg));
           }
         })
-        .then((result) => {})
+        .then((result) => { })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
           logger.info(error);
@@ -214,6 +246,59 @@ FileUpload.insertExcelData = function (rows, filename, req) {
     }
   }).catch((error) => {
     logger.info(error, "Promise error");
+  });
+};
+
+FileUpload.getAllManufacturerForSupervisor = function (req) {
+  const { supervisor_id } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_supervisor")
+        .where("id", supervisor_id)
+        .where("status", "Active")
+        .select(
+          "manufacturer_id"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getAllManufacturerOfSalesagentUnderSupervisor = function (req) {
+  const { supervisor_id } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const supervisor_employee_code_data = await knex("APSISIPDC.cr_supervisor")
+        .where("id", supervisor_id)
+        .where("status", "Active")
+        .select(
+          "supervisor_employee_code"
+        );
+      if (supervisor_employee_code_data == 0) reject(sendApiResult(false, "Supervisor Not found."));
+      const supervisor_code = supervisor_employee_code_data[0].supervisor_employee_code;
+      console.log(supervisor_code);
+      const manufacturer = await knex("APSISIPDC.cr_sales_agent")
+        .leftJoin("APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_sales_agent.manufacturer_id")
+        .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
+        .where("cr_sales_agent.status", "Active")
+        .where("cr_manufacturer.status", "Active")
+        .select(
+          "cr_sales_agent.manufacturer_id",
+          "cr_manufacturer.manufacturer_name"
+        );
+      if (manufacturer == 0) reject(sendApiResult(false, "Manufacturer Not found."));
+
+      resolve(sendApiResult(true, "Data fetched successfully", manufacturer));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
   });
 };
 
@@ -270,6 +355,79 @@ FileUpload.getSupervisorListByManufacturerAndDistributor = function (req) {
   });
 };
 
+FileUpload.getSalesAgentListByManufacturerAndSupervisor = function (req) {
+  const { manufacturer_id, supervisor_code } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_sales_agent")
+        .where("status", "Active")
+        .where("manufacturer_id", manufacturer_id)
+        .where("autho_supervisor_employee_code", supervisor_code)
+        .select(
+          "id",
+          "agent_name",
+          "agent_nid",
+          "phone",
+          "agent_employee_code"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getRetailerListByManufacturerAndSalesagent = function (req) {
+  const { manufacturer_id, salesagent_id } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_retailer_vs_sales_agent")
+        .where("status", "Active")
+        .where("manufacturer_id", manufacturer_id)
+        .where("sales_agent_id", salesagent_id)
+        .select(
+          "retailer_id",
+          "retailer_code"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
+  const { salesagent_id, retailer_id } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_disbursement")
+        .leftJoin("APSISIPDC.cr_retailer",
+          "cr_retailer.id",
+          "cr_disbursement.retailer_id")
+        //.where("cr_retailer.status", "Active")
+        .where("sales_agent_id", salesagent_id)
+        .where("retailer_id", retailer_id)
+        .select(
+          "cr_disbursement.id",
+          "cr_disbursement.retailer_id",
+          "cr_disbursement.disbursement_amount",
+          "cr_disbursement.transaction_fee",
+          "cr_retailer.retailer_name",
+          "cr_retailer.phone",
+          "cr_retailer.email"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 
 FileUpload.deleteSupervisor = function ({ id }) {
   return new Promise(async (resolve, reject) => {

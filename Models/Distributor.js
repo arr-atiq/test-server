@@ -3,7 +3,7 @@ const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const knex = require("../config/database");
 
-const FileUpload = function () {};
+const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
@@ -26,16 +26,17 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           const user_role_id = user_roles[0].id;
 
           const data_array = [];
+          const unuploaded_data_array = [];
           if (Object.keys(rows).length != 0) {
             for (let index = 0; index < rows.length; index++) {
-              const distributor_corporate_reg =
-                rows[index].Distributor_Corporate_Registration_No;
+              const distributor_tin =
+                rows[index].Distributor_TIN;
               const duplication_check = await knex
-                .count("cr_distributor.corporate_registration_no as count")
+                .count("cr_distributor.distributor_tin as count")
                 .from("APSISIPDC.cr_distributor")
                 .where(
-                  "APSISIPDC.cr_distributor.corporate_registration_no",
-                  distributor_corporate_reg
+                  "APSISIPDC.cr_distributor.distributor_tin",
+                  distributor_tin
                 );
               const duplication_check_val = parseInt(
                 duplication_check[0].count
@@ -82,6 +83,48 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
                 };
                 data_array.push(temp_data);
+              } else {
+                const temp_data = {
+                  Manufacturer_id: rows[index].Manufacturer_id,
+                  Distributor_Name: rows[index].Distributor_Name,
+                  Distributor_Code: rows[index].Distributor_Code,
+                  Distributor_TIN: rows[index].Distributor_TIN,
+                  Official_Email: rows[index].Official_Email,
+                  Official_Contact_Number: rows[index].Official_Contact_Number,
+                  Is_Distributor_or_Third_Party_Agency:
+                    rows[index].Is_Distributor_or_Third_Party_Agency,
+                  Distributor_Corporate_Registration_No:
+                    rows[index].Distributor_Corporate_Registration_No,
+                  Trade_License_No: rows[index].Trade_License_No,
+                  Distributor_Registered_Office_in_Bangladesh:
+                    rows[index].Distributor_Registered_Office_in_Bangladesh,
+                  Address_Line_1: rows[index].Address_Line_1,
+                  Address_Line_2: rows[index].Address_Line_2,
+                  Postal_Code: rows[index].Postal_Code,
+                  Post_Office: rows[index].Post_Office,
+                  Thana: rows[index].Thana,
+                  District: rows[index].District,
+                  Division: rows[index].Division,
+                  Name_of_Authorized_Representative:
+                    rows[index].Name_of_Authorized_Representative,
+                  Full_Name: rows[index].Full_Name,
+                  NID: rows[index].NID,
+                  Designation_of_Authorized_Representative:
+                    rows[index].Designation_of_Authorized_Representative,
+                  Mobile_No: rows[index].Mobile_No,
+                  Official_Email_Id_of_Authorized_Representative:
+                    rows[index].Official_Email_Id_of_Authorized_Representative,
+                  Region_of_Operation: rows[index].Region_of_Operation,
+                  Distributor_Bank_Account_Number:
+                    rows[index].Distributor_Bank_Account_Number,
+                  Distributor_Bank_Account_Title:
+                    rows[index].Distributor_Bank_Account_Title,
+                  Distributor_Bank_Account_Type:
+                    rows[index].Distributor_Bank_Account_Type,
+                  Distributor_Bank_Name: rows[index].Distributor_Bank_Name,
+                  Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
+                };
+                unuploaded_data_array.push(temp_data);
               }
             }
           }
@@ -105,6 +148,47 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             msg = "File Uploaded successfully!";
             resolve(sendApiResult(true, msg, empty_insert_log));
           }
+          if (Object.keys(unuploaded_data_array).length != 0) {
+            for (let index = 0; index < unuploaded_data_array.length; index++) {
+              const unuploaded_distributor = {
+                distributor_name: unuploaded_data_array[index].Distributor_Name,
+                manufacturer_id: unuploaded_data_array[index].Manufacturer_id,
+                distributor_code: unuploaded_data_array[index].Distributor_Code,
+                distributor_tin: unuploaded_data_array[index].Distributor_TIN,
+                official_email: unuploaded_data_array[index].Official_Email,
+                official_contact_number:
+                  unuploaded_data_array[index].Official_Contact_Number,
+                is_distributor_or_third_party_agency:
+                  unuploaded_data_array[index].Is_Distributor_or_Third_Party_Agency,
+                corporate_registration_no:
+                  unuploaded_data_array[index].Distributor_Corporate_Registration_No,
+                trade_license_no: unuploaded_data_array[index].Trade_License_No,
+                registered_office_bangladesh:
+                  unuploaded_data_array[index].Distributor_Registered_Office_in_Bangladesh,
+                ofc_address1: unuploaded_data_array[index].Address_Line_1,
+                ofc_address2: unuploaded_data_array[index].Address_Line_2,
+                ofc_postal_code: unuploaded_data_array[index].Postal_Code,
+                ofc_post_office: unuploaded_data_array[index].Post_Office,
+                ofc_thana: unuploaded_data_array[index].Thana,
+                ofc_district: unuploaded_data_array[index].District,
+                ofc_division: unuploaded_data_array[index].Division,
+                name_of_authorized_representative:
+                  unuploaded_data_array[index].Name_of_Authorized_Representative,
+                autho_rep_full_name: unuploaded_data_array[index].Full_Name,
+                autho_rep_nid: unuploaded_data_array[index].NID,
+                autho_rep_designation:
+                  unuploaded_data_array[index].Designation_of_Authorized_Representative,
+                autho_rep_phone: unuploaded_data_array[index].Mobile_No,
+                autho_rep_email:
+                  unuploaded_data_array[index]
+                    .Official_Email_Id_of_Authorized_Representative,
+                region_of_operation: unuploaded_data_array[index].Region_of_Operation,
+                created_by: req.user_id,
+              };
+              await knex("APSISIPDC.cr_distributor_unuploaded_data")
+                .insert(unuploaded_distributor);
+            }
+          }
 
           if (Object.keys(data_array).length != 0) {
             const distributor_insert_ids = [];
@@ -112,7 +196,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < data_array.length; index++) {
               const team_distributor = {
                 distributor_name: data_array[index].Distributor_Name,
-                manufacturer_id: rows[index].Manufacturer_id,
+                manufacturer_id: data_array[index].Manufacturer_id,
                 distributor_code: data_array[index].Distributor_Code,
                 distributor_tin: data_array[index].Distributor_TIN,
                 official_email: data_array[index].Official_Email,
@@ -273,7 +357,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             resolve(sendApiResult(true, msg));
           }
         })
-        .then((result) => {})
+        .then((result) => { })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
           logger.info(error);
@@ -458,7 +542,7 @@ FileUpload.getDistributorByManufacturer = function (req) {
           "cr_distributor.ofc_district",
           "cr_distributor.ofc_division",
           "cr_distributor.distributor_code"
-          
+
         )
         .distinct()
         .paginate({

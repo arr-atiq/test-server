@@ -26,6 +26,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           const user_role_id = user_roles[0].id;
 
           const data_array = [];
+          const unuploaded_data_array = [];
           if (Object.keys(rows).length != 0) {
             for (let index = 0; index < rows.length; index++) {
               const agent_nid = rows[index].Sales_Agent_NID;
@@ -48,6 +49,19 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Distributor: rows[index].Distributor,
                 };
                 data_array.push(temp_data);
+              } else {
+                const temp_data = {
+                  Sales_Agent_Name: rows[index].Sales_Agent_Name,
+                  Sales_Agent_NID: rows[index].Sales_Agent_NID,
+                  Phone: rows[index].Phone,
+                  Manufacturer: rows[index].Manufacturer,
+                  Sales_Agent_Employee_Code:
+                    rows[index].Sales_Agent_Employee_Code,
+                  Region_of_Operation: rows[index].Region_of_Operation,
+                  Distributor: rows[index].Distributor,
+                };
+                unuploaded_data_array.push(temp_data);
+
               }
             }
           }
@@ -70,6 +84,24 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             );
             msg = "File Uploaded successfully!";
             resolve(sendApiResult(true, msg, empty_insert_log));
+          }
+
+          if (Object.keys(unuploaded_data_array).length != 0) {
+            for (let index = 0; index < unuploaded_data_array.length; index++) {
+              const unuploaded_sales_agent = {
+                agent_name: unuploaded_data_array[index].Sales_Agent_Name,
+                agent_nid: unuploaded_data_array[index].Sales_Agent_NID,
+                phone: unuploaded_data_array[index].Phone,
+                manufacturer_id: unuploaded_data_array[index].Manufacturer,
+                distributor_id: unuploaded_data_array[index].Distributor,
+                agent_employee_code:
+                  unuploaded_data_array[index].Sales_Agent_Employee_Code,
+                region_of_operation: unuploaded_data_array[index].Region_of_Operation,
+                created_by: req.user_id,
+              };
+              await knex("APSISIPDC.cr_salesagent_unuploaded_data")
+                .insert(unuploaded_sales_agent);
+            }
           }
 
           if (Object.keys(data_array).length != 0) {

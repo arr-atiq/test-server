@@ -6,6 +6,7 @@ const moment = require("moment");
 const excel = require("excel4node");
 const manuFacModel = require("../Models/Manufacturer");
 const { sendApiResult, uploaddir, generaeteExcel } = require("./helper");
+const knexfile = require("../knexfile");
 
 exports.uploadManufacturerOnboardingFile = async (req, res) => {
   req.body.user_id = req.user_id;
@@ -75,6 +76,9 @@ exports.generateManufacturerSample = async (req, res) => {
     // 		knex.raw('"company_territory"."name" as "territory_name"')
     // 		)
     // 	.groupBy("cr_retail_limit.outlet_code");
+    // const manufacturer  = await knex("APSISIPDC.cr_manufacturer")
+    // .select()
+    // .where("status", "Active");
 
     const headers = [
       "Sr.",
@@ -174,8 +178,8 @@ exports.generateManufacturerSample = async (req, res) => {
     // 	col_add++;
     // 	row++;
     // }
-    await workbook.write("public/samples/manufacturerSampleDownload.xlsx");
-    const fileName = "download/samples/manufacturerSampleDownload.xlsx";
+    await workbook.write("public/unupload_report/manufacturerDownload.xlsx");
+    const fileName = "download/public/unupload_report/manufacturerDownload.xlsx";
     setTimeout(() => {
       res.send(sendApiResult(true, "Sample File Generated", fileName));
     }, 1500);
