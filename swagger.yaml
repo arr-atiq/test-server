@@ -949,6 +949,126 @@ paths:
           description: User List Fetched Successfully
         '400':
           description: Failed to get
+  /supervisor/salesagents-manufacturers/{supervisor_id}:
+    get:
+      tags:
+        - Supervisor Salesagent Disbursement For Retailer
+      summary: Getting Manufacturers Of Salesagents by Supervisor ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: supervisor_id
+          required: true
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+          description: Manufacturer Fetched Successfully
+        '400':
+          description: Failed to get
+  /supervisor/salesagents/{manufacturer_id}/{supervisor_id}:
+    get:
+      tags:
+        - Supervisor Salesagent Disbursement For Retailer
+      summary: Getting Salesagents by Manufacturer ID And Supervisor ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: manufacturer_id,supervisor_id
+          required: true
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+          description: Salesagents Fetched Successfully
+        '400':
+          description: Failed to get
+  /supervisor/retailers/{manufacturer_id}/{salesagent_id}:
+    get:
+      tags:
+        - Supervisor Salesagent Disbursement For Retailer
+      summary: Getting Retailers by Manufacturer ID And Salesagent ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: manufacturer_id,salesagent_id
+          required: true
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+          description: Retailers Fetched Successfully
+        '400':
+          description: Failed to get
+  /supervisor/disbursement/{salesagent_id}/{retailer_id}:
+    get:
+      tags:
+        - Supervisor Salesagent Disbursement For Retailer
+      summary: Getting Disbursement Details by Salesagent ID And Retailer ID
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: path
+          name: salesagent_id,retailer_id
+          required: true
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Data fetched successfully 
+        '403':
+          description: Forbidden
+          description: Disbursement Details Fetched Successfully
+        '400':
+          description: Failed to get
 securityDefinitions:
   x-access-token:
     type: apiKey

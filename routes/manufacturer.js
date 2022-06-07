@@ -7,5 +7,6 @@ router.get("/manufacturers", manufacturer.getManufacturerList);
 router.put("/manufacturer/:id", manufacturer.editManufacturer);
 router.delete("/manufacturer/:id", manufacturer.deleteManufacturer);
 router.put("/schemas", manufacturer.updateAllSchemasByManufacturer);
+router.get("/unuploaded-manufacturer-bulk", manufacturer.generateManufacturerSample)
 
 module.exports = router;
