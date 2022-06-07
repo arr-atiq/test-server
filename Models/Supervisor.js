@@ -1,6 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
 const knex = require("../config/database");
 
 const FileUpload = function () { };
@@ -29,6 +30,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           const unuploaded_data_array = [];
           if (Object.keys(rows).length != 0) {
             for (let index = 0; index < rows.length; index++) {
+              const validNID = ValidateNID(rows[index].Supervisor_NID);
+              const validPhoneNumber = ValidatePhoneNumber(rows[index].Phone);
+              const validEmail = ValidateEmail(rows[index].Supervisor_NID);
 
               const checkNidSalesAgent = await knex("APSISIPDC.cr_sales_agent")
                 .where("agent_nid", rows[index].Supervisor_NID)
