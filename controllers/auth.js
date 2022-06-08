@@ -57,19 +57,41 @@ exports.login = async (req, res) => {
     res.send(sendApiResult(false, "Oops! Invalid email or Password."));
   } else {
     const userLevel = await knex("APSISIPDC.cr_user_wise_role")
-    .innerJoin(
-      "APSISIPDC.cr_user_roles",
-      "cr_user_roles.id",
-      "cr_user_wise_role.role_id"
-    )
-    .select("cr_user_wise_role.role_id", "cr_user_roles.name")    
-    .where("cr_user_wise_role.user_id", userData.id)
-    .where("cr_user_wise_role.status", 'Active')
-    .where("cr_user_roles.status", 'Active')
-    .first();
+      .innerJoin(
+        "APSISIPDC.cr_user_roles",
+        "cr_user_roles.id",
+        "cr_user_wise_role.role_id"
+      )
+      .select("cr_user_wise_role.role_id", "cr_user_roles.name")
+      .where("cr_user_wise_role.user_id", userData.id)
+      .where("cr_user_wise_role.status", 'Active')
+      .where("cr_user_roles.status", 'Active')
+      .first();
 
-    if(userLevel == undefined){
+    if (userLevel == undefined) {
       res.send(sendApiResult(false, "Oops! User Wise Level Missing."));
+    }
+
+    if (userLevel.role_id == 12) {
+      const salesagentUser = await knex("APSISIPDC.cr_sales_agent_user")
+        .select("cr_sales_agent_user.sales_agent_id")
+        .where("cr_sales_agent_user.user_id", userData.id)
+        .where("cr_sales_agent_user.status", 'Active')
+        .first();
+
+      userData.salesagent_id = (salesagentUser?.sales_agent_id != undefined) ? salesagentUser?.sales_agent_id : null;
+
+    }
+
+    if (userLevel.role_id == 11) {
+      const supervisorUser = await knex("APSISIPDC.cr_supervisor_user")
+        .select("cr_supervisor_user.supervisor_id")
+        .where("cr_supervisor_user.user_id", userData.id)
+        .where("cr_supervisor_user.status", 'Active')
+        .first();
+
+      userData.supervisor_id = (supervisorUser?.supervisor_id != undefined) ? supervisorUser?.supervisor_id : null;
+
     }
 
     delete userData.password;
@@ -83,7 +105,7 @@ exports.login = async (req, res) => {
     await knex("APSISIPDC.cr_users").where("id", userData.id).update({
       remember_token: refreshToken,
     });
-    
+
     userData.user_level_id = (userLevel?.role_id != undefined) ? userLevel?.role_id : null;
     userData.user_level_name = (userLevel?.name != undefined) ? userLevel?.name : null;
     userData.token = token;

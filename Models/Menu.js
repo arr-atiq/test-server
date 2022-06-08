@@ -109,6 +109,7 @@ Menu.menuList = function (req) {
         .where("cr_menu.status", "Active")
         .select(
           'cr_menu.menu_name',
+          'cr_menu.menu_id',
           'parent_menu.menu_name AS parent_menu_name',
           knex.raw(`CASE "cr_menu"."menu_type" WHEN 1 THEN 'Root Menu' WHEN 2 THEN 'Main Menu' WHEN 3 THEN 'Child Menu' END AS "menu_type"`),
           'cr_menu.menu_url',

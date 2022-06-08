@@ -86,6 +86,14 @@ exports.getRnRmnMappingById = async (req, res) => {
   }
 };
 
+exports.getRetailerDetailsById = async (req, res) => {
+  try {
+    const result = await model.getRetailerDetailsById(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
 exports.updateLimit = async (req, res) => {
   try {
     req.body.user_id = req.user_id;

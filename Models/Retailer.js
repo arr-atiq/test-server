@@ -34,7 +34,7 @@ Retailer.insertExcelData = function (rows, filename, req) {
                 retailer_upload_id: retailerUploadId,
                 sales_agent_id:
                   rows[index].Sales_Agent_ID
-                  !== undefined
+                    !== undefined
                     ? rows[index].Sales_Agent_ID
                     : null,
                 retailer_name:
@@ -42,9 +42,9 @@ Retailer.insertExcelData = function (rows, filename, req) {
                     ? rows[index].Retailer_Name
                     : null,
                 sales_agent_id:
-                rows[index].Sales_Agent_ID !== undefined
-                  ? rows[index].Sales_Agent_ID
-                  : null,
+                  rows[index].Sales_Agent_ID !== undefined
+                    ? rows[index].Sales_Agent_ID
+                    : null,
                 retailer_nid:
                   rows[index].Retailer_NID !== undefined
                     ? rows[index].Retailer_NID
@@ -199,11 +199,11 @@ Retailer.insertExcelData = function (rows, filename, req) {
               };
               retailerList.push(retailerData);
             }
-            console.log('retailerList',retailerList)
+            console.log('retailerList', retailerList)
             const insertRetailerList = await knex(
               "APSISIPDC.cr_retailer_temp"
             ).insert(retailerList);
-            console.log('insertRetailerList',insertRetailerList)
+            console.log('insertRetailerList', insertRetailerList)
 
             if (insertRetailerList == true) {
               const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
@@ -236,10 +236,10 @@ Retailer.insertExcelData = function (rows, filename, req) {
         })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
-          console.log('eroorrrrrrrrrr',error);
+          console.log('eroorrrrrrrrrr', error);
         });
     } catch (error) {
-      console.log('eroorrrrrrrrrr',error);
+      console.log('eroorrrrrrrrrr', error);
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
@@ -468,13 +468,17 @@ Retailer.checkRetailerEligibility = function (req) {
                 duration_sales_data: parseInt(value.duration_sales_data),
               };
 
-              const masterRetailerInsertLog = await knex("APSISIPDC.cr_retailer").insert(masterRetailerData).returning("id");
-            
+              const masterRetailerInsertLog = await knex(
+                "APSISIPDC.cr_retailer"
+              )
+                .insert(masterRetailerData)
+                .returning("id");
+
               const sales_agent_mapping = {
-                'retailer_id' : parseInt(masterRetailerInsertLog[0]),
-                'retailer_code' : value.retailer_code,
-                'manufacturer_id' : value.manufacturer,
-                'sales_agent_id' : value.sales_agent_id,
+                'retailer_id': parseInt(masterRetailerInsertLog[0]),
+                'retailer_code': value.retailer_code,
+                'manufacturer_id': value.manufacturer,
+                'sales_agent_id': value.sales_agent_id,
               };
               await knex("APSISIPDC.cr_retailer_vs_sales_agent").insert(sales_agent_mapping);
 
@@ -629,7 +633,7 @@ Retailer.schemeWiseLimitConfigure = async function (req) {
           var schemaParameterDeatils = await getSchemeDetailsById(
             value.scheme_id
           );
-          
+
           const salesArray = JSON.parse(value.sales_array);
           const systemLimit = await creditLimit(
             schemaParameterDeatils.uninterrupted_sales,
@@ -868,6 +872,127 @@ Retailer.getRnRmnMappingById = function (req) {
   });
 };
 
+Retailer.getRetailerDetailsById = function (req) {
+  const { retailer_id } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const RetailerInfo = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer.id",
+          "cr_retailer_manu_scheme_mapping.retailer_id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          "cr_manufacturer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_distributor.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_schema",
+          "cr_retailer_manu_scheme_mapping.scheme_id",
+          "cr_schema.id"
+        )
+        .where("cr_retailer.status", "Active")
+        .where("cr_retailer_manu_scheme_mapping.status", "Active")
+        .where("cr_retailer.id", retailer_id)
+        .where("cr_retailer_manu_scheme_mapping.retailer_id", retailer_id)
+        .select(
+          "cr_retailer.id",
+          "cr_retailer.ac_number_1rn",
+          "cr_retailer.retailer_name",
+          "cr_retailer.retailer_code",
+          "cr_retailer_manu_scheme_mapping.ac_number_1rmn",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_manufacturer.website_link",
+          "cr_manufacturer.official_email",
+          "cr_manufacturer.corporate_ofc_address",
+          "cr_manufacturer.corporate_ofc_postal_code",
+          "cr_manufacturer.corporate_ofc_post_office",
+          "cr_manufacturer.corporate_ofc_thana",
+          "cr_manufacturer.corporate_ofc_district",
+          "cr_manufacturer.corporate_ofc_division",
+          "cr_manufacturer.name_of_authorized_representative",
+          "cr_manufacturer.autho_rep_phone",
+          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_distributor.distributor_name",
+          "cr_distributor.registered_office_bangladesh",
+          "cr_distributor.ofc_postal_code",
+          "cr_distributor.ofc_post_office",
+          "cr_distributor.ofc_thana",
+          "cr_distributor.ofc_district",
+          "cr_distributor.ofc_division",
+          "cr_distributor.name_of_authorized_representative",
+          "cr_distributor.region_of_operation",
+          "cr_retailer_manu_scheme_mapping.system_limit",
+          "cr_retailer_manu_scheme_mapping.propose_limit",
+          "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+          "cr_retailer_manu_scheme_mapping.scheme_id",
+          "cr_schema.transaction_fee",
+          "cr_schema.transaction_type"
+        );
+
+      const RetailerInfoArray = [];
+
+      for (const [key, value] of Object.entries(RetailerInfo)) {
+
+        RetailerInfoArray.push({
+          "retailer": {
+            "id": value.id,
+            "name": value.retailer_name,
+            "code": value.retailer_code,
+            "ac_number_1rn": value.ac_number_1rn,
+            "ac_number_1rmn": value.ac_number_1rmn,
+            "system_limit": value.system_limit,
+            "propose_limit": value.propose_limit,
+            "crm_approve_limit": value.crm_approve_limit,
+            "scheme_id": value.scheme_id,
+            "scheme_transaction_type": value.transaction_type,
+            "scheme_transaction_fee": value.transaction_type == "SLAB" ? null : value.transaction_fee
+          },
+          "distributor": {
+            "id": value.distributor_id,
+            "name": value.distributor_name,
+            "registered_office_bangladesh": value.registered_office_bangladesh,
+            "ofc_postal_code": value.ofc_postal_code,
+            "ofc_post_office": value.ofc_post_office,
+            "ofc_thana": value.ofc_thana,
+            "ofc_district": value.ofc_district,
+            "ofc_division": value.ofc_division,
+            "name_of_authorized_representative": value.name_of_authorized_representative,
+            "region_of_operation": value.region_of_operation
+
+          },
+          "manifacturer": {
+            "id": value.manufacturer_id,
+            "name": value.manufacturer_name,
+            "website_link": value.website_link,
+            "official_email": value.official_email,
+            "corporate_ofc_address": value.official_email,
+            "corporate_ofc_postal_code": value.corporate_ofc_postal_code,
+            "corporate_ofc_post_office": value.corporate_ofc_post_office,
+            "corporate_ofc_thana": value.corporate_ofc_thana,
+            "corporate_ofc_district": value.corporate_ofc_district,
+            "corporate_ofc_division": value.corporate_ofc_division,
+            "name_of_authorized_representative": value.name_of_authorized_representative,
+            "autho_rep_phone": value.autho_rep_phone,
+          }
+
+        });
+      }
+      resolve(sendApiResult(true, "Retailer Info Fetch Successfull.", RetailerInfoArray));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 Retailer.updateSchemaByRetailers = function (req) {
   const { ids, scheme_id } = req.body;
 
@@ -896,55 +1021,55 @@ Retailer.updateSchemaByRetailers = function (req) {
 
 Retailer.updateLimitMapping = async (req, res) => {
   const {
-   type,
-   limitValue,
-   user_id
+    type,
+    limitValue,
+    user_id
   } = req.body;
-   
-   return new Promise(async (resolve, reject) => {
+
+  return new Promise(async (resolve, reject) => {
     try {
-      if(type == 'ProposeLimit' ){
+      if (type == 'ProposeLimit') {
 
         knex.transaction(async (trx) => {
           const updateData = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
             .where({ ac_number_1rmn: req.params.rmnID })
             .update({
-              propose_limit : limitValue,
-              propose_approve_by:user_id
+              propose_limit: limitValue,
+              propose_approve_by: user_id
             });
-          
+
           if (updateData <= 0) (sendApiResult(false, 'Could not Found ac_number_1rmn'));
           resolve(sendApiResult(
-              true,
-              'Data updated Successfully',
-              updateData,
+            true,
+            'Data updated Successfully',
+            updateData,
           )
-        )
-       })
+          )
+        })
 
-    //.toSQL().toNative()
-     }
-      else{
+        //.toSQL().toNative()
+      }
+      else {
         knex.transaction(async (trx) => {
           const updateData = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
             .where({ ac_number_1rmn: req.params.rmnID })
             .update({
-              crm_approve_limit : limitValue,
-              crm_approve_by:user_id
+              crm_approve_limit: limitValue,
+              crm_approve_by: user_id
             });
-          
+
           if (updateData <= 0) res.send(sendApiResult(false, 'Could not Found ac_number_1rmn'));
           resolve(sendApiResult(
-              true,
-              'Data updated Successfully',
-              updateData,
+            true,
+            'Data updated Successfully',
+            updateData,
           ))
-       })
+        })
       }
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-  }); 
+  });
 }
 
 Retailer.uploadRetailerEkycFile = function (rows, filename, req) {

@@ -45,6 +45,49 @@ exports.getSupervisorList = async (req, res) => {
   }
 };
 
+exports.getAllManufacturerForSupervisor = async (req, res) => {
+  try {
+    const result = await superModel.getAllManufacturerForSupervisor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getSalesAgentListByManufacturerAndSupervisor = async (req, res) => {
+  try {
+    const result = await superModel.getSalesAgentListByManufacturerAndSupervisor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getRetailerListByManufacturerAndSalesagent = async (req, res) => {
+  try {
+    const result = await superModel.getRetailerListByManufacturerAndSalesagent(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getDisbursementBySalesagentAndRetailer = async (req, res) => {
+  try {
+    const result = await superModel.getDisbursementBySalesagentAndRetailer(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+exports.getAllManufacturerOfSalesagentUnderSupervisor = async (req, res) => {
+  try {
+    const result = await superModel.getAllManufacturerOfSalesagentUnderSupervisor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
 exports.getSupervisorListByManufacturerAndDistributor = async (req, res) => {
   try {
     const result = await superModel.getSupervisorListByManufacturerAndDistributor(req);

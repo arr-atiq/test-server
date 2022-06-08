@@ -4,7 +4,7 @@ const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
-const FileUpload = function () {};
+const FileUpload = function () { };
 require("dotenv").config();
 
 FileUpload.insertExcelData = function (rows, filename, req) {
@@ -58,17 +58,19 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           // Nature of business scope - end
 
           const data_array = [];
+          const unuploaded_data_array = [];
           if (Object.keys(rows).length != 0) {
             for (let index = 0; index < rows.length; index++) {
               const reg_no = rows[index].Manufacturer_Registration_No;
-              const duplication_check = await knex
-                .count("cr_manufacturer.registration_no as count")
-                .from("APSISIPDC.cr_manufacturer")
-                .where("APSISIPDC.cr_manufacturer.registration_no", reg_no);
+              // const duplication_check = await knex
+              //   .count("cr_manufacturer.registration_no as count")
+              //   .from("APSISIPDC.cr_manufacturer")
+              //   .where("APSISIPDC.cr_manufacturer.registration_no", reg_no);
 
-              const duplication_check_val = parseInt(
-                duplication_check[0].count
-              );
+              // const duplication_check_val = parseInt(
+              //   duplication_check[0].count
+              // );
+              const duplication_check_val = 1;
               if (duplication_check_val == 0) {
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
@@ -126,6 +128,64 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Official_Phone_Number: rows[index].Official_Phone_Number,
                 };
                 data_array.push(temp_data);
+              } else {
+                const temp_data = {
+                  Manufacturer_Name: rows[index].Manufacturer_Name,
+                  Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],
+                  Name_of_Scheme: rows[index]?.Name_of_Scheme ?? null,
+                  Manufacturer_Registration_No:
+                    rows[index].Manufacturer_Registration_No,
+                  Manufacturer_TIN: rows[index].Manufacturer_TIN,
+                  Manufacturer_BIN: rows[index].Manufacturer_BIN,
+                  Website_URL: rows[index].Website_URL,
+                  Registered_Corporate_Office_Address_in_Bangladesh:
+                    rows[index]
+                      .Registered_Corporate_Office_Address_in_Bangladesh,
+                  Corporate_Office_Address_Line_1:
+                    rows[index].Corporate_Office_Address_Line_1,
+                  Corporate_Office_Address_Line_2:
+                    rows[index].Corporate_Office_Address_Line_2,
+                  Corporate_Office_Postal_Code:
+                    rows[index].Corporate_Office_Postal_Code,
+                  Corporate_Office_Post_Office:
+                    rows[index].Corporate_Office_Post_Office,
+                  Corporate_Office_Thana: rows[index].Corporate_Office_Thana,
+                  Corporate_Office_District:
+                    rows[index].Corporate_Office_District,
+                  Corporate_Office_Division:
+                    rows[index].Corporate_Office_Division,
+                  Nature_of_Business:
+                    nature_business_arr[rows[index].Nature_of_Business],
+                  Alternative_Addresses: rows[index].Alternative_Addresses,
+                  Alternative_Address_Line_1:
+                    rows[index].Alternative_Address_Line_1,
+                  Alternative_Address_Line_2:
+                    rows[index].Alternative_Address_Line_2,
+                  Alternative_Postal_Code: rows[index].Alternative_Postal_Code,
+                  Alternative_Post_Office: rows[index].Alternative_Post_Office,
+                  Alternative_Thana: rows[index].Alternative_Thana,
+                  Alternative_District: rows[index].Alternative_District,
+                  Alternative_Division: rows[index].Alternative_Division,
+                  Official_Phone_Number: rows[index].Official_Phone_Number,
+                  Official_Email_ID: rows[index].Official_Email_ID,
+                  Authorized_Representative_Name:
+                    rows[index].Authorized_Representative_Name,
+                  Authorized_Representative_Full_Name:
+                    rows[index].Authorized_Representative_Full_Name,
+                  Authorized_Representative_NID:
+                    rows[index].Authorized_Representative_NID,
+                  Authorized_Representative_Designation:
+                    rows[index].Authorized_Representative_Designation,
+                  Authorized_Representative_Mobile_No:
+                    rows[index].Authorized_Representative_Mobile_No,
+                  Authorized_Representative_Official_Email_ID:
+                    rows[index].Authorized_Representative_Official_Email_ID,
+                  Manufacturer_Name: rows[index].Manufacturer_Name,
+                  Official_Email_ID: rows[index].Official_Email_ID,
+                  Official_Phone_Number: rows[index].Official_Phone_Number,
+                };
+                unuploaded_data_array.push(temp_data);
+
               }
             }
           }
@@ -149,6 +209,67 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             );
             msg = "File Uploaded successfully!";
             resolve(sendApiResult(true, msg, empty_insert_log));
+          }
+
+          if (Object.keys(unuploaded_data_array).length != 0) {
+            for (let index = 0; index < unuploaded_data_array.length; index++) {
+              const unuploaded_manufacture = {
+                manufacturer_name: unuploaded_data_array[index].Manufacturer_Name,
+                type_of_entity: unuploaded_data_array[index].Type_of_Entity,
+                name_of_scheme: unuploaded_data_array[index]?.Name_of_Scheme ?? null,
+                registration_no: unuploaded_data_array[index].Manufacturer_Registration_No,
+                manufacturer_tin: unuploaded_data_array[index].Manufacturer_TIN,
+                manufacturer_bin: unuploaded_data_array[index].Manufacturer_BIN,
+                website_link: unuploaded_data_array[index].Website_URL,
+                corporate_ofc_address:
+                  unuploaded_data_array[index]
+                    .Registered_Corporate_Office_Address_in_Bangladesh,
+                corporate_ofc_address_1:
+                  unuploaded_data_array[index].Corporate_Office_Address_Line_1,
+                corporate_ofc_address_2:
+                  unuploaded_data_array[index].Corporate_Office_Address_Line_2,
+                corporate_ofc_postal_code:
+                  unuploaded_data_array[index].Corporate_Office_Postal_Code,
+                corporate_ofc_post_office:
+                  unuploaded_data_array[index].Corporate_Office_Post_Office,
+                corporate_ofc_thana: unuploaded_data_array[index].Corporate_Office_Thana,
+                corporate_ofc_district:
+                  unuploaded_data_array[index].Corporate_Office_District,
+                corporate_ofc_division:
+                  unuploaded_data_array[index].Corporate_Office_Division,
+                nature_of_business: unuploaded_data_array[index].Nature_of_Business,
+                alternative_ofc_address:
+                  unuploaded_data_array[index].Alternative_Addresses,
+                alternative_address_1:
+                  unuploaded_data_array[index].Alternative_Address_Line_1,
+                alternative_address_2:
+                  unuploaded_data_array[index].Alternative_Address_Line_2,
+                alternative_postal_code:
+                  unuploaded_data_array[index].Alternative_Postal_Code,
+                alternative_post_office:
+                  unuploaded_data_array[index].Alternative_Post_Office,
+                alternative_thana: unuploaded_data_array[index].Alternative_Thana,
+                alternative_district: unuploaded_data_array[index].Alternative_District,
+                alternative_division: unuploaded_data_array[index].Alternative_Division,
+                official_phone: unuploaded_data_array[index].Official_Phone_Number,
+                official_email: unuploaded_data_array[index].Official_Email_ID,
+                name_of_authorized_representative:
+                  unuploaded_data_array[index].Authorized_Representative_Name,
+                autho_rep_full_name:
+                  unuploaded_data_array[index].Authorized_Representative_Full_Name,
+                autho_rep_nid: unuploaded_data_array[index].Authorized_Representative_NID,
+                autho_rep_designation:
+                  unuploaded_data_array[index].Authorized_Representative_Designation,
+                autho_rep_phone:
+                  unuploaded_data_array[index].Authorized_Representative_Mobile_No,
+                autho_rep_email:
+                  unuploaded_data_array[index].Authorized_Representative_Official_Email_ID,
+                created_by: req.user_id,
+              };
+
+              await knex("APSISIPDC.cr_manufacturer_unuploaded_data")
+                .insert(unuploaded_manufacture);
+            }
           }
 
           if (Object.keys(data_array).length != 0) {
@@ -208,13 +329,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   data_array[index].Authorized_Representative_Official_Email_ID,
                 created_by: req.user_id,
               };
-              console.log('team_manufacture',team_manufacture);
 
               const insert_manufacture = await knex("APSISIPDC.cr_manufacturer")
                 .insert(team_manufacture)
                 .returning("id");
 
-              console.log('insert_manufacture',insert_manufacture);
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
                 /* try{
@@ -228,7 +347,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 catch(err){
                   console.log('errorerrorerrorerrorerror',err)
                 }*/
-                
+
               }
 
               const temp_user = {
@@ -312,7 +431,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             resolve(sendApiResult(true, msg));
           }
         })
-        .then((result) => {})
+        .then((result) => { })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
           // logger.info(error);
