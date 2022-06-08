@@ -111,7 +111,7 @@ exports.addCredit = async (req, res) => {
         return res.send(
           sendApiResult(true, "You have Successfully Add Credit.", createScheme)
         );
-      };
+};
 
 exports.disbursement = async (req, res) => {
   let {retailer_id , onermn_acc  , sales_agent_id , disbursement_amount } = req.body
