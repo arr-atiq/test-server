@@ -169,16 +169,16 @@ exports.disbursement = async (req, res) => {
       var limitUpdate = {
         current_limit: parseFloat(getLimitAmountValue[0]?.current_limit) + parseFloat(disbursement_amount)
       }
-      var processingFee = {
-        'retailer_id' : retailer_id,
-        'principal_outstanding' :principalAmount?.principal_outstanding ? (parseFloat(principalAmount.principal_outstanding) + disbursement_amount) : disbursement_amount ,
-        'onermn_acc' : onermn_acc,
-        'transaction_type' : 'PROCESSFEE',
-        'disbursement_id': createDisbursment[0],
-        'processing_fee':processingFeeValue,
-        'total_outstanding':outstanding + processingFeeValue + disbursement_amount
-        // 'transaction_cost_type':transaction_cost_type
-      }
+      // var processingFee = {
+      //   'retailer_id' : retailer_id,
+      //   'principal_outstanding' :principalAmount?.principal_outstanding ? (parseFloat(principalAmount.principal_outstanding) + disbursement_amount) : disbursement_amount ,
+      //   'onermn_acc' : onermn_acc,
+      //   'transaction_type' : 'PROCESSFEE',
+      //   'disbursement_id': createDisbursment[0],
+      //   'processing_fee':processingFeeValue,
+      //   'total_outstanding':outstanding + processingFeeValue + disbursement_amount
+      //   // 'transaction_cost_type':transaction_cost_type
+      // }
 
 
       // var transsactionFee = {
@@ -192,7 +192,7 @@ exports.disbursement = async (req, res) => {
       // }
     
       await knex("APSISIPDC.cr_retailer_loan_calculation").insert(loan).then(async ()=>{
-          await knex("APSISIPDC.cr_retailer_loan_calculation").insert(processingFee).then(async ()=>{
+          // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(processingFee).then(async ()=>{
             await knex.transaction(async (trx) => {
               // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(transsactionFee).then(async ()=>{
               const limit_update = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
@@ -205,7 +205,7 @@ exports.disbursement = async (req, res) => {
                 return res.send((sendApiResult(false, "failed to update one rmn account ")));
               }
             // });
-            });
+            // });
           })
       });
     
@@ -370,6 +370,63 @@ exports.totalLoan = async (req, res) => {
        return res.send((sendApiResult(false, "No Data Found")));
      }
 };
+
+
+exports.processingFeeAmout = async (req, res) => {
+  let { onermn_acc } = req.params
+  var SchemeID =await getSchemeID(onermn_acc)
+  console.log('onermn_acc',SchemeID)
+
+  if(SchemeID[0]?.scheme_id){
+    var schemeValue =await getSchemeValue(SchemeID[0].scheme_id)
+    var value = {
+      'transaction_cost' : schemeValue[0]?.processing_cost
+    }
+    return res.send((sendApiResult(true, "Processing Fee Success",value)));
+
+  }else{
+    return res.send((sendApiResult(false, "No Schema Found")));
+  }
+};
+
+exports.UpdateprocessingFeeAmount = async (req, res) => {
+  let { onermn_acc , processing_fee } = req.body
+  var SchemeID =await getSchemeID(onermn_acc)
+  console.log('onermn_acc',SchemeID)
+
+  if(SchemeID[0]?.scheme_id){
+    var schemeValue =await getSchemeValue(SchemeID[0].scheme_id)
+
+    if(processing_fee == schemeValue[0]?.processing_cost ){
+      await knex.transaction(async (trx) => {
+        const processing_fee_update = await trx(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping"
+        )
+          .whereIn("ac_number_1rmn", onermn_acc)
+          .update({
+            processing_fee,
+          });
+
+          if(processing_fee_update){
+            return res.send((sendApiResult(true, "Processing Fee Success",processing_fee_update)));
+          }else{
+                return res.send((sendApiResult(false, "Something Went Wrong")));
+          }
+        
+      });
+    }else{
+       return res.send((sendApiResult(false, "Processing Fee Value And Schema Processing Fee Value Do not match")));
+    }
+    // var value = {
+    //   'transaction_cost' : schemeValue[0]?.processing_cost
+    // }
+
+  }else{
+    return res.send((sendApiResult(false, "No Schema Found")));
+  }
+};
+
+
 
 
 
