@@ -36,7 +36,7 @@ const importExcelData2DB = async function (filename, req) {
     }
     return insert;
   } catch (error) {
-    console.log("-------------------",error)
+    console.log("-------------------", error)
     return sendApiResult(false, "File not uploaded");
   }
 };
@@ -45,41 +45,7 @@ const importExcelData2DB = async function (filename, req) {
 
 exports.generateManufacturerSample = async (req, res) => {
   try {
-    // const limit_data = await knex("APSISIPDC.cr_retail_limit")
-    // .leftJoin("APSISIPDC.cr_dh_fi", "cr_dh_fi.id_dh", "cr_retail_limit.id_dh")
-    // .leftJoin("APSISIPDC.company", "company.id", "cr_retail_limit.id_dh")
-    // .leftJoin(
-    // 	"APSISIPDC.distributorspoint",
-    // 	"distributorspoint.id",
-    // 	"cr_retail_limit.id_point"
-    // 	)
-    // .leftJoin(
-    // 	"APSISIPDC.company_territory",
-    // 	"company_territory.territory",
-    // 	"distributorspoint.territory"
-    // 	)
-    // .where("cr_dh_fi.id_fi", req.params.id)
-    // 	//.whereNull("id_cr_limit_info")
-    // 	.where("limit_status", "Scope uploaded")
-    // 	.where("kyc_status", "Approved")
-    // 	.whereNotIn("cr_retail_limit.id_point", [334, 344])
-    // 	.select(
-    // 		"cr_retail_limit.outlet_code",
-    // 		"cr_retail_limit.owner_name",
-    // 		"cr_retail_limit.outlet_name",
-    // 		"cr_retail_limit.phone",
-    // 		"cr_retail_limit.address",
-    // 		"cr_retail_limit.loan_account_number",
-    // 		"cr_retail_limit.client_id",
-    // 		knex.raw('"company"."name" as "house_name"'),
-    // 		knex.raw('"distributorspoint"."name" as "point_name"'),
-    // 		knex.raw('"company_territory"."name" as "territory_name"')
-    // 		)
-    // 	.groupBy("cr_retail_limit.outlet_code");
-    // const manufacturer  = await knex("APSISIPDC.cr_manufacturer")
-    // .select()
-    // .where("status", "Active");
-
+    const limit_data = await knex("APSISIPDC.cr_retail_limit")
     const headers = [
       "Sr.",
       "Manufacturer_Name",
@@ -179,7 +145,7 @@ exports.generateManufacturerSample = async (req, res) => {
     // 	row++;
     // }
     await workbook.write("public/unupload_report/manufacturerDownload.xlsx");
-    const fileName = "download/public/unupload_report/manufacturerDownload.xlsx";
+    const fileName = "./unupload_report/manufacturerDownload.xlsx";
     setTimeout(() => {
       res.send(sendApiResult(true, "Sample File Generated", fileName));
     }, 1500);
