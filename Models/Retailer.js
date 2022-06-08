@@ -643,8 +643,7 @@ Retailer.schemeWiseLimitConfigure = async function (req) {
             salesArray,
             schemaParameterDeatils.interval_checking_avg_sales_duration
           );
-          console.log('systemLimit');
-          console.log(systemLimit);
+          
           await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
             .where({ id: value.id })
             .update({
@@ -894,6 +893,11 @@ Retailer.getRetailerDetailsById = function (req) {
           "cr_retailer_manu_scheme_mapping.distributor_id",
           "cr_distributor.id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_schema",
+          "cr_retailer_manu_scheme_mapping.scheme_id",
+          "cr_schema.id"
+        )
         .where("cr_retailer.status", "Active")
         .where("cr_retailer_manu_scheme_mapping.status", "Active")
         .where("cr_retailer.id", retailer_id)
@@ -928,7 +932,10 @@ Retailer.getRetailerDetailsById = function (req) {
           "cr_distributor.region_of_operation",
           "cr_retailer_manu_scheme_mapping.system_limit",
           "cr_retailer_manu_scheme_mapping.propose_limit",
-          "cr_retailer_manu_scheme_mapping.crm_approve_limit"
+          "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+          "cr_retailer_manu_scheme_mapping.scheme_id",
+          "cr_schema.transaction_fee",
+          "cr_schema.transaction_type"
         );
 
       const RetailerInfoArray = [];
@@ -945,7 +952,9 @@ Retailer.getRetailerDetailsById = function (req) {
             "system_limit": value.system_limit,
             "propose_limit": value.propose_limit,
             "crm_approve_limit": value.crm_approve_limit,
-
+            "scheme_id": value.scheme_id,
+            "scheme_transaction_type": value.transaction_type,
+            "scheme_transaction_fee": value.transaction_type == "SLAB" ? null : value.transaction_fee
           },
           "distributor": {
             "id": value.distributor_id,
@@ -1062,6 +1071,256 @@ Retailer.updateLimitMapping = async (req, res) => {
     }
   });
 }
+
+Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex
+        .transaction(async (trx) => {
+          let msg;
+          const folderName = req.file_for;
+          if (Object.keys(rows).length !== 0) {
+            for (let index = 0; index < rows.length; index++) {              
+              var retailer_code = rows[index].REF_NO;
+              const retailerInfo = await knex
+                .from("APSISIPDC.cr_retailer")
+                .select(
+                  "id"
+                )
+                .where("retailer_code", retailer_code)
+                .where("kyc_status", null)
+                .where("cib_status", null)
+                .where("activation_status", "Inactive")
+                .where("status", "Active")
+                .first();
+
+              const retailerEkycData = {
+                retailer_id : retailerInfo.id,
+                retailer_code : retailer_code,
+                subject_role : rows[index].SUBJECT_ROLE !== undefined ? rows[index].SUBJECT_ROLE : null,
+                type_of_financing : rows[index].TYPE_OF_FINANCING !== undefined ? rows[index].TYPE_OF_FINANCING : null,
+                number_of_installment : rows[index].NUMBER_OF_INSTALLMENT !== undefined ? rows[index].NUMBER_OF_INSTALLMENT : null,
+                installment_amount : rows[index].INSTALLMENT_AMOUNT !== undefined ? rows[index].INSTALLMENT_AMOUNT : null,
+                total_requested_amount : rows[index].TOTAL_REQUESTED_AMOUNT !== undefined ? rows[index].TOTAL_REQUESTED_AMOUNT : null,
+                periodicity_of_payment : rows[index].PERIODICITY_OF_PAYMENT !== undefined ? rows[index].PERIODICITY_OF_PAYMENT : null,
+                title : rows[index].TITLE !== undefined ? rows[index].TITLE : null,
+                name : rows[index].NAME !== undefined ? rows[index].NAME : null,                  
+                father_title : rows[index].FATHER_TITLE !== undefined ? rows[index].FATHER_TITLE : null,
+                father_name : rows[index].FATHER_NAME !== undefined ? rows[index].FATHER_NAME : null,
+                mother_title : rows[index].MOTHER_TITLE !== undefined ? rows[index].MOTHER_TITLE : null,
+                mother_name : rows[index].MOTHER_NAME !== undefined ? rows[index].MOTHER_NAME : null,
+                spouse_title : rows[index].SPOUSE_TITLE !== undefined ? rows[index].SPOUSE_TITLE : null,
+                spouse_name : rows[index].SPOUSE_NAME !== undefined ? rows[index].SPOUSE_NAME : null,
+                nid : rows[index].NID !== undefined ? rows[index].NID : null,
+                tin : rows[index].TIN !== undefined ? rows[index].TIN : null,
+                date_of_birth : rows[index].DATE_OF_BIRTH !== undefined ? getJsDateFromExcel(rows[index].DATE_OF_BIRTH) : null,
+                gender : rows[index].GENDER !== undefined ? rows[index].GENDER : null,
+                district_of_birth : rows[index].DISTRICT_OF_BIRTH !== undefined ? rows[index].DISTRICT_OF_BIRTH : null,
+                country_of_birth : rows[index].COUNTRY_OF_BIRTH !== undefined ? rows[index].COUNTRY_OF_BIRTH : null,
+                permanent_district : rows[index].PERMANENT_DISTRICT !== undefined ? rows[index].PERMANENT_DISTRICT : null,
+                permanent_street_name_and_number : rows[index].PERMANENT_STREET_NAME_AND_NUMBER !== undefined ? rows[index].PERMANENT_STREET_NAME_AND_NUMBER : null,
+                permanent_postal_code : rows[index].PERMANENT_POSTAL_CODE !== undefined ? rows[index].PERMANENT_POSTAL_CODE : null,
+                permanent_country : rows[index].PERMANENT_COUNTRY !== undefined ? rows[index].PERMANENT_COUNTRY : null,
+                present_district : rows[index].PRESENT_DISTRICT !== undefined ? rows[index].PRESENT_DISTRICT : null,
+                present_street_name_and_number : rows[index].PRESENT_STREET_NAME_AND_NUMBER !== undefined ? rows[index].PRESENT_STREET_NAME_AND_NUMBER : null,                  
+                present_postal_code : rows[index].PRESENT_POSTAL_CODE !== undefined ? rows[index].PRESENT_POSTAL_CODE : null,
+                present_country : rows[index].PRESENT_COUNTRY !== undefined ? rows[index].PRESENT_COUNTRY : null,
+                id_type : rows[index].ID_TYPE !== undefined ? rows[index].ID_TYPE : null,
+                id_number : rows[index].ID_NUMBER !== undefined ? rows[index].ID_NUMBER : null,
+                // id_issue_date : rows[index].ID_ISSUE_DATE !== undefined ? getJsDateFromExcel(rows[index].ID_ISSUE_DATE) : null, 
+                id_issue_country : rows[index].ID_ISSUE_COUNTRY !== undefined ? rows[index].ID_ISSUE_COUNTRY : null,
+                sector_type : rows[index].SECTOR_TYPE !== undefined ? rows[index].SECTOR_TYPE : null,
+                sector_code : rows[index].SECTOR_CODE !== undefined ? rows[index].SECTOR_CODE : null,
+                telephone_number : rows[index].TELEPHONE_NUMBER !== undefined ? rows[index].TELEPHONE_NUMBER : null,
+                data_source : rows[index].DATA_SOURCE !== undefined ? rows[index].DATA_SOURCE : null,
+                ref_no : rows[index].REF_NO !== undefined ? rows[index].REF_NO : null,
+                applicant_type : rows[index].APPLICANT_TYPE !== undefined ? rows[index].APPLICANT_TYPE : null,
+                remarks : rows[index].REMARKS !== undefined ? rows[index].REMARKS : null,
+                ekycresultid : rows[index].EKYCRESULTID !== undefined ? rows[index].EKYCRESULTID : null,
+                trackingno : rows[index].TRACKINGNO !== undefined ? rows[index].TRACKINGNO : null,
+                mobileno : rows[index].MOBILENO !== undefined ? rows[index].MOBILENO : null,
+                fullnamebn : rows[index].FULLNAMEBN !== undefined ? rows[index].FULLNAMEBN : null,
+                mothernamebn : rows[index].MOTHERNAMEBN !== undefined ? rows[index].MOTHERNAMEBN : null,
+                fathernamebn : rows[index].FATHERNAMEBN !== undefined ? rows[index].FATHERNAMEBN : null,
+                permanentaddressbn : rows[index].PERMANENTADDRESSBN !== undefined ? rows[index].PERMANENTADDRESSBN : null,
+                facematchscorerpa : rows[index].FACEMATCHSCORERPA !== undefined ? rows[index].FACEMATCHSCORERPA : null,
+                makeby : rows[index].MAKEBY !== undefined ? rows[index].MAKEBY : null,
+                // makedate : rows[index].MAKEDATE !== undefined ? getJsDateFromExcel(rows[index].MAKEDATE) : null,
+                isverified : rows[index].ISVERIFIED !== undefined ? rows[index].ISVERIFIED : null,
+                created_by  : req.user_id
+              };
+              const insertRetailerEkycInfo = await knex("APSISIPDC.cr_retailer_kyc_information").insert(retailerEkycData).returning("id");
+
+              if(rows[index].ISVERIFIED !== undefined){
+                const retailerEkycHistory = {
+                  retailer_id : retailerInfo.id,
+                  retailer_code : retailer_code,
+                  kyc_id : insertRetailerEkycInfo[0],
+                  // kyc_date : rows[index].MAKEDATE !== undefined ? rows[index].MAKEDATE : null,
+                  // kyc_time : rows[index].MAKEDATE !== undefined ? rows[index].MAKEDATE : null,
+                  kyc_status : ((rows[index].ISVERIFIED).toLowerCase() == 'yes') ? 'Active' : 'Inactive',
+                  // start_date : null,
+                  // end_date : null,
+                  kyc_done_by : rows[index].MAKEBY !== undefined ? rows[index].MAKEBY : null,
+                  // created_by : rows[index].MAKEBY !== undefined ? rows[index].MAKEBY : null
+                }
+
+                const insertRetailerEkycHistory = await knex("APSISIPDC.cr_retailer_kyc_history").insert(retailerEkycHistory);
+
+                if((rows[index].ISVERIFIED).toLowerCase() == 'yes'){
+                  var retailerEkycUpdate = await knex("APSISIPDC.cr_retailer")
+                    .where({ id: retailerInfo.id })
+                    .update({
+                      kyc_status: 1,
+                      kyc_id: insertRetailerEkycInfo[0]
+                    });
+                } else {
+                  var retailerEkycUpdate = await knex("APSISIPDC.cr_retailer")
+                    .where({ id: retailerInfo.id })
+                    .update({
+                      kyc_status: 0
+                    });
+                }
+              }
+            }
+            msg = "Ekyc File Uploaded successfully!";
+            resolve(sendApiResult(true, msg));
+          }
+
+          if (Object.keys(rows).length === 0) {
+            resolve(
+              sendApiResult(false, "No Rows Found in your Uploaded File.")
+            );
+          }
+        })
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, "Data not inserted."));
+          console.log('eroorrrrrrrrrr',error);
+        });
+    } catch (error) {
+      console.log('eroorrrrrrrrrr',error);
+      reject(sendApiResult(false, error.message));
+    }
+  }).catch((error) => {
+    // console.log(error, 'Promise error');
+  });
+};
+
+Retailer.uploadRetailerCibFile = function (rows, filename, req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex
+        .transaction(async (trx) => {
+          let msg;
+          const folderName = req.file_for;
+          if (Object.keys(rows).length !== 0) {
+            for (let index = 0; index < rows.length; index++) {
+              var retailer_code = rows[index].Ref_No;
+              const retailerInfo = await knex
+                .from("APSISIPDC.cr_retailer")
+                .select(
+                  "id"
+                )
+                .where("retailer_code", retailer_code)
+                .whereNot("kyc_status", null)
+                .where("cib_status", null)
+                .where("activation_status", "Inactive")
+                .where("status", "Active")
+                .first();
+
+              const retailerCibData = {
+                retailer_id : retailerInfo.id,
+                retailer_code : retailer_code,
+                subject_code : rows[index].Subject_Code !== undefined ? rows[index].Subject_Code : null,
+                classification : rows[index].Classification !== undefined ? rows[index].Classification : null,                
+                ref_no : rows[index].Ref_No !== undefined ? rows[index].Ref_No : null,
+                title : rows[index].Title !== undefined ? rows[index].Title : null,
+                name : rows[index].Name !== undefined ? rows[index].Name : null,                  
+                father_title : rows[index].Father_Title !== undefined ? rows[index].Father_Title : null,
+                father_name : rows[index].Fathers_Name !== undefined ? rows[index].Fathers_Name : null,
+                mother_title : rows[index].Mother_Title !== undefined ? rows[index].Mother_Title : null,
+                mother_name : rows[index].Mothers_Name !== undefined ? rows[index].Mothers_Name : null,
+                spouse_title : rows[index].Spouse_Title !== undefined ? rows[index].Spouse_Title : null,
+                spouse_name : rows[index].Spouse_Name !== undefined ? rows[index].Spouse_Name : null,
+                // nid : rows[index].NID !== undefined ? parseInt(rows[index].NID) : null,
+                // tin : rows[index].TIN !== undefined ? parseInt(rows[index].TIN) : null,
+                country : rows[index].Country !== undefined ? rows[index].Country : null,
+                // dob : rows[index].DOB !== undefined ? getJsDateFromExcel(rows[index].DOB) : null,
+                gender : rows[index].Gender !== undefined ? rows[index].Gender : null,              
+                district_of_birth : rows[index].District_Of_Birth !== undefined ? rows[index].District_Of_Birth : null,
+                country_of_birth : rows[index].Country_Of_Birth !== undefined ? rows[index].Country_Of_Birth : null,
+                permanent_district : rows[index].Permanent_District !== undefined ? rows[index].Permanent_District : null,
+                permanent_street_name_and_number : rows[index].Permanent_Street_Name_And_Number !== undefined ? rows[index].Permanent_Street_Name_And_Number : null,
+                permanent_postal_code : rows[index].Permanent_Postal_Code !== undefined ? rows[index].Permanent_Postal_Code : null,
+                permanent_country : rows[index].Permanent_Country !== undefined ? rows[index].Permanent_Country : null,
+                present_district : rows[index].Present_District !== undefined ? rows[index].Present_District : null,
+                present_street_name_and_number : rows[index].Present_Street_Name_And_Number !== undefined ? rows[index].Present_Street_Name_And_Number : null,                  
+                present_postal_code : rows[index].Present_Postal_Code !== undefined ? rows[index].Present_Postal_Code : null,
+                present_country : rows[index].Present_Country !== undefined ? rows[index].Present_Country : null,
+                subject_role : rows[index].Subject_Role !== undefined ? rows[index].Subject_Role : null,
+                id_number : rows[index].ID_NUMBER !== undefined ? rows[index].ID_NUMBER : null,
+                type_of_financing : rows[index].Type_Of_Financing !== undefined ? rows[index].Type_Of_Financing : null,
+                // number_of_installment : rows[index].Number_Of_Installment !== undefined ? rows[index].Number_Of_Installment : null,
+                // installment_amount : rows[index].Installment_Amount !== undefined ? rows[index].Installment_Amount : null,
+                // total_requested_amount : rows[index].Total_Requested_Amount !== undefined ? rows[index].Total_Requested_Amount : null,                                
+                periodicity_of_payment : rows[index].Periodicity_Of_Payment !== undefined ? rows[index].Periodicity_Of_Payment : null,
+                id_type : rows[index].ID_Type !== undefined ? rows[index].ID_Type : null,
+                id_number : rows[index].ID_Number !== undefined ? rows[index].ID_Number : null,
+                // id_issue_date : rows[index].ID_Issue_Date !== undefined ? rows[index].ID_Issue_Date : null,
+                id_issue_country : rows[index].ID_Issue_Country !== undefined ? rows[index].ID_Issue_Country : null,
+                sector_type : rows[index].Sector_Type !== undefined ? rows[index].Sector_Type : null,
+                sector_code : rows[index].Sector_Code !== undefined ? rows[index].Sector_Code : null,
+                telephone_number : rows[index].Telephone_Number !== undefined ? rows[index].Telephone_Number : null,
+                remarks : rows[index].Remarks !== undefined ? rows[index].Remarks : null,
+                cib_created_by : rows[index].Created_By !== undefined ? rows[index].Created_By : null,
+                // cib_created_date : rows[index].Created_Date !== undefined ? rows[index].Created_Date : null,
+                downloaded_by : rows[index].Downloaded_By !== undefined ? rows[index].Downloaded_By : null,
+                // downloaded_date : rows[index].Downloaded_Date !== undefined ? rows[index].Downloaded_Date : null,                
+                ref_type : rows[index].Ref_Type !== undefined ? rows[index].Ref_Type : null,
+                total_outstanding_bdt : rows[index].Total_Outstanding_BDT !== undefined ? rows[index].Total_Outstanding_BDT : null,
+                overdue_amount_bdt : rows[index].Overdue_Amount_BDT !== undefined ? rows[index].Overdue_Amount_BDT : null,                
+                default_history : rows[index].Default_History !== undefined ? rows[index].Default_History : null,
+                status : rows[index].Status !== undefined ? rows[index].Status : null
+              };
+
+              const insertRetailerCibInfo = await knex("APSISIPDC.cr_retailer_cib").insert(retailerCibData).returning("id");
+              
+              var retailerCibUpdate = await knex("APSISIPDC.cr_retailer")
+                    .where({ id: retailerInfo.id })
+                    .update({
+                      cib_status: 1,
+                      cib_id: insertRetailerCibInfo[0]
+                    });
+            }
+            
+            msg = "CIB File Uploaded successfully!";
+            resolve(sendApiResult(true, msg));
+          }
+
+          if (Object.keys(rows).length === 0) {
+            resolve(
+              sendApiResult(false, "No Rows Found in your Uploaded File.")
+            );
+          }
+        })
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, "Data not inserted."));
+          console.log('eroorrrrrrrrrr',error);
+        });
+    } catch (error) {
+      console.log('eroorrrrrrrrrr',error);
+      reject(sendApiResult(false, error.message));
+    }
+  }).catch((error) => {
+    // console.log(error, 'Promise error');
+  });
+};
 
 
 module.exports = Retailer;

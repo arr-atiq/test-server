@@ -15,6 +15,7 @@ module.exports.schemaValidation = async (req, res, next) => {
     other_charge,
     overdue_amount,
     penal_charge,
+    transaction_type
   } = req.body;
   const { user_id } = req;
   const data = {
@@ -32,11 +33,13 @@ module.exports.schemaValidation = async (req, res, next) => {
     other_charge,
     overdue_amount,
     penal_charge,
+    transaction_type,
     created_by: user_id,
   };
 
   const schema = Joi.object({
     scheme_name: Joi.string().min(3).required(),
+    transaction_type: Joi.string().required(),
     rate_of_interest: Joi.number().required(),
     loan_tenor_in_days: Joi.number(),
     expiry_date: Joi.date(),

@@ -1,6 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
 const knex = require("../config/database");
 
 const FileUpload = function () { };
@@ -27,8 +28,38 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
           const data_array = [];
           const unuploaded_data_array = [];
+          const invalidate_data_array=[];
           if (Object.keys(rows).length != 0) {
             for (let index = 0; index < rows.length; index++) {
+              console.log(type(rows[index].Phone));
+              const validNID = ValidateNID(rows[index].Supervisor_NID);
+              const validPhoneNumber = ValidatePhoneNumber(rows[index].Phone);
+              console.log(validNID);
+              console.log(validPhoneNumber);
+
+              if (validNID || validPhoneNumber) {
+                const temp_data = {
+                  Supervisor_Name: rows[index].Supervisor_Name,
+                  Supervisor_NID: rows[index].Supervisor_NID,
+                  Phone: rows[index].Phone,
+                  Manufacturer: rows[index].Manufacturer,
+                  Supervisor_Employee_Code:
+                    rows[index].Supervisor_Employee_Code,
+                  Region_of_Operation: rows[index].Region_of_Operation,
+                  Distributor: rows[index].Distributor
+                };
+                if(validNID){
+                  console.log(validNID);
+                }
+                if(validPhoneNumber){
+                  console.log(validPhoneNumber);
+                }
+
+                invalidate_data_array.push(temp_data);
+                continue;
+                
+
+              }
 
               const checkNidSalesAgent = await knex("APSISIPDC.cr_sales_agent")
                 .where("agent_nid", rows[index].Supervisor_NID)
@@ -56,7 +87,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     Supervisor_Employee_Code:
                       rows[index].Supervisor_Employee_Code,
                     Region_of_Operation: rows[index].Region_of_Operation,
-                    Distributor: rows[index].Distributor,
+                    Distributor: rows[index].Distributor
                   };
                   data_array.push(temp_data);
                 } else {
@@ -95,6 +126,25 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             );
             msg = "File Uploaded successfully!";
             resolve(sendApiResult(true, msg, empty_insert_log));
+          }
+
+          if (Object.keys(invalidate_data_array).length != 0) {
+            for (let index = 0; index < invalidate_data_array.length; index++) {
+              const invalidated_supervisor = {
+                supervisor_name: invalidate_data_array[index].Supervisor_Name,
+                supervisor_nid: invalidate_data_array[index].Supervisor_NID,
+                phone: invalidate_data_array[index].Phone,
+                manufacturer_id: invalidate_data_array[index].Manufacturer,
+                distributor_id: invalidate_data_array[index].Distributor,
+                supervisor_employee_code:
+                invalidate_data_array[index].Supervisor_Employee_Code,
+                region_of_operation: invalidate_data_array[index].Region_of_Operation,
+                created_by: req.user_id,
+              };
+
+              await knex("APSISIPDC.cr_supervisor_invalidated_data")
+                .insert(invalidated_supervisor);
+            }
           }
 
           if (Object.keys(unuploaded_data_array).length != 0) {
