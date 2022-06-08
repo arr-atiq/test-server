@@ -12,6 +12,7 @@ router.get("/salesagents-manufacturers/:supervisor_id", supervisor.getAllManufac
 router.get("/salesagents/:manufacturer_id/:supervisor_code", supervisor.getSalesAgentListByManufacturerAndSupervisor);
 router.get("/retailers/:manufacturer_id/:salesagent_id", supervisor.getRetailerListByManufacturerAndSalesagent);
 router.get("/disbursement/:salesagent_id/:retailer_id", supervisor.getDisbursementBySalesagentAndRetailer);
+router.get("/unuploaded-supervisor-bulk", supervisor.generateSupervisorUnuploadedData);
 
 
 module.exports = router;

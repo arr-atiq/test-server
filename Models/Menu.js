@@ -104,7 +104,7 @@ Menu.menuList = function (req) {
           "cr_menu.parent_menu_id"
         )
         // .where(function() {
-           // this.where({ 'parent_menu.status': 'Active' })                                
+           // this.where({ 'parent_menu.status': 'Active' })
         // })
         .where("cr_menu.status", "Active")
         .select(

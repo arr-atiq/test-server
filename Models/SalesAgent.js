@@ -28,6 +28,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           const data_array = [];
           const unuploaded_data_array = [];
           if (Object.keys(rows).length != 0) {
+            console.log("haha2");
             for (let index = 0; index < rows.length; index++) {
               const agent_nid = rows[index].Sales_Agent_NID;
               const duplication_check = await knex
@@ -38,6 +39,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check[0].count
               );
               if (duplication_check_val == 0) {
+                console.log(rows[index].Authorized_supervisor_emp_code);
                 const temp_data = {
                   Sales_Agent_Name: rows[index].Sales_Agent_Name,
                   Sales_Agent_NID: rows[index].Sales_Agent_NID,
@@ -45,6 +47,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Manufacturer: rows[index].Manufacturer,
                   Sales_Agent_Employee_Code:
                     rows[index].Sales_Agent_Employee_Code,
+                  Authorized_supervisor_emp_code:
+                    rows[index].Authorized_supervisor_emp_code,
                   Region_of_Operation: rows[index].Region_of_Operation,
                   Distributor: rows[index].Distributor,
                 };
@@ -57,6 +61,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Manufacturer: rows[index].Manufacturer,
                   Sales_Agent_Employee_Code:
                     rows[index].Sales_Agent_Employee_Code,
+                  Authorized_supervisor_emp_code:
+                    rows[index].Authorized_supervisor_emp_code,
                   Region_of_Operation: rows[index].Region_of_Operation,
                   Distributor: rows[index].Distributor,
                 };
@@ -96,6 +102,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 distributor_id: unuploaded_data_array[index].Distributor,
                 agent_employee_code:
                   unuploaded_data_array[index].Sales_Agent_Employee_Code,
+                autho_supervisor_employee_code:
+                  unuploaded_data_array[index].Authorized_supervisor_emp_code,
                 region_of_operation: unuploaded_data_array[index].Region_of_Operation,
                 created_by: req.user_id,
               };
@@ -109,6 +117,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             const user_insert_ids = [];
             const distributor_ids = [];
             for (let index = 0; index < data_array.length; index++) {
+              console.log(data_array[index].Authorized_supervisor_emp_code);
               const team_sales_agent = {
                 agent_name: data_array[index].Sales_Agent_Name,
                 agent_nid: data_array[index].Sales_Agent_NID,
@@ -117,6 +126,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 distributor_id: data_array[index].Distributor,
                 agent_employee_code:
                   data_array[index].Sales_Agent_Employee_Code,
+                autho_supervisor_employee_code:
+                  data_array[index].Authorized_supervisor_emp_code,
                 region_of_operation: data_array[index].Region_of_Operation,
                 created_by: req.user_id,
               };
@@ -342,20 +353,34 @@ FileUpload.getRetailerbySalesAgent = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const { salesagent_id } = req.params;
+      const manufacturer = await knex("APSISIPDC.cr_sales_agent")
+        .where("id", salesagent_id)
+        .select("manufacturer_id");
+
+      const manufacturer_id = manufacturer[0].manufacturer_id;
+      console.log(manufacturer_id);
+
       const data = await knex("APSISIPDC.cr_retailer")
         .leftJoin(
           "APSISIPDC.cr_retailer_vs_sales_agent",
-          "cr_retailer.id",
-          "cr_retailer_vs_sales_agent.retailer_id"
+          "cr_retailer_vs_sales_agent.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer.id"
         )
         .where("cr_retailer.status", "Active")
         .where("cr_retailer_vs_sales_agent.status", "Active")
         .where("cr_retailer_vs_sales_agent.sales_agent_id", salesagent_id)
+        .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
         .select(
           "cr_retailer.id",
           "cr_retailer.retailer_name",
           "cr_retailer.retailer_code",
-          "cr_retailer_vs_sales_agent.sales_agent_id"
+          "cr_retailer_vs_sales_agent.sales_agent_id",
+          "cr_retailer_manu_scheme_mapping.ac_number_1rmn"
         );
 
       if (data == 0) reject(sendApiResult(false, "Not found."));
