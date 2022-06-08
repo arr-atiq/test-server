@@ -58,7 +58,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   "id",
                 );
               if (checkNidSalesAgent.length == 0) {
-                console.log("haha");
                 const supervisor_nid = rows[index].Supervisor_NID;
                 const supervisor_phone = rows[index].Phone;
                 const supervisor_emp_code = rows[index].Supervisor_Employee_Code;
@@ -73,21 +72,20 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   duplication_checkNID[0].count
                 );
                 const duplication_check_phone = await knex
-                  .count("cr_supervisor.supervisor_nid as count")
+                  .count("cr_supervisor.phone as count")
                   .from("APSISIPDC.cr_supervisor")
                   .where(
-                    "APSISIPDC.cr_supervisor.supervisor_nid",
+                    "APSISIPDC.cr_supervisor.phone",
                     supervisor_phone
                   );
                 const duplication_check_val_phone = parseInt(
                   duplication_check_phone[0].count
                 );
-                console.log(duplication_check_val_phone);
                 const duplication_check_emp_code = await knex
-                  .count("cr_supervisor.supervisor_nid as count")
+                  .count("cr_supervisor.supervisor_employee_code as count")
                   .from("APSISIPDC.cr_supervisor")
                   .where(
-                    "APSISIPDC.cr_supervisor.supervisor_nid",
+                    "APSISIPDC.cr_supervisor.supervisor_employee_code",
                     supervisor_emp_code
                   );
                 const duplication_check_val_emp_code = parseInt(

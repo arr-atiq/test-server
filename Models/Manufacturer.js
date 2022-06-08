@@ -1,6 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, duplication_manufacturer } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
@@ -59,19 +60,155 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
           const data_array = [];
           const unuploaded_data_array = [];
+          const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
             for (let index = 0; index < rows.length; index++) {
               const reg_no = rows[index].Manufacturer_Registration_No;
-              // const duplication_check = await knex
-              //   .count("cr_manufacturer.registration_no as count")
-              //   .from("APSISIPDC.cr_manufacturer")
-              //   .where("APSISIPDC.cr_manufacturer.registration_no", reg_no);
+              const email = rows[index].Official_Email_ID;
+              const phone = rows[index].Official_Phone_Number;
+              const tin = rows[index].Manufacturer_TIN;
+              const name = rows[index].Manufacturer_Name;
+              const nid = rows[index].Authorized_Representative_NID;
+              const reg = reg_no.toString();
 
-              // const duplication_check_val = parseInt(
-              //   duplication_check[0].count
-              // );
-              const duplication_check_val = 1;
-              if (duplication_check_val == 0) {
+              const validNID = ValidateNID(nid);
+              const validPhoneNumber = ValidatePhoneNumber(phone.toString());
+              const validEmail = ValidatePhoneNumber(email);
+
+              if (!validNID || !validPhoneNumber || !validEmail) {
+                const temp_data = {
+                  Manufacturer_Name: rows[index].Manufacturer_Name,
+                  Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],
+                  Name_of_Scheme: rows[index]?.Name_of_Scheme ?? null,
+                  Manufacturer_Registration_No:
+                    rows[index].Manufacturer_Registration_No,
+                  Manufacturer_TIN: rows[index].Manufacturer_TIN,
+                  Manufacturer_BIN: rows[index].Manufacturer_BIN,
+                  Website_URL: rows[index].Website_URL,
+                  Registered_Corporate_Office_Address_in_Bangladesh:
+                    rows[index]
+                      .Registered_Corporate_Office_Address_in_Bangladesh,
+                  Corporate_Office_Address_Line_1:
+                    rows[index].Corporate_Office_Address_Line_1,
+                  Corporate_Office_Address_Line_2:
+                    rows[index].Corporate_Office_Address_Line_2,
+                  Corporate_Office_Postal_Code:
+                    rows[index].Corporate_Office_Postal_Code,
+                  Corporate_Office_Post_Office:
+                    rows[index].Corporate_Office_Post_Office,
+                  Corporate_Office_Thana: rows[index].Corporate_Office_Thana,
+                  Corporate_Office_District:
+                    rows[index].Corporate_Office_District,
+                  Corporate_Office_Division:
+                    rows[index].Corporate_Office_Division,
+                  Nature_of_Business:
+                    nature_business_arr[rows[index].Nature_of_Business],
+                  Alternative_Addresses: rows[index].Alternative_Addresses,
+                  Alternative_Address_Line_1:
+                    rows[index].Alternative_Address_Line_1,
+                  Alternative_Address_Line_2:
+                    rows[index].Alternative_Address_Line_2,
+                  Alternative_Postal_Code: rows[index].Alternative_Postal_Code,
+                  Alternative_Post_Office: rows[index].Alternative_Post_Office,
+                  Alternative_Thana: rows[index].Alternative_Thana,
+                  Alternative_District: rows[index].Alternative_District,
+                  Alternative_Division: rows[index].Alternative_Division,
+                  Official_Phone_Number: rows[index].Official_Phone_Number,
+                  Official_Email_ID: rows[index].Official_Email_ID,
+                  Authorized_Representative_Name:
+                    rows[index].Authorized_Representative_Name,
+                  Authorized_Representative_Full_Name:
+                    rows[index].Authorized_Representative_Full_Name,
+                  Authorized_Representative_NID:
+                    rows[index].Authorized_Representative_NID,
+                  Authorized_Representative_Designation:
+                    rows[index].Authorized_Representative_Designation,
+                  Authorized_Representative_Mobile_No:
+                    rows[index].Authorized_Representative_Mobile_No,
+                  Authorized_Representative_Official_Email_ID:
+                    rows[index].Authorized_Representative_Official_Email_ID,
+                  Manufacturer_Name: rows[index].Manufacturer_Name,
+                  Official_Email_ID: rows[index].Official_Email_ID,
+                  Official_Phone_Number: rows[index].Official_Phone_Number,
+                };
+
+                invalidate_data_array.push(temp_data);
+                continue;
+              }
+
+              const duplication_checkReg = await knex
+                .count("cr_manufacturer.registration_no as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.registration_no",
+                  reg
+                );
+
+              const duplication_check_val_reg = parseInt(
+                duplication_checkReg[0].count
+              );
+
+              const duplication_checkEmail = await knex
+                .count("cr_manufacturer.official_email as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.official_email",
+                  email
+                );
+
+              const duplication_check_val_email = parseInt(
+                duplication_checkEmail[0].count
+              );
+
+              const duplication_checkPhone = await knex
+                .count("cr_manufacturer.official_phone as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.official_phone",
+                  phone
+                );
+
+              const duplication_check_val_phone = parseInt(
+                duplication_checkPhone[0].count
+              );
+
+              const duplication_checkTIN = await knex
+                .count("cr_manufacturer.manufacturer_tin as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.manufacturer_tin",
+                  tin
+                );
+
+              const duplication_check_val_tin = parseInt(
+                duplication_checkTIN[0].count
+              );
+
+              const duplication_checkName = await knex
+                .count("cr_manufacturer.manufacturer_name as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.manufacturer_name",
+                  name
+                );
+
+              const duplication_check_val_name = parseInt(
+                duplication_checkName[0].count
+              );
+
+              const duplication_checkNID = await knex
+                .count("cr_manufacturer.autho_rep_nid as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.autho_rep_nid",
+                  nid
+                );
+
+              const duplication_check_val_nid = parseInt(
+                duplication_checkNID[0].count
+              );
+
+              if (duplication_check_val_reg == 0 && duplication_check_val_email == 0 && duplication_check_val_phone == 0 && duplication_check_val_name == 0) {
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],
@@ -211,12 +348,75 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             resolve(sendApiResult(true, msg, empty_insert_log));
           }
 
+          if (Object.keys(invalidate_data_array).length != 0) {
+            console.log("haha1122");
+            for (let index = 0; index < invalidate_data_array.length; index++) {
+              const invalidated_manufacture = {
+                manufacturer_name: invalidate_data_array[index].Manufacturer_Name,
+                type_of_entity: invalidate_data_array[index].Type_of_Entity,
+                name_of_scheme: invalidate_data_array[index]?.Name_of_Scheme ?? 'hello',
+                registration_no: invalidate_data_array[index].Manufacturer_Registration_No,
+                manufacturer_tin: invalidate_data_array[index].Manufacturer_TIN,
+                manufacturer_bin: invalidate_data_array[index].Manufacturer_BIN,
+                website_link: invalidate_data_array[index].Website_URL,
+                corporate_ofc_address:
+                  invalidate_data_array[index]
+                    .Registered_Corporate_Office_Address_in_Bangladesh,
+                corporate_ofc_address_1:
+                  invalidate_data_array[index].Corporate_Office_Address_Line_1,
+                corporate_ofc_address_2:
+                  invalidate_data_array[index].Corporate_Office_Address_Line_2,
+                corporate_ofc_postal_code:
+                  invalidate_data_array[index].Corporate_Office_Postal_Code,
+                corporate_ofc_post_office:
+                  invalidate_data_array[index].Corporate_Office_Post_Office,
+                corporate_ofc_thana: invalidate_data_array[index].Corporate_Office_Thana,
+                corporate_ofc_district:
+                  invalidate_data_array[index].Corporate_Office_District,
+                corporate_ofc_division:
+                  invalidate_data_array[index].Corporate_Office_Division,
+                nature_of_business: invalidate_data_array[index].Nature_of_Business,
+                alternative_ofc_address:
+                  invalidate_data_array[index].Alternative_Addresses,
+                alternative_address_1:
+                  invalidate_data_array[index].Alternative_Address_Line_1,
+                alternative_address_2:
+                  invalidate_data_array[index].Alternative_Address_Line_2,
+                alternative_postal_code:
+                  invalidate_data_array[index].Alternative_Postal_Code,
+                alternative_post_office:
+                  invalidate_data_array[index].Alternative_Post_Office,
+                alternative_thana: invalidate_data_array[index].Alternative_Thana,
+                alternative_district: invalidate_data_array[index].Alternative_District,
+                alternative_division: invalidate_data_array[index].Alternative_Division,
+                official_phone: invalidate_data_array[index].Official_Phone_Number,
+                official_email: invalidate_data_array[index].Official_Email_ID,
+                name_of_authorized_representative:
+                  invalidate_data_array[index].Authorized_Representative_Name,
+                autho_rep_full_name:
+                  invalidate_data_array[index].Authorized_Representative_Full_Name,
+                autho_rep_nid: invalidate_data_array[index].Authorized_Representative_NID,
+                autho_rep_designation:
+                  invalidate_data_array[index].Authorized_Representative_Designation,
+                autho_rep_phone:
+                  invalidate_data_array[index].Authorized_Representative_Mobile_No,
+                autho_rep_email:
+                  invalidate_data_array[index].Authorized_Representative_Official_Email_ID,
+                created_by: req.user_id,
+              };
+              await knex("APSISIPDC.cr_manufacturer_invalidated_data")
+                .insert(invalidated_manufacture);
+            }
+            console.log("haha1188");
+          }
+
           if (Object.keys(unuploaded_data_array).length != 0) {
+            console.log("haha1122");
             for (let index = 0; index < unuploaded_data_array.length; index++) {
               const unuploaded_manufacture = {
                 manufacturer_name: unuploaded_data_array[index].Manufacturer_Name,
                 type_of_entity: unuploaded_data_array[index].Type_of_Entity,
-                name_of_scheme: unuploaded_data_array[index]?.Name_of_Scheme ?? null,
+                name_of_scheme: unuploaded_data_array[index]?.Name_of_Scheme ?? 'hello',
                 registration_no: unuploaded_data_array[index].Manufacturer_Registration_No,
                 manufacturer_tin: unuploaded_data_array[index].Manufacturer_TIN,
                 manufacturer_bin: unuploaded_data_array[index].Manufacturer_BIN,
@@ -266,10 +466,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   unuploaded_data_array[index].Authorized_Representative_Official_Email_ID,
                 created_by: req.user_id,
               };
-
+              console.log(unuploaded_manufacture);
               await knex("APSISIPDC.cr_manufacturer_unuploaded_data")
                 .insert(unuploaded_manufacture);
             }
+            console.log("haha1144");
           }
 
           if (Object.keys(data_array).length != 0) {
