@@ -355,6 +355,22 @@ exports.slab = async (req, res) => {
     return res.send((sendApiResult(true, "Transaction Cost",value)));
 };
 
+exports.totalLoan = async (req, res) => {
+  let { onermn_acc } = req.params
+     let totalValue =await getPrincipalAmount(onermn_acc)
+     console.log(totalValue)
+     var resPonseVaslue = {
+      "total_outstanding": totalValue.total_outstanding,
+      "retailer_id": totalValue.retailer_id,
+      "onermn_acc": totalValue.onermn_acc,
+     }
+     if(totalValue){
+       return res.send((sendApiResult(true, "Find Total Cost",resPonseVaslue)));
+     }else{
+       return res.send((sendApiResult(false, "No Data Found")));
+     }
+};
+
 
 
 
