@@ -2,7 +2,7 @@ const readXlsxFile = require("read-excel-file/node");
 const xlsx = require("xlsx");
 const moment = require("moment");
 const { sendApiResult, uploaddir } = require("./helperController");
-const model = require("../Models/RetailerModel");
+const model = require("../Models/Retailer");
 
 exports.uploadRetailerOnboardingFile = async (req, res) => {
   const upload = await importExcelData2DB(req.file.filename, req.body);
@@ -93,5 +93,61 @@ exports.updateLimit = async (req, res) => {
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.uploadRetailerEkycFile = async (req, res) => {
+  const upload = await uploadRetailerEkycFile(req.file.filename, req.body);
+  res.status(200).send(upload);
+};
+
+const uploadRetailerEkycFile = async function (filename, req) {
+  try {
+    let resData = [];
+    const folder_name = req.file_for;
+    const workbook = xlsx.readFile(
+      `./public/configuration_file/${folder_name}/${filename}`,
+      { type: "array" }
+    );
+    const sheetnames = Object.keys(workbook.Sheets);
+    let i = sheetnames.length;
+    var insert = "";
+    while (i--) {
+      const sheetname = sheetnames[i];
+      const arrayName = sheetname.toString();
+      resData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetname]);
+      insert = await model.uploadRetailerEkycFile(resData, filename, req);
+    }
+    return insert;
+  } catch (error) {
+    return sendApiResult(false, "File not uploaded");
+  }
+};
+
+exports.uploadRetailerCibFile = async (req, res) => {
+  const upload = await uploadRetailerCibFile(req.file.filename, req.body);
+  res.status(200).send(upload);
+};
+
+const uploadRetailerCibFile = async function (filename, req) {
+  try {
+    let resData = [];
+    const folder_name = req.file_for;
+    const workbook = xlsx.readFile(
+      `./public/configuration_file/${folder_name}/${filename}`,
+      { type: "array" }
+    );
+    const sheetnames = Object.keys(workbook.Sheets);
+    let i = sheetnames.length;
+    var insert = "";
+    while (i--) {
+      const sheetname = sheetnames[i];
+      const arrayName = sheetname.toString();
+      resData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetname]);
+      insert = await model.uploadRetailerCibFile(resData, filename, req);
+    }
+    return insert;
+  } catch (error) {
+    return sendApiResult(false, "File not uploaded");
   }
 };
