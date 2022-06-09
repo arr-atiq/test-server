@@ -1,6 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
 const knex = require("../config/database");
 
 const FileUpload = function () { };
@@ -27,19 +28,15 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
           const data_array = [];
           const unuploaded_data_array = [];
+          const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
-            console.log("haha2");
             for (let index = 0; index < rows.length; index++) {
               const agent_nid = rows[index].Sales_Agent_NID;
-              const duplication_check = await knex
-                .count("cr_sales_agent.agent_nid as count")
-                .from("APSISIPDC.cr_sales_agent")
-                .where("APSISIPDC.cr_sales_agent.agent_nid", agent_nid);
-              const duplication_check_val = parseInt(
-                duplication_check[0].count
-              );
-              if (duplication_check_val == 0) {
-                console.log(rows[index].Authorized_supervisor_emp_code);
+              const phoneNumber = rows[index].Phone;
+              const validNID = ValidateNID(agent_nid);
+              const validPhoneNumber = ValidatePhoneNumber(phoneNumber.toString());
+
+              if (!validNID || !validPhoneNumber) {
                 const temp_data = {
                   Sales_Agent_Name: rows[index].Sales_Agent_Name,
                   Sales_Agent_NID: rows[index].Sales_Agent_NID,
@@ -50,7 +47,92 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Authorized_supervisor_emp_code:
                     rows[index].Authorized_supervisor_emp_code,
                   Region_of_Operation: rows[index].Region_of_Operation,
-                  Distributor: rows[index].Distributor,
+                  Distributor: rows[index].Distributor
+                };
+
+                invalidate_data_array.push(temp_data);
+                continue;
+              }
+
+              const salesagent_nid = rows[index].Sales_Agent_NID;
+              const salesagent_phone = rows[index].Phone;
+              const salesagent_emp_code = rows[index].Sales_Agent_Employee_Code;
+              const autho_supervisor_code = rows[index].Authorized_supervisor_emp_code;
+              const agent_distributor_id = rows[index].Distributor;
+              const autho_manufacturer_id = rows[index].Manufacturer;
+
+              const check_exist_manu_dis_sup = await knex("APSISIPDC.cr_sales_agent")
+                .innerJoin(
+                  "APSISIPDC.cr_supervisor",
+                  "cr_supervisor.supervisor_employee_code",
+                  "cr_sales_agent.autho_supervisor_employee_code"
+                )
+                .where(
+                  "cr_sales_agent.distributor_id", agent_distributor_id
+                )
+                .where(
+                  "cr_supervisor.distributor_id", agent_distributor_id
+                )
+                .where(
+                  "cr_supervisor.supervisor_employee_code", autho_supervisor_code
+                )
+                .where(
+                  "cr_sales_agent.manufacturer_id", autho_manufacturer_id
+                )
+                .where(
+                  "cr_supervisor.manufacturer_id", autho_manufacturer_id
+                )
+                .select("cr_supervisor.id");
+
+                if(check_exist_manu_dis_sup.length == 0){
+                  continue;
+                }
+
+              const duplication_checkNID = await knex
+                .count("cr_sales_agent.agent_nid as count")
+                .from("APSISIPDC.cr_sales_agent")
+                .where(
+                  "APSISIPDC.cr_sales_agent.agent_nid",
+                  salesagent_nid
+                );
+              const duplication_check_val_nid = parseInt(
+                duplication_checkNID[0].count
+              );
+
+              const duplication_check_phone = await knex
+                .count("cr_sales_agent.phone as count")
+                .from("APSISIPDC.cr_sales_agent")
+                .where(
+                  "APSISIPDC.cr_sales_agent.phone",
+                  salesagent_phone
+                );
+              const duplication_check_val_phone = parseInt(
+                duplication_check_phone[0].count
+              );
+
+              const duplication_check_emp_code = await knex
+                .count("cr_sales_agent.agent_employee_code as count")
+                .from("APSISIPDC.cr_sales_agent")
+                .where(
+                  "APSISIPDC.cr_sales_agent.agent_employee_code",
+                  salesagent_emp_code
+                );
+              const duplication_check_val_emp_code = parseInt(
+                duplication_check_emp_code[0].count
+              );
+
+              if (duplication_check_val_nid == 0 && duplication_check_val_phone == 0 && duplication_check_val_emp_code == 0) {
+                const temp_data = {
+                  Sales_Agent_Name: rows[index].Sales_Agent_Name,
+                  Sales_Agent_NID: rows[index].Sales_Agent_NID,
+                  Phone: rows[index].Phone,
+                  Manufacturer: rows[index].Manufacturer,
+                  Sales_Agent_Employee_Code:
+                    rows[index].Sales_Agent_Employee_Code,
+                  Authorized_supervisor_emp_code:
+                    rows[index].Authorized_supervisor_emp_code,
+                  Region_of_Operation: rows[index].Region_of_Operation,
+                  Distributor: rows[index].Distributor
                 };
                 data_array.push(temp_data);
               } else {
@@ -92,6 +174,27 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             resolve(sendApiResult(true, msg, empty_insert_log));
           }
 
+          if (Object.keys(invalidate_data_array).length != 0) {
+            for (let index = 0; index < invalidate_data_array.length; index++) {
+              const invalidated_salesagent = {
+                agent_name: invalidate_data_array[index].Sales_Agent_Name,
+                agent_nid: invalidate_data_array[index].Sales_Agent_NID,
+                phone: invalidate_data_array[index].Phone,
+                manufacturer_id: invalidate_data_array[index].Manufacturer,
+                distributor_id: invalidate_data_array[index].Distributor,
+                agent_employee_code:
+                  invalidate_data_array[index].Sales_Agent_Employee_Code,
+                autho_supervisor_employee_code:
+                  invalidate_data_array[index].Authorized_supervisor_emp_code,
+                region_of_operation: invalidate_data_array[index].Region_of_Operation,
+                created_by: req.user_id,
+              };
+
+              await knex("APSISIPDC.cr_sales_agent_invalidated_data")
+                .insert(invalidated_salesagent);
+            }
+          }
+
           if (Object.keys(unuploaded_data_array).length != 0) {
             for (let index = 0; index < unuploaded_data_array.length; index++) {
               const unuploaded_sales_agent = {
@@ -117,7 +220,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             const user_insert_ids = [];
             const distributor_ids = [];
             for (let index = 0; index < data_array.length; index++) {
-              console.log(data_array[index].Authorized_supervisor_emp_code);
               const team_sales_agent = {
                 agent_name: data_array[index].Sales_Agent_Name,
                 agent_nid: data_array[index].Sales_Agent_NID,
@@ -358,7 +460,6 @@ FileUpload.getRetailerbySalesAgent = function (req) {
         .select("manufacturer_id");
 
       const manufacturer_id = manufacturer[0].manufacturer_id;
-      console.log(manufacturer_id);
 
       const data = await knex("APSISIPDC.cr_retailer")
         .leftJoin(
