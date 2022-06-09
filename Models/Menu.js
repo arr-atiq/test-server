@@ -265,7 +265,7 @@ Menu.addMenuAccess = function (req, res) {
                       updated_at: new Date()
                     });
 
-            for (let [index, menu] of Object.entries(req.menu_ids)) {              
+            for (let [index, menu] of Object.entries(req.menu_ids)) {
               let tempLog = {
                 menu_id : parseInt(menu),
                 user_role_id : null,
