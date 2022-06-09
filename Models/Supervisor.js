@@ -28,16 +28,15 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
           const data_array = [];
           const unuploaded_data_array = [];
-          const invalidate_data_array=[];
+          const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
             for (let index = 0; index < rows.length; index++) {
-              console.log(type(rows[index].Phone));
-              const validNID = ValidateNID(rows[index].Supervisor_NID);
-              const validPhoneNumber = ValidatePhoneNumber(rows[index].Phone);
-              console.log(validNID);
-              console.log(validPhoneNumber);
+              const nid = rows[index].Supervisor_NID;
+              const phoneNumber = rows[index].Phone;
+              const validNID = ValidateNID(nid);
+              const validPhoneNumber = ValidatePhoneNumber(phoneNumber.toString());
 
-              if (validNID || validPhoneNumber) {
+              if (!validNID || !validPhoneNumber) {
                 const temp_data = {
                   Supervisor_Name: rows[index].Supervisor_Name,
                   Supervisor_NID: rows[index].Supervisor_NID,
@@ -48,17 +47,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Region_of_Operation: rows[index].Region_of_Operation,
                   Distributor: rows[index].Distributor
                 };
-                if(validNID){
-                  console.log(validNID);
-                }
-                if(validPhoneNumber){
-                  console.log(validPhoneNumber);
-                }
 
                 invalidate_data_array.push(temp_data);
                 continue;
-                
-
               }
 
               const checkNidSalesAgent = await knex("APSISIPDC.cr_sales_agent")
@@ -68,17 +59,39 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 );
               if (checkNidSalesAgent.length == 0) {
                 const supervisor_nid = rows[index].Supervisor_NID;
-                const duplication_check = await knex
+                const supervisor_phone = rows[index].Phone;
+                const supervisor_emp_code = rows[index].Supervisor_Employee_Code;
+                const duplication_checkNID = await knex
                   .count("cr_supervisor.supervisor_nid as count")
                   .from("APSISIPDC.cr_supervisor")
                   .where(
                     "APSISIPDC.cr_supervisor.supervisor_nid",
                     supervisor_nid
                   );
-                const duplication_check_val = parseInt(
-                  duplication_check[0].count
+                const duplication_check_val_nid = parseInt(
+                  duplication_checkNID[0].count
                 );
-                if (duplication_check_val == 0) {
+                const duplication_check_phone = await knex
+                  .count("cr_supervisor.phone as count")
+                  .from("APSISIPDC.cr_supervisor")
+                  .where(
+                    "APSISIPDC.cr_supervisor.phone",
+                    supervisor_phone
+                  );
+                const duplication_check_val_phone = parseInt(
+                  duplication_check_phone[0].count
+                );
+                const duplication_check_emp_code = await knex
+                  .count("cr_supervisor.supervisor_employee_code as count")
+                  .from("APSISIPDC.cr_supervisor")
+                  .where(
+                    "APSISIPDC.cr_supervisor.supervisor_employee_code",
+                    supervisor_emp_code
+                  );
+                const duplication_check_val_emp_code = parseInt(
+                  duplication_check_emp_code[0].count
+                );
+                if (duplication_check_val_nid == 0 && duplication_check_val_phone == 0 && duplication_check_val_emp_code == 0) {
                   const temp_data = {
                     Supervisor_Name: rows[index].Supervisor_Name,
                     Supervisor_NID: rows[index].Supervisor_NID,
@@ -137,7 +150,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 manufacturer_id: invalidate_data_array[index].Manufacturer,
                 distributor_id: invalidate_data_array[index].Distributor,
                 supervisor_employee_code:
-                invalidate_data_array[index].Supervisor_Employee_Code,
+                  invalidate_data_array[index].Supervisor_Employee_Code,
                 region_of_operation: invalidate_data_array[index].Region_of_Operation,
                 created_by: req.user_id,
               };
@@ -331,7 +344,6 @@ FileUpload.getAllManufacturerOfSalesagentUnderSupervisor = function (req) {
         );
       if (supervisor_employee_code_data == 0) reject(sendApiResult(false, "Supervisor Not found."));
       const supervisor_code = supervisor_employee_code_data[0].supervisor_employee_code;
-      console.log(supervisor_code);
       const manufacturer = await knex("APSISIPDC.cr_sales_agent")
         .leftJoin("APSISIPDC.cr_manufacturer",
           "cr_manufacturer.id",
