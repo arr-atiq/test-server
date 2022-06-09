@@ -209,7 +209,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               );
 
               if (duplication_check_val_reg == 0 && duplication_check_val_email == 0 && duplication_check_val_phone == 0 && duplication_check_val_name == 0) {
-                console.log("haha");
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],
@@ -407,11 +406,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               await knex("APSISIPDC.cr_manufacturer_invalidated_data")
                 .insert(invalidated_manufacture);
             }
-            console.log("haha1188");
           }
 
           if (Object.keys(unuploaded_data_array).length != 0) {
-            console.log("haha1122");
             for (let index = 0; index < unuploaded_data_array.length; index++) {
               const unuploaded_manufacture = {
                 manufacturer_name: unuploaded_data_array[index].Manufacturer_Name,
@@ -466,11 +463,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   unuploaded_data_array[index].Authorized_Representative_Official_Email_ID,
                 created_by: req.user_id,
               };
-              console.log(unuploaded_manufacture);
               await knex("APSISIPDC.cr_manufacturer_unuploaded_data")
                 .insert(unuploaded_manufacture);
             }
-            console.log("haha1144");
           }
 
           if (Object.keys(data_array).length != 0) {

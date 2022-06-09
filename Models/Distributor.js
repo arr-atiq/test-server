@@ -34,16 +34,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
               const nid = rows[index].NID;
               const phoneNumber = rows[index].Official_Contact_Number;
-              //const email = rows[index].autho_rep_email;
+              const email = rows[index].Official_Email;
 
               const validNID = ValidateNID(nid);
               const validPhoneNumber = ValidatePhoneNumber(phoneNumber.toString());
-              //const validEmail = ValidateEmail(email);
-              console.log(validNID);
-              console.log(validPhoneNumber);
+              const validEmail = ValidateEmail(email);
 
-              if (!validNID || !validPhoneNumber) {
-                console.log("haha44");
+              if (!validNID || !validPhoneNumber || !validEmail) {
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,
@@ -99,13 +96,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   distributor_tin
                 );
 
-                console.log(duplication_check);
-
               const duplication_check_val = parseInt(
                 duplication_check[0].count
               );
               if (duplication_check_val == 0) {
-                console.log("haha");
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,
@@ -148,7 +142,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 };
                 data_array.push(temp_data);
               } else {
-                console.log("haha22");
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,

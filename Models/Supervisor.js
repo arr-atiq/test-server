@@ -344,7 +344,6 @@ FileUpload.getAllManufacturerOfSalesagentUnderSupervisor = function (req) {
         );
       if (supervisor_employee_code_data == 0) reject(sendApiResult(false, "Supervisor Not found."));
       const supervisor_code = supervisor_employee_code_data[0].supervisor_employee_code;
-      console.log(supervisor_code);
       const manufacturer = await knex("APSISIPDC.cr_sales_agent")
         .leftJoin("APSISIPDC.cr_manufacturer",
           "cr_manufacturer.id",

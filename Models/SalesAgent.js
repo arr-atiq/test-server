@@ -83,7 +83,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   "cr_supervisor.manufacturer_id", autho_manufacturer_id
                 )
                 .select("cr_supervisor.id");
-                console.log("haha");
 
                 if(check_exist_manu_dis_sup.length == 0){
                   continue;
