@@ -73,7 +73,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
               const validNID = ValidateNID(nid);
               const validPhoneNumber = ValidatePhoneNumber(phone.toString());
-              const validEmail = ValidatePhoneNumber(email);
+              const validEmail = ValidateEmail(email);
 
               if (!validNID || !validPhoneNumber || !validEmail) {
                 const temp_data = {
@@ -209,6 +209,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               );
 
               if (duplication_check_val_reg == 0 && duplication_check_val_email == 0 && duplication_check_val_phone == 0 && duplication_check_val_name == 0) {
+                console.log("haha");
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],
@@ -349,7 +350,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
 
           if (Object.keys(invalidate_data_array).length != 0) {
-            console.log("haha1122");
             for (let index = 0; index < invalidate_data_array.length; index++) {
               const invalidated_manufacture = {
                 manufacturer_name: invalidate_data_array[index].Manufacturer_Name,
