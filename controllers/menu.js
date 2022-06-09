@@ -45,3 +45,12 @@ exports.menuDelete = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.addMenuAccess = async (req, res) => {
+  try {
+    const result = await Menu.addMenuAccess(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
