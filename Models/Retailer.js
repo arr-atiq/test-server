@@ -199,11 +199,9 @@ Retailer.insertExcelData = function (rows, filename, req) {
               };
               retailerList.push(retailerData);
             }
-            console.log('retailerList', retailerList)
             const insertRetailerList = await knex(
               "APSISIPDC.cr_retailer_temp"
             ).insert(retailerList);
-            console.log('insertRetailerList', insertRetailerList)
 
             if (insertRetailerList == true) {
               const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
@@ -236,10 +234,8 @@ Retailer.insertExcelData = function (rows, filename, req) {
         })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
-          console.log('eroorrrrrrrrrr', error);
         });
     } catch (error) {
-      console.log('eroorrrrrrrrrr', error);
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
@@ -1198,10 +1194,8 @@ Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
         })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
-          console.log('eroorrrrrrrrrr',error);
         });
     } catch (error) {
-      console.log('eroorrrrrrrrrr',error);
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
@@ -1311,10 +1305,8 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
         })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
-          console.log('eroorrrrrrrrrr',error);
         });
     } catch (error) {
-      console.log('eroorrrrrrrrrr',error);
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
