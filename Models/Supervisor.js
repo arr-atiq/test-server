@@ -441,6 +441,28 @@ FileUpload.getSalesAgentListByManufacturerAndSupervisor = function (req) {
   });
 };
 
+FileUpload.getSalesAgentListBySupervisor = function (req) {
+  const { supervisor_code } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const sales_agent = await knex("APSISIPDC.cr_sales_agent")
+        .where("status", "Active")
+        .where("autho_supervisor_employee_code", supervisor_code)
+        .select(
+          "id",
+          "agent_name"
+        );
+
+      console.log(sales_agent);
+      if (sales_agent == 0) reject(sendApiResult(false, "Not found Sales Agent."));
+      resolve(sendApiResult(true, "Data fetched successfully", sales_agent));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 FileUpload.getRetailerListByManufacturerAndSalesagent = function (req) {
   const { manufacturer_id, salesagent_id } = req.params;
 
@@ -463,7 +485,9 @@ FileUpload.getRetailerListByManufacturerAndSalesagent = function (req) {
 };
 
 FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
-  const { salesagent_id, retailer_id } = req.params;
+  const { supervisor_code } = req.params;
+  const { start_date, end_date } = req.query;
+
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -471,9 +495,13 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
         .leftJoin("APSISIPDC.cr_retailer",
           "cr_retailer.id",
           "cr_disbursement.retailer_id")
-        //.where("cr_retailer.status", "Active")
-        .where("sales_agent_id", salesagent_id)
-        .where("retailer_id", retailer_id)
+        .leftJoin("APSISIPDC.cr_sales_agent",
+          "cr_sales_agent.id",
+          "cr_disbursement.sales_agent_id")
+        //.where("cr_disbursement.sales_agent_id", salesagent_id)
+        .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
+        .whereRaw(`"cr_disbursement"."created_at" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_disbursement"."created_at" < TO_DATE('${end_date}', 'YYYY-MM-DD')`)
         .select(
           "cr_disbursement.id",
           "cr_disbursement.retailer_id",
@@ -481,10 +509,63 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
           "cr_disbursement.transaction_fee",
           "cr_retailer.retailer_name",
           "cr_retailer.phone",
-          "cr_retailer.email"
+          "cr_retailer.email",
+          "cr_disbursement.created_at",
+          //(knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`))
+
         );
+      //.knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`);
+      let total_amount =0;
+      for (let i = 0; i < data.length; i++) {
+        total_amount = total_amount + data[i].disbursement_amount;
+        
+      }
       if (data == 0) reject(sendApiResult(false, "Not found."));
-      resolve(sendApiResult(true, "Data fetched successfully", data));
+      const data_Array = [{data: data}, {total_amount:total_amount}]
+      resolve(sendApiResult(true, "Data fetched successfully", data_Array));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
+  const { supervisor_code } = req.params;
+  const { start_date, end_date } = req.query;
+
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_retailer_loan_calculation")
+        .leftJoin("APSISIPDC.cr_retailer",
+          "cr_retailer.id",
+          "cr_retailer_loan_calculation.retailer_id")
+        .leftJoin("APSISIPDC.cr_sales_agent",
+          "cr_sales_agent.id",
+          "cr_retailer_loan_calculation.sales_agent_id")
+        //.where("cr_disbursement.sales_agent_id", salesagent_id)
+        .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${end_date}', 'YYYY-MM-DD')`)
+        .select(
+          "cr_retailer_loan_calculation.id",
+          "cr_retailer_loan_calculation.retailer_id",
+          "cr_retailer_loan_calculation.repayment",
+          "cr_retailer.retailer_name",
+          "cr_retailer.phone",
+          "cr_retailer.email",
+          "cr_retailer_loan_calculation.created_at",
+          //(knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`))
+
+        );
+      //.knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`);
+      let total_amount =0;
+      for (let i = 0; i < data.length; i++) {
+        total_amount = total_amount + data[i].repayment;
+        
+      }
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      const data_Array = [{data: data}, {total_repayment:total_amount}]
+      resolve(sendApiResult(true, "Data fetched successfully", data_Array));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
