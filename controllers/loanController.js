@@ -308,7 +308,11 @@ exports.disbursement = async (req, res) => {
 exports.repayment = async (req, res) => {
   let {retailer_id , onermn_acc  , sales_agent_id , repayment , transaction_cost} = req.body
   // let transaction_cost = transaction_cost_value;
+
+ 
   const findSalesAgent =await findSalesrelation(sales_agent_id , retailer_id)
+  const firstRepaymentID =await getfirstRepaymentID(onermn_acc)
+ 
   const principalAmount =await getPrincipalAmount(onermn_acc)
   const getLimitAmountValue =await getLimitAmount(onermn_acc)
   const getSlabDateValue = await getSlabDate(onermn_acc)
@@ -316,13 +320,13 @@ exports.repayment = async (req, res) => {
   var getSchemeId =await getSchemeID(onermn_acc)
   var SchemeValue;
   if(getSchemeId){
-    SchemeValue =await getSchemeValue(getSchemeId[0].scheme_id)
+    SchemeValue =await getSchemeValue(getSchemeId[0]?.scheme_id)
   }else{
     /**
     * If scheme not found . Then in future we will hir global parameter
     */
   }
-
+console.log('principalAmount?.total_outstanding',principalAmount?.total_outstanding)
   if(principalAmount?.total_outstanding >= repayment ){
     let repaymentType = {
       'retailer_id' : retailer_id,
@@ -332,7 +336,8 @@ exports.repayment = async (req, res) => {
       'sales_agent_id' :sales_agent_id,
       'repayment' : repayment,
     }
-
+    let calculateRepaymentInterest =( parseFloat(principalAmount.total_outstanding) - parseFloat(principalAmount.principal_outstanding)).toFixed(2) ?? 0 ;
+    
     const createRepayment = await knex("APSISIPDC.cr_disbursement").insert(repaymentType).returning('id');
     if(createRepayment) {
     // if(getSchemeId[0]?.transaction_type == 'SLAB'){
@@ -344,13 +349,17 @@ exports.repayment = async (req, res) => {
     // }else{
     //   transaction_cost = repayment * (SchemeValue[0]?.transaction_fee/100) ?? 0
     // }
+
   
-    let calculateRepaymentInterest =( parseFloat(principalAmount.total_outstanding) - parseFloat(principalAmount.principal_outstanding)).toFixed(2) ?? 0 ;
   
     var intersetPaid = 0;
   
     if(calculateRepaymentInterest > repayment){
       intersetPaid = parseFloat(calculateRepaymentInterest) - parseFloat(repayment)
+      let totalInterestResponse = {
+        'totalInterest' : calculateRepaymentInterest
+      }
+      return res.send((sendApiResult(false, "Your repayment is less than your total interest",totalInterestResponse)));
     }else{
       intersetPaid = parseFloat(repayment) - parseFloat(calculateRepaymentInterest)
     }
@@ -387,10 +396,83 @@ exports.repayment = async (req, res) => {
     var limitUpdate = {
       current_limit: parseFloat(getLimitAmountValue[0]?.current_limit) - parseFloat(repayment) + parseFloat(calculateRepaymentInterest)
     }
-    console.log('parseFloat(limitUpdate)',limitUpdate)
   
-      await knex("APSISIPDC.cr_retailer_loan_calculation").insert(repaymentValueAll).then(async ()=>{
+      await knex("APSISIPDC.cr_retailer_loan_calculation").insert(repaymentValueAll).returning('id').then(async (response)=>{
         // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(transactionCost).then(async ()=>{
+          console.log('firstRepaymentID',firstRepaymentID)
+          console.log('response',response)
+
+          var interest =await findRepaymentInterest(onermn_acc , parseInt(firstRepaymentID?.id) , parseInt(response[0]))
+          // console.log('interest',interest)
+          let sumofReimbursement = interest.reduce(function (accumulator, curValue) {
+            return parseFloat(accumulator) + parseFloat(curValue.interest_reimbursment)
+          }, 0) ?? 0;
+
+          let sumOFpenal_interest = interest.reduce(function (accumulator, curValue) {
+            return parseFloat(accumulator) + parseFloat(curValue.penal_interest)
+          }, 0) ?? 0;
+
+          let sumOfoverdue_amount = interest.reduce(function (accumulator, curValue) {
+            return parseFloat(accumulator) + parseFloat(curValue.overdue_amount)
+          }, 0) ?? 0;
+
+          let sumOfpenal_charge= interest.reduce(function (accumulator, curValue) {
+            return parseFloat(accumulator) + parseFloat(curValue.penal_charge)
+          }, 0) ?? 0;
+
+          let sumOfdaily_principal_interest= interest.reduce(function (accumulator, curValue) {
+            return parseFloat(accumulator) + parseFloat(curValue.daily_principal_interest)
+          }, 0) ?? 0;
+
+          let sumOfcharge= interest.reduce(function (accumulator, curValue) {
+            return parseFloat(accumulator) + parseFloat(curValue.charge)
+          }, 0) ?? 0;
+
+          
+          let sumOfother_charge= interest.reduce(function (accumulator, curValue) {
+            return parseFloat(accumulator) + parseFloat(curValue.other_charge)
+          }, 0) ?? 0;
+
+          // console.log('interest',interest)
+          
+          // console.log('sumofReimbursement',sumofReimbursement)
+          // console.log('interest',interest)
+          // console.log('sumOFpenal_interest',sumOFpenal_interest)
+          // console.log('sumOfoverdue_amount',sumOfoverdue_amount)
+          // console.log('sumOfpenal_charge',sumOfpenal_charge)
+          // console.log('sumOfdaily_principal_interest',sumOfdaily_principal_interest)
+          // console.log('sumOfcharge',sumOfcharge)
+          // console.log('sumOfother_charge',sumOfother_charge)
+
+          let  updateInterest = {
+            'interest_reimbursment' :sumofReimbursement,
+            'penal_interest' :sumOFpenal_interest,
+            'overdue_amount' :sumOfoverdue_amount,
+            'penal_charge' :sumOfpenal_charge,
+            'daily_principal_interest' :sumOfdaily_principal_interest,
+            'charge' :sumOfcharge,
+            'other_charge' :sumOfother_charge,
+
+          }
+
+          await knex.transaction(async (trx) => {
+            const interest_update = await trx("APSISIPDC.cr_retailer_loan_calculation")
+              .where({ id: response[0] })
+              .update(
+                updateInterest
+              );
+              console.log('limit_update',interest_update)
+            if (interest_update <= 0){
+              return res.send((sendApiResult(false, "failed to update one rmn account ")));
+             }
+            });
+
+         
+
+          // let sumOfother_charge= allRepayment.reduce(function (accumulator, curValue) {
+          //   return parseFloat(accumulator) + parseFloat(curValue.other_charge:)
+          // }, 0) ?? 0;
+          // return
           await knex.transaction(async (trx) => {
             const limit_update = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
               .where({ ac_number_1rmn: onermn_acc })
@@ -683,6 +765,15 @@ var calculateTransactionCost = function (total, ratePercent, roundToPlaces) {
 }
 
 
+var getfirstRepaymentID =async (onermn_acc) => {
+  return await knex
+  .from("APSISIPDC.cr_retailer_loan_calculation")
+  .select()
+  .where("onermn_acc", onermn_acc)
+  .where("transaction_type","REPAYMENT")
+  .orderBy('id', 'desc').first()
+}
+
 var getSchemeID =async (onermn_acc) => {
   return await knex
   .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
@@ -820,6 +911,15 @@ var getAllRepayment =async (onermn_acc) => {
       }
       return response;
   }
+}
+
+
+var findRepaymentInterest =async (onermn_acc ,firstId , secondId) => {
+  return await knex
+  .from("APSISIPDC.cr_retailer_loan_calculation")
+  .select()
+  .where("onermn_acc", onermn_acc)
+  .whereBetween('id', [firstId+1, secondId-1]);
 }
 
 
