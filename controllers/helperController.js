@@ -17,6 +17,15 @@ exports.sendApiResult = function (success, message, data = {}) {
   return data;
 };
 
+exports.blockunblock = function (success, paginate, data = {}) {
+  var data = {
+    success,
+    paginate,
+    data,
+  };
+  return data;
+};
+
 exports.makeRandStr = function (length) {
   let result = "";
   const characters =
