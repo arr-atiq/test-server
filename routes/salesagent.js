@@ -10,5 +10,7 @@ router.get("/retailers/:salesagent_id", salesagent.getRetailersByRegionOperation
 router.get("/salesagents/:manufacturer_id", salesagent.getSalesAgentListByManufacturerAndSupervisor);
 router.put("/salesagent/:id", salesagent.editSalesAgent);
 router.delete("/salesagent/:id", salesagent.deleteSalesAgent);
+router.get("/unuploaded-salesagent-data", salesagent.generateSalesagentUnuploadedReport);
+router.get("/invalidated-salesagent-data", salesagent.generateSalesagentInvalidatedReport);
 
 module.exports = router;

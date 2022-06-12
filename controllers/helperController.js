@@ -6,11 +6,21 @@ const axios = require("axios");
 const moment = require("moment");
 const excel = require("excel4node");
 const knex = require("../config/database");
+const { resolve } = require("path");
 
 exports.sendApiResult = function (success, message, data = {}) {
   var data = {
     success,
     message,
+    data,
+  };
+  return data;
+};
+
+exports.blockunblock = function (success, paginate, data = {}) {
+  var data = {
+    success,
+    paginate,
     data,
   };
   return data;
@@ -653,4 +663,21 @@ exports.ValidateTIN = function (tin) {
     return false;
   }
   return false;
+};
+
+exports.duplication_manufacturer = async function (reg_no) {
+  const reg = reg_no.toString();
+  const data = await knex
+    .from("APSISIPDC.cr_manufacturer")
+    .where(
+      "cr_manufacturer.registration_no",
+      reg
+    )
+    .select("id");
+    console.log(data);
+
+  const duplication_check_val = data.length;
+  console.log(duplication_check_val);
+  await duplication_check_val;
+
 };

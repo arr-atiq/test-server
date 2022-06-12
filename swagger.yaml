@@ -758,6 +758,32 @@ paths:
           description: Menu deleted Successfully
         '400':
           description: Failed to get
+  /menu/add-menu-access:
+    post:
+      tags:
+        - Menu
+      summary: Add Menu Access
+      description: API for creating Menu by Dana Admin.
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: body
+          name: body
+          description: Menu Load
+          required: true
+          schema:
+            $ref: "#/definitions/AddMenuAccess"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Menu Access Added Successful.
+        "400":
+          description: Bad request
+        "500":
+          description: Internal Server Error
   /supervisor/supervisors/{manufacturer_id}/{distributor_id}:
     get:
       tags:
@@ -1659,3 +1685,17 @@ definitions:
       id:
         type: integer
         description: id of the specific Menu
+  AddMenuAccess:
+    properties:      
+      menu_ids:
+        type: string
+        description: Menu IDs List in Array. Example [1,2,3]
+      user_level_ids:
+        type: string
+        description: User Level List in Array. Example [1,2,3]
+      user_ids:
+        type: string
+        description: User IDs List in Array. Example [1,2,3]
+      created_by:
+        type: integer
+        description: id of the specific User 
