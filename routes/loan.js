@@ -12,6 +12,7 @@ router.get("/retailer/:onermn_acc", loan.totalLoan);
 router.get("/getprocessingFeeAmount/:onermn_acc", loan.processingFeeAmout);
 router.post("/UpdateprocessingFeeAmount", loan.UpdateprocessingFeeAmount);
 router.post("/loanTenorInDays", loan.loanTenorInDays);
+// router.post("/totalLoan", loan.totalLoan);
 
 
 

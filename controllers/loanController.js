@@ -60,7 +60,7 @@ exports.insertLoanCalculation = async (req, res) => {
             var expiryInterestValue
             totalInterest = (parseFloat(interestAfterExpiryOverdue) +  parseFloat(interestAfterExpiryPenal))
             totalLoan = parseFloat(principalAmount.total_outstanding) + parseFloat(totalInterest) 
-            if(graceValue >= LoanTenorIndays?.days){
+            if(graceValue <= LoanTenorIndays?.days){
              const interestAfterGracePenal = calculateInterest(principalAmount.principal_outstanding, 1, schemavalue.penal_charge, 2) ?? 0;
                expiryInterestValue = {
                 'overdue_amount': interestAfterExpiryOverdue,
@@ -103,14 +103,19 @@ exports.insertLoanCalculation = async (req, res) => {
             totalInterest = (parseFloat(dailyInterest) +  parseFloat(interestOfCharge) + parseFloat(interestOftherCharge) + parseFloat(interestOfreimbursment) )
             totalLoan = parseFloat(principalAmount.total_outstanding) + parseFloat(totalInterest) + parseFloat(interestOfreimbursment)
           
+            console.log('graceValue',graceValue)
+            console.log('LoanTenorIndays',LoanTenorIndays?.days)
 
-            if(graceValue >= LoanTenorIndays?.days){
+            if(graceValue <= LoanTenorIndays?.days){
               const interestAfterGracePenal = calculateInterest(principalAmount.principal_outstanding, 1, schemavalue.penal_charge, 2) ?? 0;
+
+              console.log('interestAfterGracePenal',interestAfterGracePenal)
              dailyInterestValue = {
             'retailer_id':principalAmount.retailer_id,
             'onermn_acc':principalAmount.onermn_acc,
-            'retailer_id':principalAmount.retailer_id,
-            'retailer_id':principalAmount.retailer_id,
+            // 'penal_charge':parseFloat(interestAfterGracePenal),
+            // 'retailer_id':principalAmount.retailer_id,
+            // 'retailer_id':principalAmount.retailer_id,
             'principal_outstanding':principalAmount.principal_outstanding ,
             'daily_principal_interest': dailyInterest,
             'interest_reimbursment':interestOfreimbursment,
@@ -126,8 +131,8 @@ exports.insertLoanCalculation = async (req, res) => {
           dailyInterestValue = {
             'retailer_id':principalAmount.retailer_id,
             'onermn_acc':principalAmount.onermn_acc,
-            'retailer_id':principalAmount.retailer_id,
-            'retailer_id':principalAmount.retailer_id,
+            // 'retailer_id':principalAmount.retailer_id,
+            // 'retailer_id':principalAmount.retailer_id,
             'principal_outstanding':principalAmount.principal_outstanding,
             'daily_principal_interest': dailyInterest,
             'interest_reimbursment':interestOfreimbursment,
@@ -140,9 +145,10 @@ exports.insertLoanCalculation = async (req, res) => {
           }
         }
       
-           delete dailyInterestValue.id
-           delete dailyInterestValue.overdue_amount
-           delete dailyInterestValue.penal_charge
+          //  delete dailyInterestValue.id
+          //  delete dailyInterestValue.overdue_amount
+          //  delete dailyInterestValue.penal_charge
+           console.log('dailyInterestValue',dailyInterestValue)
     
             const createInterest = await knex("APSISIPDC.cr_retailer_loan_calculation").insert(dailyInterestValue);
             responseValue.push(dailyInterestValue)
@@ -439,11 +445,24 @@ exports.slab = async (req, res) => {
 };
 
 exports.totalLoan = async (req, res) => {
-  let { onermn_acc } = req.params
+     let { onermn_acc } = req.params
+     const getSchemeId =await getSchemeID(onermn_acc)
+      let SchemeValue;
+      let loanTenorDays;
+      if(getSchemeId){
+         SchemeValue =await getSchemeValue(getSchemeId[0].scheme_id)
+      }
+     console.log('SchemeValue',SchemeValue)
+     if(SchemeValue[0]){
+      loanTenorDays =await findLoanTenorIndays(onermn_acc , SchemeValue[0])
+     }
      let totalValue =await getPrincipalAmount(onermn_acc)
-     console.log(totalValue)
-     var resPonseVaslue = {
+     
+     console.log('loanTenorDays',loanTenorDays)
+     var resPonseVaslue = {...loanTenorDays,
       "total_outstanding": totalValue.total_outstanding,
+      "principal_outstanding": totalValue.principal_outstanding,
+      'total_interest': (parseFloat(totalValue.total_outstanding) - parseFloat(totalValue.principal_outstanding)).toFixed(2),
       "retailer_id": totalValue.retailer_id,
       "onermn_acc": totalValue.onermn_acc,
      }
@@ -458,7 +477,6 @@ exports.totalLoan = async (req, res) => {
 exports.processingFeeAmout = async (req, res) => {
   let { onermn_acc } = req.params
   var SchemeID =await getSchemeID(onermn_acc)
-  console.log('onermn_acc',SchemeID)
 
   if(SchemeID[0]?.scheme_id){
     var schemeValue =await getSchemeValue(SchemeID[0].scheme_id)
@@ -647,6 +665,11 @@ exports.loanTenorInDays = async (req, res) => {
   
 };
 
+// exports.loanTenorInDays = async (req, res) => {
+//   const {onermn_acc} = req.body
+  
+// };
+
 
 var calculateInterest = function (total, days, ratePercent, roundToPlaces) {
   var interestRate = ((ratePercent/100));
@@ -759,35 +782,41 @@ var getAllRepayment =async (onermn_acc) => {
   var allRepayment = await getAllRepayment(oneRMn)
   var response = {}
   var days;
-  let sum = allRepayment.reduce(function (accumulator, curValue) {
+  let sumRepayment = allRepayment.reduce(function (accumulator, curValue) {
       return accumulator + curValue.repayment
   }, 0) ?? 0;
   var tenorValue;
   let disbursementAdd = 0;
   for (var i = 0; i < allDisbursements.length; i++) {
       disbursementAdd = allDisbursements[i].disburshment + disbursementAdd
-      if (disbursementAdd > sum) {
+      if (disbursementAdd > sumRepayment) {
           tenorValue = allDisbursements[i]
           break;
       }
   }
   // const todayDate = new Date(tenorValue?.created_at.toString().replaceAll(/\s/g, ''))
   const todayDate = new Date(tenorValue?.created_at)
+  console.log('parseFloat(disbursementAdd)',parseFloat(disbursementAdd))
+  console.log('parseFloat(sumRepayment)',parseFloat(sumRepayment))
 
   const now = moment.utc();
   var end = moment(todayDate);
   days = now.diff(end, "days");
   console.log('days',days)
+  console.log('schemeValue?.loan_tenor_in_days',schemeValue?.loan_tenor_in_days)
+
   if (days >= schemeValue?.loan_tenor_in_days) {
       response = {
-          'tanor': true,
-          'days': days
+          'nextDisbursement': false,
+          'days': days,
+          'minimum_amount':parseFloat(disbursementAdd) - parseFloat(sumRepayment)
       }
       return response;
   } else {
       response = {
-          'tanor': false,
-          'days': days
+          'nextDisbursement': true,
+          'days': days,
+          'minimum_amount':0
       }
       return response;
   }
