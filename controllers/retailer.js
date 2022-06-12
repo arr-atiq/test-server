@@ -28,7 +28,7 @@ const importExcelData2DB = async function (filename, req) {
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, "File not uploaded");
+    return sendApiResult(false, "Retailer File not uploaded due to " + error.message);
   }
 };
 
@@ -128,7 +128,7 @@ const uploadRetailerEkycFile = async function (filename, req) {
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, "File not uploaded");
+    return sendApiResult(false, "File not uploaded due to " + error.message);
   }
 };
 
@@ -156,6 +156,6 @@ const uploadRetailerCibFile = async function (filename, req) {
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, "File not uploaded");
+    return sendApiResult(false, "File not uploaded due to " + error.message);
   }
 };

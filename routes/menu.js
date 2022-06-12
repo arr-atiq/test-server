@@ -8,5 +8,6 @@ router.post("/add-menu", menu.addMenu);
 router.post("/menu-list", menu.menuList);
 router.get("/menu-details/:id", menu.menuDetails);
 router.delete("/delete-menu/:id", menu.menuDelete);
+router.post("/add-menu-access", menu.addMenuAccess);
 
 module.exports = router;
