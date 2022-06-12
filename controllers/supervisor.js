@@ -117,7 +117,7 @@ exports.editSupervisor = async (req, res) => {
   }
 };
 
-exports.generateSupervisorUnuploadedData = async (req, res) => {
+exports.generateSupervisorUnuploadedReport = async (req, res) => {
   try {
     const limit_data = await knex("APSISIPDC.cr_supervisor_unuploaded_data")
       .where("status", "Active")
@@ -178,26 +178,26 @@ exports.generateSupervisorUnuploadedData = async (req, res) => {
     	col_add++;
     	worksheet
     	.cell(row, col + col_add)
-    	.string(e.supervisor_nid ? e.supervisor_nid : "");
+    	.number(e.supervisor_nid ? e.supervisor_nid : "");
     	col_add++;
     	worksheet
     	.cell(row, col + col_add)
     	.string(e.phone ? e.phone : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.manufacturer_id ? e.manufacturer_id : "");
+    	worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
     	col_add++;
     	worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
     	col_add++;
     	worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.distributor_id ? e.distributor_id : "");
+    	worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
     	col_add++;
     	// worksheet.cell(row, col + col_add).number(0);
     	// col_add++;
     	row++;
     }
-    await workbook.write("public/unupload_report/supervisorDownload.xlsx");
-    const fileName = "./unupload_report/supervisorDownload.xlsx";
+    await workbook.write("public/unupload_report/supervisorUnuploadedDataDownload.xlsx");
+    const fileName = "./unupload_report/supervisorUnuploadedDataDownload.xlsx";
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);
@@ -206,7 +206,7 @@ exports.generateSupervisorUnuploadedData = async (req, res) => {
   }
 };
 
-exports.generateSupervisorInvalidatedData = async (req, res) => {
+exports.generateSupervisorInvalidatedReport = async (req, res) => {
   try {
     const limit_data = await knex("APSISIPDC.cr_supervisor_invalidated_data")
       .where("status", "Active")
@@ -266,26 +266,26 @@ exports.generateSupervisorInvalidatedData = async (req, res) => {
     	col_add++;
     	worksheet
     	.cell(row, col + col_add)
-    	.string(e.supervisor_nid ? e.supervisor_nid : "");
+    	.number(e.supervisor_nid ? e.supervisor_nid : "");
     	col_add++;
     	worksheet
     	.cell(row, col + col_add)
     	.string(e.phone ? e.phone : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.manufacturer_id ? e.manufacturer_id : "");
+    	worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
     	col_add++;
     	worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
     	col_add++;
     	worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.distributor_id ? e.distributor_id : "");
+    	worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
     	col_add++;
     	// worksheet.cell(row, col + col_add).number(0);
     	// col_add++;
     	row++;
     }
-    await workbook.write("public/unupload_report/supervisorInvalidateDownload.xlsx");
-    const fileName = "./unupload_report/supervisorInvalidateDownload.xlsx";
+    await workbook.write("public/unupload_report/supervisorInvalidateDataDownload.xlsx");
+    const fileName = "./unupload_report/supervisorInvalidateDataDownload.xlsx";
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);

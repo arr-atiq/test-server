@@ -5,6 +5,8 @@ const xlsx = require("xlsx");
 const moment = require("moment");
 const { sendApiResult, uploaddir } = require("./helper");
 const model = require("../Models/SalesAgent");
+const knex = require("../config/database");
+const excel = require("excel4node");
 
 exports.uploadSalesAgentOnboardingFile = async (req, res) => {
   req.body.user_id = req.user_id;
@@ -99,7 +101,7 @@ exports.editSalesAgent = async (req, res) => {
   }
 };
 
-exports.generateSalesagentUnuploadedData = async (req, res) => {
+exports.generateSalesagentUnuploadedReport = async (req, res) => {
   try {
     const limit_data = await knex("APSISIPDC.cr_salesagent_unuploaded_data")
       .where("status", "Active")
@@ -113,7 +115,6 @@ exports.generateSalesagentUnuploadedData = async (req, res) => {
         "region_of_operation",
         "distributor_id"
       );
-      console.log(limit_data);
     const headers = [
       "Sr.",
       "Sales_Agent_Name",
@@ -158,30 +159,30 @@ exports.generateSalesagentUnuploadedData = async (req, res) => {
     	col_add++;
     	worksheet
     	.cell(row, col + col_add)
-    	.string(e.supervisor_name ? e.supervisor_name : "");
+    	.string(e.agent_name ? e.agent_name : "");
     	col_add++;
     	worksheet
     	.cell(row, col + col_add)
-    	.string(e.supervisor_nid ? e.supervisor_nid : "");
+    	.number(e.agent_nid ? e.agent_nid : "");
     	col_add++;
     	worksheet
     	.cell(row, col + col_add)
     	.string(e.phone ? e.phone : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.manufacturer_id ? e.manufacturer_id : "");
+    	worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
+    	worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "");
     	col_add++;
     	worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.distributor_id ? e.distributor_id : "");
+    	worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
     	col_add++;
     	// worksheet.cell(row, col + col_add).number(0);
     	// col_add++;
     	row++;
     }
-    await workbook.write("public/unupload_report/supervisorDownload.xlsx");
-    const fileName = "./unupload_report/supervisorDownload.xlsx";
+    await workbook.write("public/unupload_report/sales_agent_unuploaded_report.xlsx");
+    const fileName = "./unupload_report/sales_agent_unuploaded_report.xlsx";
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);
@@ -190,28 +191,30 @@ exports.generateSalesagentUnuploadedData = async (req, res) => {
   }
 };
 
-exports.generateSupervisorInvalidatedData = async (req, res) => {
+exports.generateSalesagentInvalidatedReport = async (req, res) => {
   try {
-    const limit_data = await knex("APSISIPDC.cr_supervisor_invalidated_data")
+    const limit_data = await knex("APSISIPDC.cr_sales_agent_invalidated_data")
       .where("status", "Active")
       .select(
-        "supervisor_name",
-        "supervisor_nid",
+        "agent_name",
+        "agent_nid",
         "phone",
         "manufacturer_id",
-        "supervisor_employee_code",
+        "agent_employee_code",
+        "autho_supervisor_employee_code",
         "region_of_operation",
         "distributor_id"
       );
     const headers = [
       "Sr.",
-      "Supervisor_Name",
-      "Supervisor_NID",
+      "Sales_Agent_Name",
+      "Sales_Agent_NID",
       "Phone",
+      "Sales_Agent_Employee_Code",
+      "Authorized_supervisor_emp_code",
       "Manufacturer",
-      "Supervisor_Employee_Code",
-      "Region_of_Operation",
       "Distributor",
+      "Region_of_Operation"
     ];
     const workbook = new excel.Workbook();
     const worksheet = workbook.addWorksheet("Sheet 1");
@@ -246,30 +249,32 @@ exports.generateSupervisorInvalidatedData = async (req, res) => {
     	col_add++;
     	worksheet
     	.cell(row, col + col_add)
-    	.string(e.supervisor_name ? e.supervisor_name : "");
+    	.string(e.agent_name ? e.agent_name : "");
     	col_add++;
     	worksheet
     	.cell(row, col + col_add)
-    	.string(e.supervisor_nid ? e.supervisor_nid : "");
+    	.number(e.agent_nid ? e.agent_nid : "");
     	col_add++;
     	worksheet
     	.cell(row, col + col_add)
     	.string(e.phone ? e.phone : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.manufacturer_id ? e.manufacturer_id : "");
+    	worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
+    	worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "");
+    	col_add++;
+      worksheet.cell(row, col + col_add).string(e.autho_supervisor_employee_code ? e.autho_supervisor_employee_code : "");
     	col_add++;
     	worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.distributor_id ? e.distributor_id : "");
+    	worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
     	col_add++;
     	// worksheet.cell(row, col + col_add).number(0);
     	// col_add++;
     	row++;
     }
-    await workbook.write("public/unupload_report/supervisorInvalidateDownload.xlsx");
-    const fileName = "./unupload_report/supervisorInvalidateDownload.xlsx";
+    await workbook.write("public/unupload_report/sales_agent_unuploaded_report.xlsx");
+    const fileName = "./unupload_report/sales_agent_unuploaded_report.xlsx";
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);
