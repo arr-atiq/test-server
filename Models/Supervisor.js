@@ -596,19 +596,26 @@ FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
         total_interest_reimbursment = total_interest_reimbursment + data[i].interest_reimbursment;
       }
       if (data == 0) reject(sendApiResult(false, "Not found."));
-      const data_Array = [{ data: data },
-      { total_repayment: total_amount },
-      { total_principal_outstanding: total_principal_outstanding },
-      { total_daily_principal_interest: total_daily_principal_interest },
-      { total_charge: total_charge },
-      { total_other_charge: total_other_charge },
-      { total_outstanding_sum: total_outstanding_sum },
-      { total_overdue_amount: total_overdue_amount },
-      { total_transaction_cost: total_transaction_cost },
-      { total_penal_interest: total_penal_interest },
-      { total_penal_charge: total_penal_charge },
-      { total_processing_fee: total_processing_fee },
-      { total_interest_reimbursment: total_interest_reimbursment }
+      const data_Array = [
+        { result: data },
+        { 
+          calculation : [ 
+          { total_repayment: total_amount },
+          { total_principal_outstanding: total_principal_outstanding },
+          { total_daily_principal_interest: total_daily_principal_interest },
+          { total_charge: total_charge },
+          { total_other_charge: total_other_charge },
+          { total_outstanding_sum: total_outstanding_sum },
+          { total_overdue_amount: total_overdue_amount },
+          { total_transaction_cost: total_transaction_cost },
+          { total_penal_interest: total_penal_interest },
+          { total_penal_charge: total_penal_charge },
+          { total_processing_fee: total_processing_fee },
+          { total_interest_reimbursment: total_interest_reimbursment }
+          ]
+        
+        }
+     
       ]
       resolve(sendApiResult(true, "Data fetched successfully", data_Array));
     } catch (error) {
