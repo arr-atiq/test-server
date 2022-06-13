@@ -563,7 +563,7 @@ exports.processingFeeAmout = async (req, res) => {
   if(SchemeID[0]?.scheme_id){
     var schemeValue =await getSchemeValue(SchemeID[0].scheme_id)
     var value = {
-      'transaction_cost' : schemeValue[0]?.processing_cost
+      'processing_fee' : schemeValue[0]?.processing_cost
     }
     return res.send((sendApiResult(true, "Processing Fee Success",value)));
 
