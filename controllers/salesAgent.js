@@ -65,6 +65,15 @@ exports.getRetailersByRegionOperation = async (req, res) => {
   }
 };
 
+exports.getRetailersBySalesAgent = async (req, res) => {
+  try {
+    const result = await model.getRetailersBySalesAgent(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.getRetailerbySalesAgent = async (req, res) => {
   try {
     const result = await model.getRetailerbySalesAgent(req);

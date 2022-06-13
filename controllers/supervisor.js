@@ -65,6 +65,15 @@ exports.getSalesAgentListByManufacturerAndSupervisor = async (req, res) => {
   }
 };
 
+exports.getSalesAgentListBySupervisor = async (req, res) => {
+  try {
+    const result = await superModel.getSalesAgentListBySupervisor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.getRetailerListByManufacturerAndSalesagent = async (req, res) => {
   try {
     const result = await superModel.getRetailerListByManufacturerAndSalesagent(req);
@@ -77,6 +86,15 @@ exports.getRetailerListByManufacturerAndSalesagent = async (req, res) => {
 exports.getDisbursementBySalesagentAndRetailer = async (req, res) => {
   try {
     const result = await superModel.getDisbursementBySalesagentAndRetailer(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getRepaymentBySalesagentAndRetailer = async (req, res) => {
+  try {
+    const result = await superModel.getRepaymentBySalesagentAndRetailer(req);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));

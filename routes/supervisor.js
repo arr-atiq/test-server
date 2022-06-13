@@ -11,9 +11,12 @@ router.delete("/supervisor/:id", supervisor.deleteSupervisor);
 router.get("/salesagents-manufacturers/:supervisor_id", supervisor.getAllManufacturerOfSalesagentUnderSupervisor);
 router.get("/salesagents/:manufacturer_id/:supervisor_code", supervisor.getSalesAgentListByManufacturerAndSupervisor);
 router.get("/retailers/:manufacturer_id/:salesagent_id", supervisor.getRetailerListByManufacturerAndSalesagent);
-router.get("/disbursement/:salesagent_id/:retailer_id", supervisor.getDisbursementBySalesagentAndRetailer);
+router.get("/disbursement/:supervisor_code", supervisor.getDisbursementBySalesagentAndRetailer);
+router.get("/repayment/:supervisor_code", supervisor.getRepaymentBySalesagentAndRetailer);
 router.get("/unuploaded-supervisor-data", supervisor.generateSupervisorUnuploadedReport);
 router.get("/invalidated-supervisor-data", supervisor.generateSupervisorInvalidatedReport);
+//12/6/2022
+router.get("/salesagents/:supervisor_code", supervisor.getSalesAgentListBySupervisor);
 
 
 module.exports = router;
