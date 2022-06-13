@@ -545,7 +545,7 @@ FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
         //.where("cr_disbursement.sales_agent_id", salesagent_id)
         .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
         .whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
-        .whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${end_date}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${end_date}', 'YYYY-MM-DD')`)
         .where("cr_retailer_loan_calculation.transaction_type", "REPAYMENT")
         .select(
           "cr_retailer_loan_calculation.id",
