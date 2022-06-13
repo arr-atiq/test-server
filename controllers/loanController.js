@@ -404,69 +404,70 @@ console.log('principalAmount?.total_outstanding',principalAmount?.total_outstand
 
           var interest =await findRepaymentInterest(onermn_acc , parseInt(firstRepaymentID?.id) , parseInt(response[0]))
           // console.log('interest',interest)
-          let sumofReimbursement = interest.reduce(function (accumulator, curValue) {
-            return parseFloat(accumulator) + parseFloat(curValue.interest_reimbursment)
-          }, 0) ?? 0;
+          if(interest?.length > 0){
+            let sumofReimbursement = interest.reduce(function (accumulator, curValue) {
+              return parseFloat(accumulator) + parseFloat(curValue.interest_reimbursment)
+            }, 0) ?? 0;
 
-          let sumOFpenal_interest = interest.reduce(function (accumulator, curValue) {
-            return parseFloat(accumulator) + parseFloat(curValue.penal_interest)
-          }, 0) ?? 0;
+            let sumOFpenal_interest = interest.reduce(function (accumulator, curValue) {
+              return parseFloat(accumulator) + parseFloat(curValue.penal_interest)
+            }, 0) ?? 0;
 
-          let sumOfoverdue_amount = interest.reduce(function (accumulator, curValue) {
-            return parseFloat(accumulator) + parseFloat(curValue.overdue_amount)
-          }, 0) ?? 0;
+            let sumOfoverdue_amount = interest.reduce(function (accumulator, curValue) {
+              return parseFloat(accumulator) + parseFloat(curValue.overdue_amount)
+            }, 0) ?? 0;
 
-          let sumOfpenal_charge= interest.reduce(function (accumulator, curValue) {
-            return parseFloat(accumulator) + parseFloat(curValue.penal_charge)
-          }, 0) ?? 0;
+            let sumOfpenal_charge= interest.reduce(function (accumulator, curValue) {
+              return parseFloat(accumulator) + parseFloat(curValue.penal_charge)
+            }, 0) ?? 0;
 
-          let sumOfdaily_principal_interest= interest.reduce(function (accumulator, curValue) {
-            return parseFloat(accumulator) + parseFloat(curValue.daily_principal_interest)
-          }, 0) ?? 0;
+            let sumOfdaily_principal_interest= interest.reduce(function (accumulator, curValue) {
+              return parseFloat(accumulator) + parseFloat(curValue.daily_principal_interest)
+            }, 0) ?? 0;
 
-          let sumOfcharge= interest.reduce(function (accumulator, curValue) {
-            return parseFloat(accumulator) + parseFloat(curValue.charge)
-          }, 0) ?? 0;
+            let sumOfcharge= interest.reduce(function (accumulator, curValue) {
+              return parseFloat(accumulator) + parseFloat(curValue.charge)
+            }, 0) ?? 0;
 
-          
-          let sumOfother_charge= interest.reduce(function (accumulator, curValue) {
-            return parseFloat(accumulator) + parseFloat(curValue.other_charge)
-          }, 0) ?? 0;
+            
+            let sumOfother_charge= interest.reduce(function (accumulator, curValue) {
+              return parseFloat(accumulator) + parseFloat(curValue.other_charge)
+            }, 0) ?? 0;
 
-          // console.log('interest',interest)
-          
-          // console.log('sumofReimbursement',sumofReimbursement)
-          // console.log('interest',interest)
-          // console.log('sumOFpenal_interest',sumOFpenal_interest)
-          // console.log('sumOfoverdue_amount',sumOfoverdue_amount)
-          // console.log('sumOfpenal_charge',sumOfpenal_charge)
-          // console.log('sumOfdaily_principal_interest',sumOfdaily_principal_interest)
-          // console.log('sumOfcharge',sumOfcharge)
-          // console.log('sumOfother_charge',sumOfother_charge)
+            // console.log('interest',interest)
+            
+            // console.log('sumofReimbursement',sumofReimbursement)
+            // console.log('interest',interest)
+            // console.log('sumOFpenal_interest',sumOFpenal_interest)
+            // console.log('sumOfoverdue_amount',sumOfoverdue_amount)
+            // console.log('sumOfpenal_charge',sumOfpenal_charge)
+            // console.log('sumOfdaily_principal_interest',sumOfdaily_principal_interest)
+            // console.log('sumOfcharge',sumOfcharge)
+            // console.log('sumOfother_charge',sumOfother_charge)
 
-          let  updateInterest = {
-            'interest_reimbursment' :sumofReimbursement,
-            'penal_interest' :sumOFpenal_interest,
-            'overdue_amount' :sumOfoverdue_amount,
-            'penal_charge' :sumOfpenal_charge,
-            'daily_principal_interest' :sumOfdaily_principal_interest,
-            'charge' :sumOfcharge,
-            'other_charge' :sumOfother_charge,
+            let  updateInterest = {
+              'interest_reimbursment' :sumofReimbursement,
+              'penal_interest' :sumOFpenal_interest,
+              'overdue_amount' :sumOfoverdue_amount,
+              'penal_charge' :sumOfpenal_charge,
+              'daily_principal_interest' :sumOfdaily_principal_interest,
+              'charge' :sumOfcharge,
+              'other_charge' :sumOfother_charge,
 
-          }
+            }
 
-          await knex.transaction(async (trx) => {
-            const interest_update = await trx("APSISIPDC.cr_retailer_loan_calculation")
-              .where({ id: response[0] })
-              .update(
-                updateInterest
-              );
-              console.log('limit_update',interest_update)
-            if (interest_update <= 0){
-              return res.send((sendApiResult(false, "failed to update one rmn account ")));
-             }
-            });
-
+            await knex.transaction(async (trx) => {
+              const interest_update = await trx("APSISIPDC.cr_retailer_loan_calculation")
+                .where({ id: response[0] })
+                .update(
+                  updateInterest
+                );
+                console.log('limit_update',interest_update)
+              if (interest_update <= 0){
+                return res.send((sendApiResult(false, "failed to update one rmn account ")));
+              }
+              });
+            }
          
 
           // let sumOfother_charge= allRepayment.reduce(function (accumulator, curValue) {
@@ -489,15 +490,16 @@ console.log('principalAmount?.total_outstanding',principalAmount?.total_outstand
       });
     }
   
-    let totalLimit = parseInt(getLimitAmountValue[0]?.crm_approve_limit) - parseInt(getLimitAmountValue[0]?.current_limit)
+    //let totalLimit = parseInt(getLimitAmountValue[0]?.crm_approve_limit) - parseInt(getLimitAmountValue[0]?.current_limit)
   }else{
     return res.send((sendApiResult(false, "Repayment is higher than Total Outstanding")));
   }
 };
 
 exports.slab = async (req, res) => {
-  let { onermn_acc , repayment } = req.query
   console.log('req.params',req.query)
+
+  let { onermn_acc , repayment } = req.query
   const getSlabDateValue = await getSlabDate(onermn_acc)
   const dateSlab = getSlabDateValue?.created_at
   let transaction_cost = 0;
@@ -532,7 +534,7 @@ exports.totalLoan = async (req, res) => {
       let SchemeValue;
       let loanTenorDays;
       if(getSchemeId){
-         SchemeValue =await getSchemeValue(getSchemeId[0].scheme_id)
+         SchemeValue =await getSchemeValue(getSchemeId[0]?.scheme_id)
       }
      console.log('SchemeValue',SchemeValue)
      if(SchemeValue[0]){
@@ -542,16 +544,19 @@ exports.totalLoan = async (req, res) => {
      
      console.log('loanTenorDays',loanTenorDays)
      var resPonseVaslue = {...loanTenorDays,
-      "total_outstanding": totalValue.total_outstanding,
-      "principal_outstanding": totalValue.principal_outstanding,
-      'total_interest': (parseFloat(totalValue.total_outstanding) - parseFloat(totalValue.principal_outstanding)).toFixed(2),
-      "retailer_id": totalValue.retailer_id,
-      "onermn_acc": totalValue.onermn_acc,
+      "total_outstanding": totalValue?.total_outstanding.toFixed(2) ?? 0,
+      "principal_outstanding": totalValue?.principal_outstanding.toFixed(2) ?? 0,
+      'total_interest': (parseFloat(totalValue?.total_outstanding) - parseFloat(totalValue?.principal_outstanding)).toFixed(2) ?? 0,
+      "retailer_id": totalValue?.retailer_id,
+      "onermn_acc": totalValue?.onermn_acc,
      }
      if(totalValue){
        return res.send((sendApiResult(true, "Find Total Cost",resPonseVaslue)));
      }else{
-       return res.send((sendApiResult(false, "No Data Found")));
+       var reponse = {
+         'retailer':'This Retailer Have No Loan Yet'
+       }
+       return res.send((sendApiResult(false, "No Data Found",reponse)));
      }
 };
 
@@ -563,7 +568,7 @@ exports.processingFeeAmout = async (req, res) => {
   if(SchemeID[0]?.scheme_id){
     var schemeValue =await getSchemeValue(SchemeID[0].scheme_id)
     var value = {
-      'transaction_cost' : schemeValue[0]?.processing_cost
+      'processing_fee' : schemeValue[0]?.processing_cost
     }
     return res.send((sendApiResult(true, "Processing Fee Success",value)));
 
@@ -907,7 +912,7 @@ var getAllRepayment =async (onermn_acc) => {
       response = {
           'nextDisbursement': true,
           'days': days,
-          'minimum_amount':0
+          'minimum_amount':parseFloat(disbursementAdd) - parseFloat(sumRepayment)
       }
       return response;
   }
