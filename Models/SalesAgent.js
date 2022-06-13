@@ -541,7 +541,10 @@ FileUpload.getRetailerbySalesAgent = function (req) {
           "cr_retailer.retailer_name",
           "cr_retailer.retailer_code",
           "cr_retailer_vs_sales_agent.sales_agent_id",
-          "cr_retailer_manu_scheme_mapping.ac_number_1rmn"
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer_manu_scheme_mapping.ac_number_1rmn",
+          "cr_retailer_manu_scheme_mapping.processing_fee",
+          "cr_retailer_manu_scheme_mapping.crm_approve_limit",
         );
 
       if (data == 0) reject(sendApiResult(false, "Not found."));

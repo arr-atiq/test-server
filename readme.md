@@ -25,10 +25,14 @@ Kindly connect with Team Lead.
 1. `docker-compose up -d`
 2. `docker-compose down`
 
+## Run project on Ngnix
+localhost:80
+
 ## Deploy Backend without Docker and Nginx
 `pm2 start npm --name "IPDC-DANA-BACKEND" -- start`
 
 ## KIll PORT
 npx kill-port 5000
+
 
 
