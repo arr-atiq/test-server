@@ -515,13 +515,13 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
 
         );
       //.knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`);
-      let total_amount =0;
+      let total_amount = 0;
       for (let i = 0; i < data.length; i++) {
         total_amount = total_amount + data[i].disbursement_amount;
-        
+
       }
       if (data == 0) reject(sendApiResult(false, "Not found."));
-      const data_Array = [{data: data}, {total_amount:total_amount}]
+      const data_Array = [{ data: data }, { total_amount: total_amount }]
       resolve(sendApiResult(true, "Data fetched successfully", data_Array));
     } catch (error) {
       reject(sendApiResult(false, error.message));
@@ -546,25 +546,70 @@ FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
         .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
         .whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
         .whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${end_date}', 'YYYY-MM-DD')`)
+        .where("cr_retailer_loan_calculation.transaction_type", "REPAYMENT")
         .select(
           "cr_retailer_loan_calculation.id",
           "cr_retailer_loan_calculation.retailer_id",
           "cr_retailer_loan_calculation.repayment",
+          "cr_retailer_loan_calculation.principal_outstanding",
+          "cr_retailer_loan_calculation.daily_principal_interest",
+          "cr_retailer_loan_calculation.charge",
+          "cr_retailer_loan_calculation.other_charge",
+          "cr_retailer_loan_calculation.total_outstanding",
+          "cr_retailer_loan_calculation.overdue_amount",
+          "cr_retailer_loan_calculation.transaction_cost",
+          "cr_retailer_loan_calculation.penal_interest",
+          "cr_retailer_loan_calculation.penal_charge",
+          "cr_retailer_loan_calculation.processing_fee",
+          "cr_retailer_loan_calculation.interest_reimbursment",
           "cr_retailer.retailer_name",
           "cr_retailer.phone",
           "cr_retailer.email",
-          "cr_retailer_loan_calculation.created_at",
-          //(knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`))
-
+          "cr_retailer_loan_calculation.created_at"
         );
-      //.knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`);
-      let total_amount =0;
+      let total_amount = 0;
+      let total_principal_outstanding = 0;
+      let total_daily_principal_interest = 0;
+      let total_charge = 0;
+      let total_other_charge = 0;
+      let total_outstanding_sum = 0;
+      let total_overdue_amount = 0;
+      let total_transaction_cost = 0;
+      let total_penal_interest = 0;
+      let total_penal_charge = 0;
+      let total_processing_fee = 0;
+      let total_interest_reimbursment = 0;
+
+
       for (let i = 0; i < data.length; i++) {
         total_amount = total_amount + data[i].repayment;
-        
+        total_principal_outstanding = total_principal_outstanding + data[i].principal_outstanding;
+        total_daily_principal_interest = total_daily_principal_interest + data[i].principal_outstanding;
+        total_charge = total_charge + data[i].charge;
+        total_other_charge = total_other_charge + data[i].other_charge;
+        total_outstanding_sum = total_outstanding_sum + data[i].total_outstanding;
+        total_overdue_amount = total_overdue_amount + data[i].overdue_amount;
+        total_transaction_cost = total_transaction_cost + data[i].transaction_cost;
+        total_penal_interest = total_penal_interest + data[i].penal_interest;
+        total_penal_charge = total_penal_charge + data[i].penal_charge;
+        total_processing_fee = total_processing_fee + data[i].processing_fee;
+        total_interest_reimbursment = total_interest_reimbursment + data[i].interest_reimbursment;
       }
       if (data == 0) reject(sendApiResult(false, "Not found."));
-      const data_Array = [{data: data}, {total_repayment:total_amount}]
+      const data_Array = [{ data: data },
+      { total_repayment: total_amount },
+      { total_principal_outstanding: total_principal_outstanding },
+      { total_daily_principal_interest: total_daily_principal_interest },
+      { total_charge: total_charge },
+      { total_other_charge: total_other_charge },
+      { total_outstanding_sum: total_outstanding_sum },
+      { total_overdue_amount: total_overdue_amount },
+      { total_transaction_cost: total_transaction_cost },
+      { total_penal_interest: total_penal_interest },
+      { total_penal_charge: total_penal_charge },
+      { total_processing_fee: total_processing_fee },
+      { total_interest_reimbursment: total_interest_reimbursment }
+      ]
       resolve(sendApiResult(true, "Data fetched successfully", data_Array));
     } catch (error) {
       reject(sendApiResult(false, error.message));
