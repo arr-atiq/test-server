@@ -496,8 +496,9 @@ console.log('principalAmount?.total_outstanding',principalAmount?.total_outstand
 };
 
 exports.slab = async (req, res) => {
-  let { onermn_acc , repayment } = req.query
   console.log('req.params',req.query)
+
+  let { onermn_acc , repayment } = req.query
   const getSlabDateValue = await getSlabDate(onermn_acc)
   const dateSlab = getSlabDateValue?.created_at
   let transaction_cost = 0;
@@ -532,7 +533,7 @@ exports.totalLoan = async (req, res) => {
       let SchemeValue;
       let loanTenorDays;
       if(getSchemeId){
-         SchemeValue =await getSchemeValue(getSchemeId[0].scheme_id)
+         SchemeValue =await getSchemeValue(getSchemeId[0]?.scheme_id)
       }
      console.log('SchemeValue',SchemeValue)
      if(SchemeValue[0]){
@@ -542,16 +543,19 @@ exports.totalLoan = async (req, res) => {
      
      console.log('loanTenorDays',loanTenorDays)
      var resPonseVaslue = {...loanTenorDays,
-      "total_outstanding": totalValue.total_outstanding,
-      "principal_outstanding": totalValue.principal_outstanding,
-      'total_interest': (parseFloat(totalValue.total_outstanding) - parseFloat(totalValue.principal_outstanding)).toFixed(2),
-      "retailer_id": totalValue.retailer_id,
-      "onermn_acc": totalValue.onermn_acc,
+      "total_outstanding": totalValue?.total_outstanding.toFixed(2) ?? 0,
+      "principal_outstanding": totalValue?.principal_outstanding.toFixed(2) ?? 0,
+      'total_interest': (parseFloat(totalValue?.total_outstanding) - parseFloat(totalValue?.principal_outstanding)).toFixed(2) ?? 0,
+      "retailer_id": totalValue?.retailer_id,
+      "onermn_acc": totalValue?.onermn_acc,
      }
      if(totalValue){
        return res.send((sendApiResult(true, "Find Total Cost",resPonseVaslue)));
      }else{
-       return res.send((sendApiResult(false, "No Data Found")));
+       var reponse = {
+         'retailer':'This Retailer Have No Loan Yet'
+       }
+       return res.send((sendApiResult(false, "No Data Found",reponse)));
      }
 };
 
@@ -907,7 +911,7 @@ var getAllRepayment =async (onermn_acc) => {
       response = {
           'nextDisbursement': true,
           'days': days,
-          'minimum_amount':0
+          'minimum_amount':parseFloat(disbursementAdd) - parseFloat(sumRepayment)
       }
       return response;
   }

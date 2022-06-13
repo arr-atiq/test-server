@@ -15,6 +15,4 @@ router.post("/loanTenorInDays", loan.loanTenorInDays);
 // router.post("/totalLoan", loan.totalLoan);
 
 
-
-
 module.exports = router;
