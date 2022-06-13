@@ -5,6 +5,10 @@ log/error/
 log/info/
 public/configuration_file
 public/onboarding-sample-file
+<<<<<<< HEAD
+public/unupload_report
+=======
 public/unupload_report
 public/ekyc
 public/cib
+>>>>>>> 6dafca7173200c0370784c66f164b4e8eb1f1139
