@@ -68,7 +68,7 @@ User.getDashboard = function (req, res) {
         .count("cr_retailer.id as count")
         .from("APSISIPDC.cr_retailer")
         .whereRaw(`"cr_retailer"."created_at" >= TO_DATE('${currentMonthStartDate}', 'YYYY-MM-DD')`)
-        .whereRaw(`"cr_retailer"."created_at" <= TO_DATE('${todaydate}', 'YYYY-MM-DD')`);
+        .whereRaw(`TO_DATE("cr_retailer"."created_at", "YYYY-MM-DD") = TO_DATE('${todaydate}', 'YYYY-MM-DD')`);
       const total_retailers_count_current_month_val = parseInt(
         total_retailers_count_current_month[0].count
       );

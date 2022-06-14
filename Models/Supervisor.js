@@ -346,7 +346,7 @@ FileUpload.saveRemarksFeedback = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_remarks_feedback")
-      .insert(insertValue).returning("id");
+        .insert(insertValue).returning("id");
 
       if (data == 0) reject(sendApiResult(false, "Not Save"));
       resolve(sendApiResult(true, "Data Saved successfully", data));
@@ -356,7 +356,7 @@ FileUpload.saveRemarksFeedback = function (req) {
   });
 };
 
-FileUpload.uploadFileReamarks =(filename, req) => {
+FileUpload.uploadFileReamarks = (filename, req) => {
   const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
   const folder_name = req.file_for;
   const file_insert_log = {
@@ -515,6 +515,36 @@ FileUpload.getSalesAgentListBySupervisor = function (req) {
   });
 };
 
+FileUpload.getRemarksFeedback = function (req) {
+  const { date } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const remarks_result = await knex("APSISIPDC.cr_remarks_feedback")
+        .leftJoin("APSISIPDC.cr_feedback_file_upload",
+          "cr_feedback_file_upload.id",
+          "cr_remarks_feedback.file_upload_id")
+        .whereRaw(`"cr_feedback_file_upload"."create" >= TO_DATE('${date}', 'YYYY-MM-DD')`)
+        .select(
+          "cr_remarks_feedback.id",
+          "cr_remarks_feedback.remarks_id",
+          "cr_remarks_feedback.remarks_one",
+          "cr_remarks_feedback.remarks_two",
+          "cr_remarks_feedback.remarks_three",
+          "cr_remarks_feedback.status",
+          "cr_remarks_feedback.file_upload_id",
+          "cr_feedback_file_upload.sys_date",
+          "cr_feedback_file_upload.file_for",
+          "cr_feedback_file_upload.file_path",
+          "cr_feedback_file_upload.file_name",
+        );
+      if (remarks_result == 0) reject(sendApiResult(false, "Not found"));
+      resolve(sendApiResult(true, "Data fetched successfully", remarks_result));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 FileUpload.getRetailerListByManufacturerAndSalesagent = function (req) {
   const { manufacturer_id, salesagent_id } = req.params;
 
@@ -650,24 +680,24 @@ FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
       if (data == 0) reject(sendApiResult(false, "Not found."));
       const data_Array = [
         { result: data },
-        { 
-          calculation : 
+        {
+          calculation:
           {
-            total_repayment: total_amount ,
-            total_principal_outstanding: total_principal_outstanding ,
-            total_daily_principal_interest: total_daily_principal_interest ,
-            total_charge: total_charge ,
-            total_other_charge: total_other_charge ,
-            total_outstanding_sum: total_outstanding_sum ,
-            total_overdue_amount: total_overdue_amount ,
-            total_transaction_cost: total_transaction_cost ,
-            total_penal_interest: total_penal_interest ,
-            total_penal_charge: total_penal_charge ,
-            total_processing_fee: total_processing_fee ,
-            total_interest_reimbursment: total_interest_reimbursment 
+            total_repayment: total_amount,
+            total_principal_outstanding: total_principal_outstanding,
+            total_daily_principal_interest: total_daily_principal_interest,
+            total_charge: total_charge,
+            total_other_charge: total_other_charge,
+            total_outstanding_sum: total_outstanding_sum,
+            total_overdue_amount: total_overdue_amount,
+            total_transaction_cost: total_transaction_cost,
+            total_penal_interest: total_penal_interest,
+            total_penal_charge: total_penal_charge,
+            total_processing_fee: total_processing_fee,
+            total_interest_reimbursment: total_interest_reimbursment
           }
         }
-     
+
       ]
       resolve(sendApiResult(true, "Data fetched successfully", data_Array));
     } catch (error) {
