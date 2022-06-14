@@ -331,6 +331,58 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
   });
 };
 
+FileUpload.saveRemarksFeedback = function (req) {
+  const { remarks_id, remarks_one, remarks_two, remarks_three, file_upload_id, created_by } = req.body;
+
+  const insertValue = {
+    remarks_id,
+    remarks_one,
+    remarks_two,
+    remarks_three,
+    created_by,
+    file_upload_id
+  }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_remarks_feedback")
+      .insert(insertValue).returning("id");
+
+      if (data == 0) reject(sendApiResult(false, "Not Save"));
+      resolve(sendApiResult(true, "Data Saved successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.uploadFileReamarks =(filename, req) => {
+  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+  const folder_name = req.file_for;
+  const file_insert_log = {
+    sys_date: new Date(date),
+    file_for: folder_name,
+    file_path: `public/feedback_file/${folder_name}`,
+    file_name: filename,
+    created_by: parseInt(req.user_id)
+  };
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const file_upload = await knex("APSISIPDC.cr_feedback_file_upload").insert(
+        file_insert_log
+      ).returning("id");
+
+      if (file_upload == 0) reject(sendApiResult(false, "Not Upload"));
+      resolve(sendApiResult(true, "file Upload successfully", file_upload));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+
+
+}
+
 FileUpload.getAllManufacturerOfSalesagentUnderSupervisor = function (req) {
   const { supervisor_id } = req.params;
 
@@ -441,6 +493,28 @@ FileUpload.getSalesAgentListByManufacturerAndSupervisor = function (req) {
   });
 };
 
+FileUpload.getSalesAgentListBySupervisor = function (req) {
+  const { supervisor_code } = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const sales_agent = await knex("APSISIPDC.cr_sales_agent")
+        .where("status", "Active")
+        .where("autho_supervisor_employee_code", supervisor_code)
+        .select(
+          "id",
+          "agent_name"
+        );
+
+      console.log(sales_agent);
+      if (sales_agent == 0) reject(sendApiResult(false, "Not found Sales Agent."));
+      resolve(sendApiResult(true, "Data fetched successfully", sales_agent));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 FileUpload.getRetailerListByManufacturerAndSalesagent = function (req) {
   const { manufacturer_id, salesagent_id } = req.params;
 
@@ -463,7 +537,9 @@ FileUpload.getRetailerListByManufacturerAndSalesagent = function (req) {
 };
 
 FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
-  const { salesagent_id, retailer_id } = req.params;
+  const { supervisor_code } = req.params;
+  const { start_date, end_date } = req.query;
+
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -471,9 +547,13 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
         .leftJoin("APSISIPDC.cr_retailer",
           "cr_retailer.id",
           "cr_disbursement.retailer_id")
-        //.where("cr_retailer.status", "Active")
-        .where("sales_agent_id", salesagent_id)
-        .where("retailer_id", retailer_id)
+        .leftJoin("APSISIPDC.cr_sales_agent",
+          "cr_sales_agent.id",
+          "cr_disbursement.sales_agent_id")
+        //.where("cr_disbursement.sales_agent_id", salesagent_id)
+        .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
+        .whereRaw(`"cr_disbursement"."created_at" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_disbursement"."created_at" < TO_DATE('${end_date}', 'YYYY-MM-DD')`)
         .select(
           "cr_disbursement.id",
           "cr_disbursement.retailer_id",
@@ -481,10 +561,115 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
           "cr_disbursement.transaction_fee",
           "cr_retailer.retailer_name",
           "cr_retailer.phone",
-          "cr_retailer.email"
+          "cr_retailer.email",
+          "cr_disbursement.created_at",
+          //(knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`))
+
         );
+      //.knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`);
+      let total_amount = 0;
+      for (let i = 0; i < data.length; i++) {
+        total_amount = total_amount + data[i].disbursement_amount;
+
+      }
       if (data == 0) reject(sendApiResult(false, "Not found."));
-      resolve(sendApiResult(true, "Data fetched successfully", data));
+      const data_Array = [{ data: data }, { total_amount: total_amount }]
+      resolve(sendApiResult(true, "Data fetched successfully", data_Array));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
+  const { supervisor_code } = req.params;
+  const { start_date, end_date } = req.query;
+
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_retailer_loan_calculation")
+        .leftJoin("APSISIPDC.cr_retailer",
+          "cr_retailer.id",
+          "cr_retailer_loan_calculation.retailer_id")
+        .leftJoin("APSISIPDC.cr_sales_agent",
+          "cr_sales_agent.id",
+          "cr_retailer_loan_calculation.sales_agent_id")
+        //.where("cr_disbursement.sales_agent_id", salesagent_id)
+        .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${end_date}', 'YYYY-MM-DD')`)
+        .where("cr_retailer_loan_calculation.transaction_type", "REPAYMENT")
+        .select(
+          "cr_retailer_loan_calculation.id",
+          "cr_retailer_loan_calculation.retailer_id",
+          "cr_retailer_loan_calculation.repayment",
+          "cr_retailer_loan_calculation.principal_outstanding",
+          "cr_retailer_loan_calculation.daily_principal_interest",
+          "cr_retailer_loan_calculation.charge",
+          "cr_retailer_loan_calculation.other_charge",
+          "cr_retailer_loan_calculation.total_outstanding",
+          "cr_retailer_loan_calculation.overdue_amount",
+          "cr_retailer_loan_calculation.transaction_cost",
+          "cr_retailer_loan_calculation.penal_interest",
+          "cr_retailer_loan_calculation.penal_charge",
+          "cr_retailer_loan_calculation.processing_fee",
+          "cr_retailer_loan_calculation.interest_reimbursment",
+          "cr_retailer.retailer_name",
+          "cr_retailer.phone",
+          "cr_retailer.email",
+          "cr_retailer_loan_calculation.created_at"
+        );
+      let total_amount = 0;
+      let total_principal_outstanding = 0;
+      let total_daily_principal_interest = 0;
+      let total_charge = 0;
+      let total_other_charge = 0;
+      let total_outstanding_sum = 0;
+      let total_overdue_amount = 0;
+      let total_transaction_cost = 0;
+      let total_penal_interest = 0;
+      let total_penal_charge = 0;
+      let total_processing_fee = 0;
+      let total_interest_reimbursment = 0;
+
+
+      for (let i = 0; i < data.length; i++) {
+        total_amount = total_amount + data[i].repayment;
+        total_principal_outstanding = total_principal_outstanding + data[i].principal_outstanding;
+        total_daily_principal_interest = total_daily_principal_interest + data[i].principal_outstanding;
+        total_charge = total_charge + data[i].charge;
+        total_other_charge = total_other_charge + data[i].other_charge;
+        total_outstanding_sum = total_outstanding_sum + data[i].total_outstanding;
+        total_overdue_amount = total_overdue_amount + data[i].overdue_amount;
+        total_transaction_cost = total_transaction_cost + data[i].transaction_cost;
+        total_penal_interest = total_penal_interest + data[i].penal_interest;
+        total_penal_charge = total_penal_charge + data[i].penal_charge;
+        total_processing_fee = total_processing_fee + data[i].processing_fee;
+        total_interest_reimbursment = total_interest_reimbursment + data[i].interest_reimbursment;
+      }
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      const data_Array = [
+        { result: data },
+        { 
+          calculation : 
+          {
+            total_repayment: total_amount ,
+            total_principal_outstanding: total_principal_outstanding ,
+            total_daily_principal_interest: total_daily_principal_interest ,
+            total_charge: total_charge ,
+            total_other_charge: total_other_charge ,
+            total_outstanding_sum: total_outstanding_sum ,
+            total_overdue_amount: total_overdue_amount ,
+            total_transaction_cost: total_transaction_cost ,
+            total_penal_interest: total_penal_interest ,
+            total_penal_charge: total_penal_charge ,
+            total_processing_fee: total_processing_fee ,
+            total_interest_reimbursment: total_interest_reimbursment 
+          }
+        }
+     
+      ]
+      resolve(sendApiResult(true, "Data fetched successfully", data_Array));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }

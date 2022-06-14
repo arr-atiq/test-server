@@ -400,6 +400,66 @@ FileUpload.getSalesAgentOperationRegion = function (req) {
   });
 };
 
+FileUpload.getRetailersBySalesAgent = function (req) {
+  const { salesagent_id, distributor_id, manufacturer_id} = req.params;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      // const manufacturer = await knex("APSISIPDC.cr_sales_agent")
+      //   .where("status", "Active")
+      //   .where("id", salesagent_id)
+      //   .select(
+      //     "manufacturer_id"
+      //   );
+      // if (manufacturer == 0) reject(sendApiResult(false, "Not found."));
+
+      //const manufacturer_id = manufacturer[0].manufacturer_id;
+
+      const data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer.id",
+          "cr_retailer_manu_scheme_mapping.retailer_id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_vs_sales_agent",
+          "cr_retailer_vs_sales_agent.manufacture_id",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_disbursement",
+          "cr_disbursement.sales_agent_id",
+          "cr_retailer_vs_sales_agent.sales_agent_id"
+        )
+        .where("cr_retailer.status", "Active")
+        .where("cr_retailer_manu_scheme_mapping.status", "Active")
+        .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+        .where("cr_retailer_manu_scheme_mapping.manufacturer_id", distributor_id)
+        .where("cr_retailer_vs_sales_agent.sales_agent_id", salesagent_id)
+        .where("cr_disbursement.sales_agent_id", salesagent_id)
+        .where("cr_disbursement.retailer_id", retailer_id)
+        .whereBetween("cr_disbursement.created_at",[start_date, end_date])
+        .select(
+          "cr_retailer.id",
+          "cr_retailer.retailer_name",
+          "cr_retailer.retailer_code",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_disbursement.salesagent_id",
+          "cr_disbursement.create_at"
+        );
+
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+
+
+
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 FileUpload.getRetailersByRegionOperation = function (req) {
   const { salesagent_id } = req.params;
   const { region_of_operation } = req.query;
@@ -481,7 +541,10 @@ FileUpload.getRetailerbySalesAgent = function (req) {
           "cr_retailer.retailer_name",
           "cr_retailer.retailer_code",
           "cr_retailer_vs_sales_agent.sales_agent_id",
-          "cr_retailer_manu_scheme_mapping.ac_number_1rmn"
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer_manu_scheme_mapping.ac_number_1rmn",
+          "cr_retailer_manu_scheme_mapping.processing_fee",
+          "cr_retailer_manu_scheme_mapping.crm_approve_limit",
         );
 
       if (data == 0) reject(sendApiResult(false, "Not found."));
