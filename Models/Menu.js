@@ -225,20 +225,19 @@ Menu.addMenuAccess = function (req, res) {
   return new Promise(async (resolve, reject) => {
     try {
       if(Object.keys(req.menu_ids).length !== 0) {
+      let menu_access_update = await knex("APSISIPDC.cr_menu_access")
+                          .whereIn("menu_id", req.menu_ids)
+                          .where('status', 'Active')
+                          .update({
+                            status: 'Inactive',
+                            updated_by: req.created_by,
+                            updated_at: new Date()
+                          });
+
         let menuInsertLogUserLevel = true, menuInsertLogUser = true;
         if(Object.keys(req.user_level_ids).length !== 0) {
           let accessInsertLog = [];
           for (let [key, value] of Object.entries(req.user_level_ids)) {
-            let menu_access_update = await knex("APSISIPDC.cr_menu_access")                    
-                    .where("user_role_id", value)
-                    .whereIn("menu_id", req.menu_ids)
-                    .where('status', 'Active')
-                    .update({
-                      status: 'Inactive',
-                      updated_by: req.created_by,
-                      updated_at: new Date()
-                    });
-
             for (let [index, menu] of Object.entries(req.menu_ids)) {              
               let tempLog = {
                 menu_id : parseInt(menu),
@@ -255,16 +254,6 @@ Menu.addMenuAccess = function (req, res) {
         if(Object.keys(req.user_ids).length !== 0) {
           let accessInsertLog = [];
           for (let [key, value] of Object.entries(req.user_ids)) {
-            let menu_access_update = await knex("APSISIPDC.cr_menu_access")                    
-                    .where("user_id", value)
-                    .whereIn("menu_id", req.menu_ids)
-                    .where('status', 'Active')
-                    .update({
-                      status: 'Inactive',
-                      updated_by: req.created_by,
-                      updated_at: new Date()
-                    });
-
             for (let [index, menu] of Object.entries(req.menu_ids)) {
               let tempLog = {
                 menu_id : parseInt(menu),
