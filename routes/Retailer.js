@@ -15,6 +15,7 @@ router.get("/retailer/:retailer_id", retailer.getRetailerDetailsById);
 router.put("/updateLimit/:rmnID", retailer.updateLimit);
 router.get("/retailer-monthly-report", retailer.generateRetailersMonthlyReport);
 
+router.post("/retailer-upload-list", retailer.retailerUploadList);
 
 router.post(
     "/upload-retailer-ekyc-data",
@@ -27,5 +28,7 @@ router.post(
     uploadDynBulkFile.single("file"),
     retailer.uploadRetailerCibFile
 );
+
+router.post("/eligible-retailer-list-download", retailer.eligibleRetailerListDownload);
 
 module.exports = router;

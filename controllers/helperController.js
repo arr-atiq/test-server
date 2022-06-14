@@ -679,5 +679,8 @@ exports.duplication_manufacturer = async function (reg_no) {
   const duplication_check_val = data.length;
   console.log(duplication_check_val);
   await duplication_check_val;
-
 };
+
+exports.timeout = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
