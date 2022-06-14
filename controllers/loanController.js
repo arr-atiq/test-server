@@ -828,10 +828,10 @@ var getSlabAmount =async (repayment , days) => {
   return await knex
   .from("APSISIPDC.cr_slab")
   .select()
-  .where("lower_limit","<", repayment)
-  .where("upper_limit",">", repayment)
-  .where("day_dis_lower_limit","<", days)
-  .where("day_dis_upper_limit",">", days)
+  .where("lower_limit","<=", repayment)
+  .where("upper_limit",">=", repayment)
+  .where("day_dis_lower_limit","<=", days)
+  .where("day_dis_upper_limit",">=", days)
 
 
 }
