@@ -13,7 +13,7 @@ router.put("/schema", retailer.updateSchemaByRetailers);
 router.get("/rn_rmn_mapping/:retailer_id", retailer.getRnRmnMappingById);
 router.get("/retailer/:retailer_id", retailer.getRetailerDetailsById);
 router.put("/updateLimit/:rmnID", retailer.updateLimit);
-
+router.post("/retailer-upload-list", retailer.retailerUploadList);
 
 router.post(
     "/upload-retailer-ekyc-data",
@@ -26,5 +26,7 @@ router.post(
     uploadDynBulkFile.single("file"),
     retailer.uploadRetailerCibFile
 );
+
+router.post("/eligible-retailer-list-download", retailer.eligibleRetailerListDownload);
 
 module.exports = router;

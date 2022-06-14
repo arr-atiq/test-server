@@ -1,7 +1,8 @@
 const moment = require("moment");
-
+const excel = require('excel4node');
+const fs = require('fs');
 const { getJsDateFromExcel } = require("excel-date-to-js");
-const {sendApiResult, ValidateNID } = require("../controllers/helperController");
+const {sendApiResult, ValidateNID, timeout} = require("../controllers/helperController");
 const knex = require("../config/database");
 const { getSchemeDetailsById } = require("../controllers/scheme");
 const { creditLimit } = require("../controllers/credit_limit");
@@ -117,7 +118,6 @@ Retailer.insertExcelData = function (rows, filename, req) {
 
 Retailer.getRetailerList = function (req) {
   const { page, per_page } = req.query;
-
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_retailer")
@@ -1151,5 +1151,188 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
     console.log(error, 'Promise error');
   });
 };
+
+Retailer.retailerUploadList = function (req) {
+  const { page, per_page } = req.query;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_retailer_upload_log")
+        .whereNot("cr_retailer_upload_log.retailer_upload_id", null)
+        .where("cr_retailer_upload_log.file_for", "retailer_onboarding")
+        .select(
+          "cr_retailer_upload_log.retailer_upload_id",
+          knex.raw('TO_CHAR("cr_retailer_upload_log"."bulk_upload_date", \'YYYY-MM-DD\') AS bulk_upload_date'),
+          knex.raw(`CASE "cr_retailer_upload_log"."eligibility_check_status" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "eligibility_check"`),
+          "cr_retailer_upload_log.eligibility_check_status",
+          "cr_retailer_upload_log.file_path",
+          "cr_retailer_upload_log.file_name",
+          "cr_retailer_upload_log.file_found_rows",
+          "cr_retailer_upload_log.file_upload_rows",
+          "cr_retailer_upload_log.count_eligibility",
+          "cr_retailer_upload_log.count_ineligible",
+          "cr_users.name AS uploaded_by"
+        )
+        .innerJoin(
+          "APSISIPDC.cr_users",
+          "cr_users.id",          
+          "cr_retailer_upload_log.created_by"
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Retailer Upload List fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+Retailer.eligibleRetailerListDownload = function (req) {
+	return new Promise(async (resolve, reject) => {
+		const result = await knex("APSISIPDC.cr_retailer")                  
+                  .where("cr_retailer.retailer_upload_id", req.retailer_upload_id)
+                  .select(
+                    "cr_retailer.retailer_name", 
+                    "cr_retailer.retailer_nid", 	
+                    "cr_retailer.phone",
+                    "cr_retailer.retailer_code",
+                    "cr_retailer_type.name AS type_name", 
+                    "cr_retailer_type_entity.name AS entity_name",
+                    "cr_retailer.ac_number_1rn", 
+                    "cr_retailer.retailer_tin",
+                    "cr_retailer.corporate_registration_no", 
+                    "cr_retailer.trade_license_no", 
+                    "cr_retailer.outlet_address", 
+                    "cr_retailer.autho_rep_full_name", 
+                    "cr_retailer.autho_rep_phone", 
+                    "cr_retailer.autho_rep_nid",  
+                    "cr_retailer.duration_sales_data",
+                    knex.raw(`CASE "cr_retailer"."kyc_status" WHEN NULL THEN 'N/A' WHEN 0 THEN 'Failed' WHEN 1 THEN 'Success' END AS "kyc_status"`),
+                    knex.raw(`CASE "cr_retailer"."cib_status" WHEN NULL THEN 'N/A' WHEN 0 THEN 'Failed' WHEN 1 THEN 'Success' END AS "cib_status"`),
+                    "cr_retailer.activation_status AS status"
+                  )
+                  .innerJoin(
+                    "APSISIPDC.cr_retailer_type",
+                    "cr_retailer_type.id",          
+                    "cr_retailer.retailer_type"
+                  )
+                  .innerJoin(
+                    "APSISIPDC.cr_retailer_type_entity",
+                    "cr_retailer_type_entity.id",          
+                    "cr_retailer.type_of_entity"
+                  );
+		if(result.length == 0){
+			reject(sendApiResult(false, "No eKYC Outlet Found."));
+		} else {
+			const today = moment(new Date()).format('YYYY-MM-DD');
+			var workbook = new excel.Workbook();
+			var worksheet = workbook.addWorksheet("Eligible Retailer List (" + today + ")");
+			var headerStyle = workbook.createStyle({
+				fill: {
+					type: "pattern",
+					patternType: "solid",
+					bgColor: "#E1F0FF",
+					fgColor: "#E1F0FF"
+				},
+				font: {
+					color: "#000000",
+					size: "10",
+					bold: true
+				}
+			});
+			
+			var headers = [
+				"Sr.",
+				"Retailer Name", 
+        "Retailer NID", 	
+        "Retailer Phone", 	
+        "Retailer Code", 	
+        "Retailer Type", 	
+        "Retailer Entity Type",
+        "Retailer 1RN",
+        "Retailer TIN",
+        "Corporate Registration No", 
+        "Trade License No", 
+        "Outlet Address", 
+        "Name of Authorized Representative", 
+        "Phone No of Authorized Representative", 	
+        "NID No of Authorized Representative", 		
+        "Duration Sales Data",
+        "KYC Status",
+        "CIB Status",
+        "Status"
+			];
+			
+			var col = 1;
+			var row = 1;
+			var col_add = 0;
+			
+			headers.forEach((e) => {
+				worksheet
+					.cell(row, col + col_add)
+					.string(e)
+					.style(headerStyle);
+				col_add++;
+			});
+			
+			row = 2;
+			for (let i = 0; i < result.length; i++) {
+				var col_add = 0;
+				let e = result[i];
+				worksheet.cell(row, col + col_add).number((i+1));
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).number(e.retailer_nid ? e.retailer_nid : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.retailer_code ? e.retailer_code : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.type_name ? e.type_name : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.entity_name ? e.entity_name : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.ac_number_1rn ? e.ac_number_1rn : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).number(e.retailer_tin ? e.retailer_tin : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.corporate_registration_no ? e.corporate_registration_no : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.trade_license_no ? e.trade_license_no : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.outlet_address ? e.outlet_address : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : ""); 
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).number(e.autho_rep_nid ? e.autho_rep_nid : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.duration_sales_data ? e.duration_sales_data : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.kyc_status ? e.kyc_status : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.cib_status ? e.cib_status : "");
+				col_add++;
+				worksheet.cell(row, col + col_add).string(e.status ? e.status : "");
+				col_add++;
+				row++;
+			}
+			const file_path = 'public/retailer/';
+			if (!fs.existsSync(file_path)){
+				fs.mkdirSync(file_path, { recursive: true });
+			}
+			workbook.write(file_path + "Eligible Retailer List ("+today+").xlsx");
+			const fileName = "download/retailer/Eligible Retailer List ("+today+").xlsx";
+			await timeout(1500);
+			resolve(sendApiResult(true, "Eligible Retailer List Download", fileName));
+		}
+	})
+}
 
 module.exports = Retailer;
