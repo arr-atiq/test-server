@@ -332,14 +332,15 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
 };
 
 FileUpload.saveRemarksFeedback = function (req) {
-  const { remarks_id, remarks_one, remarks_two, remarks_three, created_by } = req.body;
+  const { remarks_id, remarks_one, remarks_two, remarks_three, file_upload_id, created_by } = req.body;
 
   const insertValue = {
     remarks_id,
     remarks_one,
     remarks_two,
     remarks_three,
-    created_by
+    created_by,
+    file_upload_id
   }
 
   return new Promise(async (resolve, reject) => {
@@ -370,7 +371,7 @@ FileUpload.uploadFileReamarks =(filename, req) => {
     try {
       const file_upload = await knex("APSISIPDC.cr_feedback_file_upload").insert(
         file_insert_log
-      ).returning("file_path");
+      ).returning("id");
 
       if (file_upload == 0) reject(sendApiResult(false, "Not Upload"));
       resolve(sendApiResult(true, "file Upload successfully", file_upload));
