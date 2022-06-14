@@ -335,7 +335,6 @@ FileUpload.saveRemarksFeedback = function (req) {
   const { remarks_id, remarks_one, remarks_two, remarks_three, file_upload_id, created_by } = req.body;
 
   const insertValue = {
-    remarks_id,
     remarks_one,
     remarks_two,
     remarks_three,
@@ -343,12 +342,27 @@ FileUpload.saveRemarksFeedback = function (req) {
     file_upload_id
   }
 
+  const remarks_loan_cal_idsArr = remarks_id.split(",");
+  console.log(remarks_loan_cal_idsArr);
+
   return new Promise(async (resolve, reject) => {
     try {
-      const data = await knex("APSISIPDC.cr_remarks_feedback")
+      const cr_remarks_feedback_id = await knex("APSISIPDC.cr_remarks_feedback")
         .insert(insertValue).returning("id");
 
-      if (data == 0) reject(sendApiResult(false, "Not Save"));
+      if (cr_remarks_feedback_id == 0) reject(sendApiResult(false, "Not Save"));
+
+      // for (let i = 0; i < remarks_loan_cal_idsArr.length; i++) {
+          const value1 =  cr_remarks_feedback_id;
+          var value2 = remarks_loan_cal_idsArr[0];
+
+     
+      // }
+
+
+         await knex("APSISIPDC.cr_remarks_loan_calculation_ids")
+          .insert({value1,value2});
+
       resolve(sendApiResult(true, "Data Saved successfully", data));
     } catch (error) {
       reject(sendApiResult(false, error.message));
@@ -539,7 +553,40 @@ FileUpload.getRemarksFeedback = function (req) {
           "cr_feedback_file_upload.file_name",
         );
       if (remarks_result == 0) reject(sendApiResult(false, "Not found"));
-      resolve(sendApiResult(true, "Data fetched successfully", remarks_result));
+
+      let loan_calculation_ids = [];
+
+      for (let i = 0; i < remarks_result.length; i++) {
+        let loan_calculation_id = remarks_result[i].remarks_id.split(",");
+        loan_calculation_ids.push(loan_calculation_id);
+      }
+
+      console.log(loan_calculation_ids);
+      let loan_details_array = [];
+      var loan_calculation_id_arr = [];
+
+      for (let i = 0; i < loan_calculation_ids.length; i++) {
+
+      }
+      const loan_calculation_data = await knex("APSISIPDC.cr_retailer_loan_calculation")
+        .leftJoin("APSISIPDC.cr_retailer",
+          "cr_retailer.id",
+          "cr_retailer_loan_calculation.retailer_id")
+        .where("cr_retailer_loan_calculation.id", loan_calculation_id_arr[i])
+        .select("cr_retailer_loan_calculation.id",
+          "cr_retailer_loan_calculation.principal_outstanding",
+          "cr_retailer_loan_calculation.transaction_cost",
+          "cr_retailer_loan_calculation.charge",
+          "cr_retailer_loan_calculation.other_charge",
+          "cr_retailer_loan_calculation.processing_fee",
+          "cr_retailer.retailer_name",
+          "cr_retailer.retailer_code");
+
+      console.log(loan_calculation_data);
+
+      loan_details_array.push(loan_calculation_data);
+
+      resolve(sendApiResult(true, "Data fetched successfully", { remarks_result, loan_details_array }));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
