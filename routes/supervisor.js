@@ -1,7 +1,12 @@
 const express = require("express");
 
 const router = express.Router();
+const multer = require("multer");
 const supervisor = require("../controllers/supervisor");
+const { uploadDynamicBulkConfig } = require("../controllers/helper");
+const uploadDynBulkFile = multer({ storage: uploadDynamicBulkConfig("file") });
+const { uploadConfig } = require("../controllers/helper");
+const uploadFile = multer({ storage: uploadConfig("file") });
 
 router.get("/supervisors", supervisor.getSupervisorList);
 router.get("/manufacturers/:supervisor_id", supervisor.getAllManufacturerForSupervisor);
@@ -17,6 +22,15 @@ router.get("/unuploaded-supervisor-data", supervisor.generateSupervisorUnuploade
 router.get("/invalidated-supervisor-data", supervisor.generateSupervisorInvalidatedReport);
 //12/6/2022
 router.get("/salesagents/:supervisor_code", supervisor.getSalesAgentListBySupervisor);
+router.post(
+    "/remarks-feedback",
+    supervisor.saveRemarksFeedback
+);
 
+router.post(
+    "/upload-remarks_feedback",
+    uploadFile.single("file"),
+    supervisor.uploadFileReamarks
+);
 
 module.exports = router;
