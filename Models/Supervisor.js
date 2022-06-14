@@ -331,6 +331,57 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
   });
 };
 
+FileUpload.saveRemarksFeedback = function (req) {
+  const { remarks_id, remarks_one, remarks_two, remarks_three, created_by } = req.body;
+
+  const insertValue = {
+    remarks_id,
+    remarks_one,
+    remarks_two,
+    remarks_three,
+    created_by
+  }
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_remarks_feedback")
+      .insert(insertValue).returning("id");
+
+      if (data == 0) reject(sendApiResult(false, "Not Save"));
+      resolve(sendApiResult(true, "Data Saved successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.uploadFileReamarks =(filename, req) => {
+  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+  const folder_name = req.file_for;
+  const file_insert_log = {
+    sys_date: new Date(date),
+    file_for: folder_name,
+    file_path: `public/feedback_file/${folder_name}`,
+    file_name: filename,
+    created_by: parseInt(req.user_id)
+  };
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const file_upload = await knex("APSISIPDC.cr_feedback_file_upload").insert(
+        file_insert_log
+      ).returning("file_path");
+
+      if (file_upload == 0) reject(sendApiResult(false, "Not Upload"));
+      resolve(sendApiResult(true, "file Upload successfully", file_upload));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+
+
+}
+
 FileUpload.getAllManufacturerOfSalesagentUnderSupervisor = function (req) {
   const { supervisor_id } = req.params;
 

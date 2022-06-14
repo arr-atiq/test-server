@@ -61,7 +61,7 @@ User.getDashboard = function (req, res) {
       const todaydate = moment().subtract(0, 'months').format('YYYY-MM-DD');
       const currentMonthStartDate = moment().subtract(0, 'months').startOf('month').format('YYYY-MM-DD');
 
-      const previousMonthEndDate = moment().subtract(1, 'months').format('YYYY-MM-DD');
+      const previousMonthEndDate = moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD');
       const previousMonthStartDate = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD');
 
       const total_retailers_count_current_month = await knex("APSISIPDC.cr_retailer")

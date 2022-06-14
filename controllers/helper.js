@@ -616,6 +616,24 @@ exports.uploadDynamicBulkConfig = function (name) {
   return storage;
 };
 
+exports.uploadConfig = function (name) {
+  const max = 100;
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const folder_name = req.body.file_for;
+      const path = `./public/feedback_file/${folder_name}`;
+      fs.mkdirSync(path, { recursive: true });
+      cb(null, path);
+    },
+    filename: (req, file, cb) => {
+      if (typeof file !== undefined) {
+        cb(null, `${file.fieldname}-${Date.now()}-${file.originalname}`);
+      }
+    },
+  });
+  return storage;
+};
+
 exports.decodeToken = async (token) => {
   const decoded = jwt.verify(token, process.env.JWT_SECRET);
   return decoded.userData.id;

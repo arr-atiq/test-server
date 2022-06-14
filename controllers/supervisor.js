@@ -36,6 +36,21 @@ const importExcelData2DB = async function (filename, req) {
   }
 };
 
+exports.uploadFileReamarks = async (req, res) => {
+  req.body.user_id = req.user_id;
+  const upload = await superModel.uploadFileReamarks(req.file.filename, req.body);
+  res.status(200).send(upload);
+};
+
+exports.saveRemarksFeedback = async (req, res) => {
+  try {
+    const result = await superModel.saveRemarksFeedback(req);
+    res.status(200).send(result)
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 // @ Arfin
 
 exports.getSupervisorList = async (req, res) => {
@@ -148,7 +163,7 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
         "region_of_operation",
         "distributor_id"
       );
-      console.log(limit_data);
+    console.log(limit_data);
     const headers = [
       "Sr.",
       "Supervisor_Name",
@@ -186,33 +201,33 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
     });
     row++;
     for (let i = 0; i < limit_data.length; i++) {
-    	var col_add = 0;
-    	let e = limit_data[i];
-    	worksheet.cell(row, col + col_add).number(i + 1);
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.supervisor_name ? e.supervisor_name : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.number(e.supervisor_nid ? e.supervisor_nid : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.phone ? e.phone : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
-    	col_add++;
-    	// worksheet.cell(row, col + col_add).number(0);
-    	// col_add++;
-    	row++;
+      var col_add = 0;
+      let e = limit_data[i];
+      worksheet.cell(row, col + col_add).number(i + 1);
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.supervisor_name ? e.supervisor_name : "");
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .number(e.supervisor_nid ? e.supervisor_nid : "");
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.phone ? e.phone : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
+      col_add++;
+      // worksheet.cell(row, col + col_add).number(0);
+      // col_add++;
+      row++;
     }
     await workbook.write("public/unupload_report/supervisorUnuploadedDataDownload.xlsx");
     const fileName = "./unupload_report/supervisorUnuploadedDataDownload.xlsx";
@@ -274,33 +289,33 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
     });
     row++;
     for (let i = 0; i < limit_data.length; i++) {
-    	var col_add = 0;
-    	let e = limit_data[i];
-    	worksheet.cell(row, col + col_add).number(i + 1);
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.supervisor_name ? e.supervisor_name : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.number(e.supervisor_nid ? e.supervisor_nid : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.phone ? e.phone : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
-    	col_add++;
-    	// worksheet.cell(row, col + col_add).number(0);
-    	// col_add++;
-    	row++;
+      var col_add = 0;
+      let e = limit_data[i];
+      worksheet.cell(row, col + col_add).number(i + 1);
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.supervisor_name ? e.supervisor_name : "");
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .number(e.supervisor_nid ? e.supervisor_nid : "");
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.phone ? e.phone : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
+      col_add++;
+      // worksheet.cell(row, col + col_add).number(0);
+      // col_add++;
+      row++;
     }
     await workbook.write("public/unupload_report/supervisorInvalidateDataDownload.xlsx");
     const fileName = "./unupload_report/supervisorInvalidateDataDownload.xlsx";
