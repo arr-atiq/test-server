@@ -162,7 +162,6 @@ const uploadRetailerCibFile = async function (filename, req) {
   }
 };
 
-<<<<<<< HEAD
 exports.generateRetailersMonthlyReport = async (req, res) => {
 
   const { month, distributor_id, manufacturer_id, district } = req.query;
@@ -188,8 +187,8 @@ exports.generateRetailersMonthlyReport = async (req, res) => {
         "cr_retailer.id",
         "cr_retailer_loan_calculation.retailer_id"
       )
-      .where(function(){
-        if(district){
+      .where(function () {
+        if (district) {
           this.where("cr_retailer.district", district)
         }
       })
@@ -291,22 +290,21 @@ exports.generateRetailersMonthlyReport = async (req, res) => {
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
-=======
-exports.retailerUploadList = async (req, res) => {
-  try {
-    const result = await model.retailerUploadList(req);
-    res.status(200).send(result);
-  } catch (error) {
-    res.send(sendApiResult(false, error.message));
-  }
-};
+}
+  exports.retailerUploadList = async (req, res) => {
+    try {
+      const result = await model.retailerUploadList(req);
+      res.status(200).send(result);
+    } catch (error) {
+      res.send(sendApiResult(false, error.message));
+    }
+  };
 
-exports.eligibleRetailerListDownload = async (req, res) => {
-	try {
-		const result = await model.eligibleRetailerListDownload(req.body);
-		res.status(200).send(result);
-	} catch (error) {
-		res.send(sendApiResult(false, error.message));
-	}
->>>>>>> 6e8594d32ae0b841416d15e13c9037cb2a74c66c
-};
+  exports.eligibleRetailerListDownload = async (req, res) => {
+    try {
+      const result = await model.eligibleRetailerListDownload(req.body);
+      res.status(200).send(result);
+    } catch (error) {
+      res.send(sendApiResult(false, error.message));
+    }
+  };
