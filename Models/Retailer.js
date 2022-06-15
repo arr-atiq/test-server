@@ -1342,8 +1342,8 @@ Retailer.retailerListExcelDownload = function (req) {
 			if (!fs.existsSync(file_path)){
 				fs.mkdirSync(file_path, { recursive: true });
 			}
-			workbook.write(file_path + (req.download_for).toUpperCase() + " Retailer List (" + today + ").xlsx");
-			const fileName = "retailer/" + (req.download_for).toUpperCase() + " Retailer List (" + today + ").xlsx";
+			workbook.write(file_path + (req.download_for).toUpperCase() + " Retailer List ("+today+").xlsx");
+			const fileName = "retailer/" + (req.download_for).toUpperCase() + " Retailer List ("+today+").xlsx";
 			await timeout(1500);
 			resolve(sendApiResult(true, (req.download_for).toUpperCase() +" Retailer List Download", fileName));
 		}
