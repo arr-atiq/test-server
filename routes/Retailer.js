@@ -29,6 +29,6 @@ router.post(
     retailer.uploadRetailerCibFile
 );
 
-router.post("/eligible-retailer-list-download", retailer.eligibleRetailerListDownload);
+router.post("/retailer-list-excel-download", retailer.retailerListExcelDownload);
 
 module.exports = router;

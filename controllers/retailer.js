@@ -300,9 +300,9 @@ exports.generateRetailersMonthlyReport = async (req, res) => {
     }
   };
 
-  exports.eligibleRetailerListDownload = async (req, res) => {
+  exports.retailerListExcelDownload = async (req, res) => {
     try {
-      const result = await model.eligibleRetailerListDownload(req.body);
+      const result = await model.retailerListExcelDownload(req.body);
       res.status(200).send(result);
     } catch (error) {
       res.send(sendApiResult(false, error.message));
