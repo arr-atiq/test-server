@@ -61,24 +61,24 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const agent_distributor_id = rows[index].Distributor;
               const autho_manufacturer_id = rows[index].Manufacturer;
 
-              const check_exist_manu_dis_sup = await knex("APSISIPDC.cr_sales_agent")
-                .innerJoin(
-                  "APSISIPDC.cr_supervisor",
-                  "cr_supervisor.supervisor_employee_code",
-                  "cr_sales_agent.autho_supervisor_employee_code"
-                )
-                .where(
-                  "cr_sales_agent.distributor_id", agent_distributor_id
-                )
+              const check_exist_manu_dis_sup = await knex("APSISIPDC.cr_supervisor")
+                // .innerJoin(
+                //   "APSISIPDC.cr_supervisor",
+                //   "cr_supervisor.supervisor_employee_code",
+                //   "cr_sales_agent.autho_supervisor_employee_code"
+                // )
+                // .where(
+                //   "cr_sales_agent.distributor_id", agent_distributor_id
+                // )
                 .where(
                   "cr_supervisor.distributor_id", agent_distributor_id
                 )
                 .where(
                   "cr_supervisor.supervisor_employee_code", autho_supervisor_code
                 )
-                .where(
-                  "cr_sales_agent.manufacturer_id", autho_manufacturer_id
-                )
+                // .where(
+                //   "cr_sales_agent.manufacturer_id", autho_manufacturer_id
+                // )
                 .where(
                   "cr_supervisor.manufacturer_id", autho_manufacturer_id
                 )

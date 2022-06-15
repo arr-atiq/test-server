@@ -140,7 +140,9 @@ Retailer.getRetailerList = function (req) {
           "division",
           "autho_rep_full_name",
           "autho_rep_phone",
-          "region_operation"
+          "region_operation",
+          "kyc_status",
+          "cib_status"
         )
         .paginate({
           perPage: per_page,
@@ -1191,10 +1193,22 @@ Retailer.retailerUploadList = function (req) {
   });
 };
 
-Retailer.eligibleRetailerListDownload = function (req) {
+Retailer.retailerListExcelDownload = function (req) {
 	return new Promise(async (resolve, reject) => {
-		const result = await knex("APSISIPDC.cr_retailer")                  
-                  .where("cr_retailer.retailer_upload_id", req.retailer_upload_id)
+		const result = await knex("APSISIPDC.cr_retailer")
+                  .where(function(){
+                    this.where("cr_retailer.retailer_upload_id", req.retailer_upload_id);
+                    if(req.download_for == 'eligible'){
+                      this.whereIn("cr_retailer.kyc_status", [null, 0, 1]);
+                      this.whereIn("cr_retailer.cib_status", [null, 0, 1]);
+                    }
+                    if(req.download_for == 'kyc'){
+                      this.where("cr_retailer.kyc_status", 1);
+                    }
+                    if(req.download_for == 'cib'){
+                      this.where("cr_retailer.cib_status", 1);
+                    }
+                  })
                   .select(
                     "cr_retailer.retailer_name", 
                     "cr_retailer.retailer_nid", 	
@@ -1225,12 +1239,13 @@ Retailer.eligibleRetailerListDownload = function (req) {
                     "cr_retailer_type_entity.id",          
                     "cr_retailer.type_of_entity"
                   );
+
 		if(result.length == 0){
-			reject(sendApiResult(false, "No eKYC Outlet Found."));
+			reject(sendApiResult(false, "No " + (req.download_for).toUpperCase() + " Retailer list Found."));
 		} else {
 			const today = moment(new Date()).format('YYYY-MM-DD');
-			var workbook = new excel.Workbook();
-			var worksheet = workbook.addWorksheet("Eligible Retailer List (" + today + ")");
+			var workbook = new excel.Workbook();			
+			var worksheet = workbook.addWorksheet((req.download_for).toUpperCase() + " Retailer List");
 			var headerStyle = workbook.createStyle({
 				fill: {
 					type: "pattern",
@@ -1247,20 +1262,20 @@ Retailer.eligibleRetailerListDownload = function (req) {
 			
 			var headers = [
 				"Sr.",
-				"Retailer Name", 
-        "Retailer NID", 	
-        "Retailer Phone", 	
-        "Retailer Code", 	
-        "Retailer Type", 	
+				"Retailer Name",
+        "Retailer NID",
+        "Retailer Phone",
+        "Retailer Code",
+        "Retailer Type",
         "Retailer Entity Type",
         "Retailer 1RN",
         "Retailer TIN",
-        "Corporate Registration No", 
-        "Trade License No", 
-        "Outlet Address", 
-        "Name of Authorized Representative", 
-        "Phone No of Authorized Representative", 	
-        "NID No of Authorized Representative", 		
+        "Corporate Registration No",
+        "Trade License No",
+        "Outlet Address",
+        "Name of Authorized Representative",
+        "Phone No of Authorized Representative",
+        "NID No of Authorized Representative",
         "Duration Sales Data",
         "KYC Status",
         "CIB Status",
@@ -1327,10 +1342,10 @@ Retailer.eligibleRetailerListDownload = function (req) {
 			if (!fs.existsSync(file_path)){
 				fs.mkdirSync(file_path, { recursive: true });
 			}
-			workbook.write(file_path + "Eligible Retailer List ("+today+").xlsx");
-			const fileName = "retailer/Eligible Retailer List ("+today+").xlsx";
+			workbook.write(file_path + (req.download_for).toUpperCase() + " Retailer List (" + today + ").xlsx");
+			const fileName = "retailer/" + (req.download_for).toUpperCase() + " Retailer List (" + today + ").xlsx";
 			await timeout(1500);
-			resolve(sendApiResult(true, "Eligible Retailer List Download", fileName));
+			resolve(sendApiResult(true, (req.download_for).toUpperCase() +" Retailer List Download", fileName));
 		}
 	})
 }
