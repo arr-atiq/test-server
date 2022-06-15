@@ -28,6 +28,7 @@ const { PORT, NODE_ENV } = process.env;
 
 const app = express();
 app.use(express.static(`${__dirname}/public`));
+app.use(express.static(__dirname + '/' + 'retailer'));
 app.use(cors());
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin","*"); 
