@@ -308,7 +308,6 @@ exports.disbursement = async (req, res) => {
 exports.repayment = async (req, res) => {
   let {retailer_id , onermn_acc  , sales_agent_id , repayment , transaction_cost} = req.body
   // let transaction_cost = transaction_cost_value;
-
  
   const findSalesAgent =await findSalesrelation(sales_agent_id , retailer_id)
   const firstRepaymentID =await getfirstRepaymentID(onermn_acc)
@@ -318,6 +317,7 @@ exports.repayment = async (req, res) => {
   const getSlabDateValue = await getSlabDate(onermn_acc)
   const dateSlab = getSlabDateValue?.created_at
   var getSchemeId =await getSchemeID(onermn_acc)
+
   var SchemeValue;
   if(getSchemeId){
     SchemeValue =await getSchemeValue(getSchemeId[0]?.scheme_id)
@@ -401,9 +401,9 @@ console.log('principalAmount?.total_outstanding',principalAmount?.total_outstand
         // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(transactionCost).then(async ()=>{
           console.log('firstRepaymentID',firstRepaymentID)
           console.log('response',response)
-
+          if(firstRepaymentID){
           var interest =await findRepaymentInterest(onermn_acc , parseInt(firstRepaymentID?.id) , parseInt(response[0]))
-          // console.log('interest',interest)
+          console.log('interestinterestinterest',interest)
           if(interest?.length > 0){
             let sumofReimbursement = interest.reduce(function (accumulator, curValue) {
               return parseFloat(accumulator) + parseFloat(curValue.interest_reimbursment)
@@ -468,7 +468,7 @@ console.log('principalAmount?.total_outstanding',principalAmount?.total_outstand
               }
               });
             }
-         
+          }
 
           // let sumOfother_charge= allRepayment.reduce(function (accumulator, curValue) {
           //   return parseFloat(accumulator) + parseFloat(curValue.other_charge:)
