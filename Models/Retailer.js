@@ -1328,7 +1328,7 @@ Retailer.eligibleRetailerListDownload = function (req) {
 				fs.mkdirSync(file_path, { recursive: true });
 			}
 			workbook.write(file_path + "Eligible Retailer List ("+today+").xlsx");
-			const fileName = "download/retailer/Eligible Retailer List ("+today+").xlsx";
+			const fileName = "public/retailer/Eligible Retailer List ("+today+").xlsx";
 			await timeout(1500);
 			resolve(sendApiResult(true, "Eligible Retailer List Download", fileName));
 		}
