@@ -140,7 +140,9 @@ Retailer.getRetailerList = function (req) {
           "division",
           "autho_rep_full_name",
           "autho_rep_phone",
-          "region_operation"
+          "region_operation",
+          "kyc_status",
+          "cib_status"
         )
         .paginate({
           perPage: per_page,
