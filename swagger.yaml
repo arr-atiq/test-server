@@ -975,6 +975,60 @@ paths:
           description: User List Fetched Successfully
         '400':
           description: Failed to get
+  /retailer/retailer-upload-list/:
+    post:
+      tags:
+        - Retailer
+      summary: Retailer Upload List fetched successfully
+      description: This api will give data in paginated format /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: query
+          name: limit
+          required: true
+        - in: query
+          name: page
+          required: true          
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Retailer Upload List fetched successfully 
+        '403':
+          description: Forbidden
+          description: User List Fetched Successfully
+        '400':
+          description: Failed to get
+  /retailer/retailer-list-excel-download/:
+    post:
+      tags:
+        - Retailer
+      summary: Retailer List Download
+      description: This api will give data excel /* limit & page */
+      parameters:
+        - in: header
+          name: bearertoken
+          description: Bearer token
+          required: true
+        - in: body
+          name: retailer_upload_id, download_for
+          description: Excel download Payload
+          required: true
+          schema:
+            $ref: '#/definitions/RetailerListExcelDownload' 
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: Retailer Upload List fetched successfully 
+        '403':
+          description: Forbidden
+          description: User List Fetched Successfully
+        '400':
+          description: Failed to get
   /supervisor/salesagents-manufacturers/{supervisor_id}:
     get:
       tags:
@@ -1699,3 +1753,11 @@ definitions:
       created_by:
         type: integer
         description: id of the specific User 
+  RetailerListExcelDownload:
+    properties:      
+      retailer_upload_id:
+        type: integer
+        description: id of the specific file upload
+      download_for:
+        type: string
+        description: download_for the specific file. string must be in eligible/kyc/cib 
