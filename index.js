@@ -1,12 +1,15 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const cron = require('node-cron');
 const bodyParser = require("body-parser");
 const logger = require("pino")();
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
+const { keepAliveDb } = require("./controllers/auth");
 const { informationLog, errorLog } = require("./log/log");
 const { PORT, NODE_ENV } = process.env;
+
 
 // process.on('uncaughtException', (ex) => {
 //   errorLog.error({
@@ -56,6 +59,13 @@ app.use(
     extended: true,
   })
 );
+
+
+
+cron.schedule('*/2 * * * *', async() =>  {
+  const data = await keepAliveDb();
+  if(data) console.log('Keeping DB connection alive..');
+});
 
 app.get("/", (req, res) =>
   res.json({ message: "Apsis Dana platform is up and running" })
