@@ -335,8 +335,8 @@ exports.eligibleRetailerListDownload = async (req, res) => {
 }
 
 exports.generateRetailersIndividualReport = async (req, res) => {
-
-  const { month, distributor_id, manufacturer_id, district } = req.query;
+  const previousMonthStartDate = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD'); 
+  const previousMonthEndDate = moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD');
   try {
     const limit_data = await knex("APSISIPDC.cr_retailer")
       .leftJoin(
@@ -354,32 +354,8 @@ exports.generateRetailersIndividualReport = async (req, res) => {
         "cr_distributor.id",
         "cr_retailer_manu_scheme_mapping.distributor_id"
       )
-      // .leftJoin(
-      //   "APSISIPDC.cr_retailer_loan_calculation",
-      //   "cr_retailer.id",
-      //   "cr_retailer_loan_calculation.retailer_id"
-      // )
-      .where(function () {
-        // if (district) {
-        //   this.where("cr_retailer.district", district)
-        // }
-        // if (manufacturer_id) {
-        //   this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
-        // }
-        // if (distributor_id) {
-        //   this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
-        // }
-        // if (month) {
-        //   const monthNum = parseInt(month);
-        //   const monthStartDate = moment('2021-12-31').add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-        //   console.log(monthStartDate)
-        //   const monthEndDate = moment('2021-12-31').add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-        //   console.log(monthEndDate)
-        //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-        //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
-        //   console.log("haha");
-        // }
-      })
+      .whereRaw(`"cr_retailer"."created_at" >= TO_DATE('${previousMonthStartDate}', 'YYYY-MM-DD')`)
+      .whereRaw(`"cr_retailer"."created_at" <= TO_DATE('${previousMonthEndDate}', 'YYYY-MM-DD')`)
       .select(
         "cr_retailer.retailer_code",
         "cr_retailer.ac_number_1rn",
