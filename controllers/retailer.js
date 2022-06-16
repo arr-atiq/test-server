@@ -105,6 +105,14 @@ exports.updateLimit = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+exports.getRetailerDistrict = async (req, res) => {
+  try {
+    const result = await model.getRetailerDistrict(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
 
 exports.uploadRetailerEkycFile = async (req, res) => {
   const upload = await uploadRetailerEkycFile(req.file.filename, req.body);
