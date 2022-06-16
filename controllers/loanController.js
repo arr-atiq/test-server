@@ -369,12 +369,12 @@ exports.repayment = async (req, res) => {
     console.log('intersetPaidintersetPaid',intersetPaid)
     // let dailyInterestValue = {...principalAmount,
     let repaymentValueAll = {
-       'principal_outstanding': calculateRepaymentInterest > repayment ? (parseFloat(principalAmount.principal_outstanding)) :
-       (parseFloat(principalAmount.principal_outstanding) - parseFloat(intersetPaid)),
+       'principal_outstanding': calculateRepaymentInterest >= repayment ? (parseFloat(principalAmount.principal_outstanding)) :
+       (parseFloat(principalAmount.principal_outstanding) - parseFloat(repayment) + parseFloat(intersetPaid)),
        'retailer_id': principalAmount.retailer_id,
        'onermn_acc': principalAmount.onermn_acc,
        'disbursement_id': principalAmount.disbursement_id,
-       'total_outstanding': (parseFloat(principalAmount.total_outstanding) - repayment) ,
+       'total_outstanding': (parseFloat(principalAmount.total_outstanding) - parseFloat(repayment)) ,
        'repayment' :repayment,
        'sales_agent_id' :sales_agent_id,
       //  'transaction_cost_type':principalAmount.transaction_cost_type,
@@ -393,7 +393,7 @@ exports.repayment = async (req, res) => {
   //     'transaction_type':'TRANSACTION'
   //  }
     var limitUpdate = {
-      current_limit: parseFloat(getLimitAmountValue[0]?.current_limit) - parseFloat(repayment) + parseFloat(calculateRepaymentInterest)
+      current_limit: parseFloat(getLimitAmountValue[0]?.current_limit) - parseFloat(repayment) 
     }
   
       await knex("APSISIPDC.cr_retailer_loan_calculation").insert(repaymentValueAll).returning('id').then(async (response)=>{
