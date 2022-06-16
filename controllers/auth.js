@@ -116,3 +116,8 @@ exports.login = async (req, res) => {
     );
   }
 };
+
+exports.keepAliveDb = async (req, res) => {
+  const data = await knex("APSISIPDC.cr_manufacturer").select("id").first().returning("id");
+  return data;
+};
