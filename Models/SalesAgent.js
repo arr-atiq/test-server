@@ -61,15 +61,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const agent_distributor_id = rows[index].Distributor;
               const autho_manufacturer_id = rows[index].Manufacturer;
 
-              const check_exist_manu_dis_sup = await knex("APSISIPDC.cr_sales_agent")
-                .innerJoin(
-                  "APSISIPDC.cr_supervisor",
-                  "cr_supervisor.supervisor_employee_code",
-                  "cr_sales_agent.autho_supervisor_employee_code"
-                )
-                .where(
-                  "cr_sales_agent.distributor_id", agent_distributor_id
-                )
+              const check_exist_manu_dis_sup = await knex("APSISIPDC.cr_supervisor")
                 .where(
                   "cr_supervisor.distributor_id", agent_distributor_id
                 )
@@ -77,16 +69,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   "cr_supervisor.supervisor_employee_code", autho_supervisor_code
                 )
                 .where(
-                  "cr_sales_agent.manufacturer_id", autho_manufacturer_id
-                )
-                .where(
                   "cr_supervisor.manufacturer_id", autho_manufacturer_id
                 )
                 .select("cr_supervisor.id");
 
-                if(check_exist_manu_dis_sup.length == 0){
-                  continue;
-                }
+              if (check_exist_manu_dis_sup.length == 0) {
+                continue;
+              }
 
               const duplication_checkNID = await knex
                 .count("cr_sales_agent.agent_nid as count")
@@ -401,7 +390,7 @@ FileUpload.getSalesAgentOperationRegion = function (req) {
 };
 
 FileUpload.getRetailersBySalesAgent = function (req) {
-  const { salesagent_id, distributor_id, manufacturer_id} = req.params;
+  const { salesagent_id, distributor_id, manufacturer_id } = req.params;
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -438,7 +427,7 @@ FileUpload.getRetailersBySalesAgent = function (req) {
         .where("cr_retailer_vs_sales_agent.sales_agent_id", salesagent_id)
         .where("cr_disbursement.sales_agent_id", salesagent_id)
         .where("cr_disbursement.retailer_id", retailer_id)
-        .whereBetween("cr_disbursement.created_at",[start_date, end_date])
+        .whereBetween("cr_disbursement.created_at", [start_date, end_date])
         .select(
           "cr_retailer.id",
           "cr_retailer.retailer_name",
