@@ -872,10 +872,6 @@ exports.loanTenorInDays = async (req, res) => {
   
 };
 
-// exports.loanTenorInDays = async (req, res) => {
-//   const {onermn_acc} = req.body
-  
-// };
 
 
 var calculateInterest = function (total, days, ratePercent, roundToPlaces) {
