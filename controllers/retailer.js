@@ -610,3 +610,20 @@ exports.generateRetailersIndividualReport = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 }
+  exports.retailerUploadList = async (req, res) => {
+    try {
+      const result = await model.retailerUploadList(req);
+      res.status(200).send(result);
+    } catch (error) {
+      res.send(sendApiResult(false, error.message));
+    }
+  };
+
+  exports.retailerListExcelDownload = async (req, res) => {
+    try {
+      const result = await model.retailerListExcelDownload(req.body);
+      res.status(200).send(result);
+    } catch (error) {
+      res.send(sendApiResult(false, error.message));
+    }
+  };
