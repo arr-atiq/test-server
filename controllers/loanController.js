@@ -101,7 +101,7 @@ exports.insertLoanCalculation = async (req, res) => {
       
       
             totalInterest = (parseFloat(dailyInterest) +  parseFloat(interestOfCharge) + parseFloat(interestOftherCharge) + parseFloat(interestOfreimbursment) )
-            totalLoan = parseFloat(principalAmount.total_outstanding) + parseFloat(totalInterest) + parseFloat(interestOfreimbursment)
+            totalLoan = parseFloat(principalAmount.total_outstanding) + parseFloat(totalInterest) 
           
             console.log('graceValue',graceValue)
             console.log('LoanTenorIndays',LoanTenorIndays?.days)
@@ -361,7 +361,9 @@ exports.repayment = async (req, res) => {
       // }
       // return res.send((sendApiResult(false, "Your repayment is less than your total interest",totalInterestResponse)));
     }else{
-      intersetPaid = parseFloat(repayment) - parseFloat(calculateRepaymentInterest)
+      // intersetPaid = parseFloat(repayment) - parseFloat(calculateRepaymentInterest)
+      intersetPaid = parseFloat(calculateRepaymentInterest)
+
     }
   
     console.log('intersetPaidintersetPaid',intersetPaid)
@@ -454,6 +456,7 @@ exports.repayment = async (req, res) => {
             var paycharge = 0;
             var payintersetPaid = 0;
 
+            console.log('intersetPaidintersetPaidintersetPaid',intersetPaid)
 
             console.log('sumofReimbursement',sumofReimbursement)
             console.log('sumOFpenal_interest',sumOFpenal_interest)
