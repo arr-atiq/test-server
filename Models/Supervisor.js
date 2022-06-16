@@ -615,7 +615,7 @@ FileUpload.getRetailerListByManufacturerAndSalesagent = function (req) {
 
 FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
   const { supervisor_code } = req.params;
-  const { start_date, end_date } = req.query;
+  const { start_date, end_date, page, per_page } = req.query;
 
 
   return new Promise(async (resolve, reject) => {
@@ -642,7 +642,12 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
           "cr_disbursement.created_at",
           //(knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`))
 
-        );
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
       //.knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`);
       let total_amount = 0;
       for (let i = 0; i < data.length; i++) {
@@ -659,7 +664,7 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
 };
 FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
   const { supervisor_code } = req.params;
-  const { start_date, end_date } = req.query;
+  const { start_date, end_date, page, per_page } = req.query;
 
 
   return new Promise(async (resolve, reject) => {
@@ -695,7 +700,12 @@ FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
           "cr_retailer.phone",
           "cr_retailer.email",
           "cr_retailer_loan_calculation.created_at"
-        );
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
       let total_amount = 0;
       let total_principal_outstanding = 0;
       let total_daily_principal_interest = 0;
