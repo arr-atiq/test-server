@@ -22,8 +22,9 @@ npm run dev
 
 ## For Docker with Nginx 
 Kindly connect with Team Lead.
-1. `docker-compose up -d`
-2. `docker-compose down`
+1. Deploy = `docker-compose up --force-recreate -d `
+2. Stop Container = `docker-compose down`
+3. See Logs = `docker-compose logs -f`
 
 ## Run project on Ngnix
 localhost:80
