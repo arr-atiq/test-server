@@ -124,14 +124,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Authorized_Representative_Designation:
                     rows[index].Authorized_Representative_Designation,
                   Authorized_Representative_Mobile_No:
-                    rows[index].Authorized_Representative_Mobile_No,
+                    rows[index]?.Authorized_Representative_Mobile_No ?? null,
                   Authorized_Representative_Official_Email_ID:
-                    rows[index].Authorized_Representative_Official_Email_ID,
+                    rows[index]?.Authorized_Representative_Official_Email_ID ?? null,
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Official_Email_ID: rows[index].Official_Email_ID,
                   Official_Phone_Number: rows[index].Official_Phone_Number,
                 };
-
                 invalidate_data_array.push(temp_data);
                 continue;
               }
@@ -257,9 +256,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Authorized_Representative_Designation:
                     rows[index].Authorized_Representative_Designation,
                   Authorized_Representative_Mobile_No:
-                    rows[index].Authorized_Representative_Mobile_No,
+                    rows[index]?.Authorized_Representative_Mobile_No ?? null,
                   Authorized_Representative_Official_Email_ID:
-                    rows[index].Authorized_Representative_Official_Email_ID,
+                    rows[index]?.Authorized_Representative_Official_Email_ID ?? null,
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Official_Email_ID: rows[index].Official_Email_ID,
                   Official_Phone_Number: rows[index].Official_Phone_Number,
@@ -314,9 +313,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Authorized_Representative_Designation:
                     rows[index].Authorized_Representative_Designation,
                   Authorized_Representative_Mobile_No:
-                    rows[index].Authorized_Representative_Mobile_No,
+                    rows[index]?.Authorized_Representative_Mobile_No ?? null,
                   Authorized_Representative_Official_Email_ID:
-                    rows[index].Authorized_Representative_Official_Email_ID,
+                    rows[index]?.Authorized_Representative_Official_Email_ID ?? null,
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Official_Email_ID: rows[index].Official_Email_ID,
                   Official_Phone_Number: rows[index].Official_Phone_Number,
@@ -398,11 +397,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 autho_rep_designation:
                   invalidate_data_array[index].Authorized_Representative_Designation,
                 autho_rep_phone:
-                  invalidate_data_array[index].Authorized_Representative_Mobile_No,
+                  invalidate_data_array[index]?.Authorized_Representative_Mobile_No ?? '',
                 autho_rep_email:
-                  invalidate_data_array[index].Authorized_Representative_Official_Email_ID,
+                  invalidate_data_array[index]?.Authorized_Representative_Official_Email_ID ?? '',
                 created_by: req.user_id,
               };
+
+              console.log(invalidated_manufacture);
               await knex("APSISIPDC.cr_manufacturer_invalidated_data")
                 .insert(invalidated_manufacture);
             }
@@ -458,11 +459,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 autho_rep_designation:
                   unuploaded_data_array[index].Authorized_Representative_Designation,
                 autho_rep_phone:
-                  unuploaded_data_array[index].Authorized_Representative_Mobile_No,
+                  unuploaded_data_array[index]?.Authorized_Representative_Mobile_No ?? '',
                 autho_rep_email:
-                  unuploaded_data_array[index].Authorized_Representative_Official_Email_ID,
+                  unuploaded_data_array[index]?.Authorized_Representative_Official_Email_ID ?? '',
                 created_by: req.user_id,
               };
+
+              console.log(unuploaded_manufacture);
               await knex("APSISIPDC.cr_manufacturer_unuploaded_data")
                 .insert(unuploaded_manufacture);
             }
@@ -520,11 +523,12 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 autho_rep_designation:
                   data_array[index].Authorized_Representative_Designation,
                 autho_rep_phone:
-                  data_array[index].Authorized_Representative_Mobile_No,
+                  data_array[index]?.Authorized_Representative_Mobile_No ?? '',
                 autho_rep_email:
-                  data_array[index].Authorized_Representative_Official_Email_ID,
+                  data_array[index]?.Authorized_Representative_Official_Email_ID ?? '',
                 created_by: req.user_id,
               };
+              console.log(team_manufacture);
 
               const insert_manufacture = await knex("APSISIPDC.cr_manufacturer")
                 .insert(team_manufacture)
