@@ -36,11 +36,11 @@ const importExcelData2DB = async function (filename, req) {
   }
 };
 
-exports.uploadFileReamarks = async (req, res) => {
-  req.body.user_id = req.user_id;
-  const upload = await superModel.uploadFileReamarks(req.file.filename, req.body);
-  res.status(200).send(upload);
-};
+// exports.uploadFileReamarks = async (req, res) => {
+//   req.body.user_id = req.user_id;
+//   const upload = await superModel.uploadFileReamarks(req.file.filename, req.body);
+//   res.status(200).send(upload);
+// };
 
 exports.saveRemarksFeedback = async (req, res) => {
   try {
