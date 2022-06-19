@@ -333,6 +333,9 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
 
 FileUpload.saveRemarksFeedback = function (req) {
 
+  console.log(req.body.file_for);
+  //console.log(req.file.filename);
+
   const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
   const userID = req.body.user_id;
   const folder_name = req.body.file_for;
@@ -344,7 +347,7 @@ FileUpload.saveRemarksFeedback = function (req) {
     file_name: filename,
     created_by: parseInt(userID)
   };
-  const { remarks_id, remarks_one, supervisor_status, admin_status,transaction_type } = req.body;
+  const { remarks_id, remarks_one, supervisor_status, admin_status, transaction_type } = req.body;
 
   const remarks_loan_cal_idsArr = remarks_id.split(",");
 
@@ -374,13 +377,13 @@ FileUpload.saveRemarksFeedback = function (req) {
 
       for (let i = 0; i < remarks_loan_cal_idsArr.length; i++) {
 
-      const feedback_loan_ids = {
-        cr_remarks_feedback_id: cr_remarks_feedback_id[0],
-        cr_remarks_loan_calculation_id: remarks_loan_cal_idsArr[i]
-      };
+        const feedback_loan_ids = {
+          cr_remarks_feedback_id: cr_remarks_feedback_id[0],
+          cr_remarks_loan_calculation_id: remarks_loan_cal_idsArr[i]
+        };
 
-      await knex("APSISIPDC.cr_remarks_loan_calculation_ids")
-        .insert(feedback_loan_ids);
+        await knex("APSISIPDC.cr_remarks_loan_calculation_ids")
+          .insert(feedback_loan_ids);
 
       }
 
@@ -550,8 +553,12 @@ FileUpload.getSalesAgentListBySupervisor = function (req) {
   });
 };
 
-FileUpload.getRemarksFeedback = function (req) {
-  const { date } = req.query;
+FileUpload.getRemarksFeedbackAdmin = function (req) {
+  const { start_date, end_date, page, per_page } = req.query;
+  const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
+  const endDate = moment(end_date).add(1,'days').format('YYYY-MM-DD');
+  console.log(startDate);
+  console.log(endDate);
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -559,55 +566,57 @@ FileUpload.getRemarksFeedback = function (req) {
         .leftJoin("APSISIPDC.cr_feedback_file_upload",
           "cr_feedback_file_upload.id",
           "cr_remarks_feedback.file_upload_id")
-        .whereRaw(`"cr_feedback_file_upload"."create" >= TO_DATE('${date}', 'YYYY-MM-DD')`)
+        .leftJoin("APSISIPDC.cr_remarks_loan_calculation_ids",
+          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
+          "cr_remarks_feedback.id")
+        .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+        .where("cr_remarks_feedback.supervisor_status", 1)
+        .where("cr_remarks_feedback.admin_status", 0)
         .select(
           "cr_remarks_feedback.id",
-          "cr_remarks_feedback.remarks_id",
           "cr_remarks_feedback.remarks_one",
-          "cr_remarks_feedback.remarks_two",
-          "cr_remarks_feedback.remarks_three",
           "cr_remarks_feedback.status",
           "cr_remarks_feedback.file_upload_id",
+          "cr_remarks_feedback.created_by",
+          "cr_remarks_feedback.supervisor_status",
+          "cr_remarks_feedback.admin_status",
+          "cr_remarks_feedback.transaction_type",
           "cr_feedback_file_upload.sys_date",
           "cr_feedback_file_upload.file_for",
           "cr_feedback_file_upload.file_path",
           "cr_feedback_file_upload.file_name",
-        );
+          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id"
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
       if (remarks_result == 0) reject(sendApiResult(false, "Not found"));
 
-      let loan_calculation_ids = [];
+      // console.log(loan_calculation_ids);
+      // let loan_details_array = [];
+      // var loan_calculation_id_arr = [];
 
-      for (let i = 0; i < remarks_result.length; i++) {
-        let loan_calculation_id = remarks_result[i].remarks_id.split(",");
-        loan_calculation_ids.push(loan_calculation_id);
-      }
+      // for (let i = 0; i < loan_calculation_ids.length; i++) {
 
-      console.log(loan_calculation_ids);
-      let loan_details_array = [];
-      var loan_calculation_id_arr = [];
+      // }
+      // const loan_calculation_data = await knex("APSISIPDC.cr_retailer_loan_calculation")
+      //   .leftJoin("APSISIPDC.cr_retailer",
+      //     "cr_retailer.id",
+      //     "cr_retailer_loan_calculation.retailer_id")
+      //   // .where("cr_retailer_loan_calculation.id", loan_calculation_id_arr[i])
+      //   .select("cr_retailer_loan_calculation.id",
+      //     "cr_retailer_loan_calculation.principal_outstanding",
+      //     "cr_retailer_loan_calculation.transaction_cost",
+      //     "cr_retailer_loan_calculation.charge",
+      //     "cr_retailer_loan_calculation.other_charge",
+      //     "cr_retailer_loan_calculation.processing_fee",
+      //     "cr_retailer.retailer_name",
+      //     "cr_retailer.retailer_code");
 
-      for (let i = 0; i < loan_calculation_ids.length; i++) {
-
-      }
-      const loan_calculation_data = await knex("APSISIPDC.cr_retailer_loan_calculation")
-        .leftJoin("APSISIPDC.cr_retailer",
-          "cr_retailer.id",
-          "cr_retailer_loan_calculation.retailer_id")
-        .where("cr_retailer_loan_calculation.id", loan_calculation_id_arr[i])
-        .select("cr_retailer_loan_calculation.id",
-          "cr_retailer_loan_calculation.principal_outstanding",
-          "cr_retailer_loan_calculation.transaction_cost",
-          "cr_retailer_loan_calculation.charge",
-          "cr_retailer_loan_calculation.other_charge",
-          "cr_retailer_loan_calculation.processing_fee",
-          "cr_retailer.retailer_name",
-          "cr_retailer.retailer_code");
-
-      console.log(loan_calculation_data);
-
-      loan_details_array.push(loan_calculation_data);
-
-      resolve(sendApiResult(true, "Data fetched successfully", { remarks_result, loan_details_array }));
+      resolve(sendApiResult(true, "Data fetched successfully", remarks_result));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }

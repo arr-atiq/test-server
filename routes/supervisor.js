@@ -22,7 +22,7 @@ router.get("/unuploaded-supervisor-data", supervisor.generateSupervisorUnuploade
 router.get("/invalidated-supervisor-data", supervisor.generateSupervisorInvalidatedReport);
 //12/6/2022
 router.get("/salesagents/:supervisor_code", supervisor.getSalesAgentListBySupervisor);
-router.get("/remarks-feedback-details", supervisor.getRemarksFeedback);
+router.get("/admin-remarks-feedback-details", supervisor.getRemarksFeedbackAdmin);
 router.post(
     "/remarks-feedback",
     uploadFile.single("file"),
