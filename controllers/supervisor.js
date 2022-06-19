@@ -89,9 +89,9 @@ exports.getSalesAgentListBySupervisor = async (req, res) => {
   }
 };
 
-exports.getRemarksFeedback = async (req, res) => {
+exports.getRemarksFeedbackAdmin = async (req, res) => {
   try {
-    const result = await superModel.getRemarksFeedback(req);
+    const result = await superModel.getRemarksFeedbackAdmin(req);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
