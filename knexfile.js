@@ -13,5 +13,12 @@ module.exports = {
       connectString:
         "(DESCRIPTION= (ADDRESS_LIST=  (ADDRESS=(PROTOCOL=TCP) (HOST=192.168.20.38)(PORT=1521) ) ) (CONNECT_DATA=(SID=orcl) ) )",
     },
+    acquireConnectionTimeout: 843600000,
+    pool: {
+        min: 2,
+        max: 150,
+        acquireTimeoutMillis: 100000,
+        idleTimeoutMillis: 100000
+    },
   }
 };
