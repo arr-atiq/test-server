@@ -98,6 +98,15 @@ exports.getRemarksFeedbackAdmin = async (req, res) => {
   }
 };
 
+exports.updateAdminStatus = async (req, res) => {
+  try {
+    const result = await superModel.updateAdminStatus(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.getRetailerListByManufacturerAndSalesagent = async (req, res) => {
   try {
     const result = await superModel.getRetailerListByManufacturerAndSalesagent(req);
