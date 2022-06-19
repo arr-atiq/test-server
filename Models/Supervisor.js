@@ -333,6 +333,9 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
 
 FileUpload.saveRemarksFeedback = function (req) {
 
+  console.log(req.body.file_for);
+  //console.log(req.file.filename);
+
   const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
   const userID = req.body.user_id;
   const folder_name = req.body.file_for;
@@ -562,10 +565,7 @@ FileUpload.getRemarksFeedback = function (req) {
         .whereRaw(`"cr_feedback_file_upload"."create" >= TO_DATE('${date}', 'YYYY-MM-DD')`)
         .select(
           "cr_remarks_feedback.id",
-          "cr_remarks_feedback.remarks_id",
           "cr_remarks_feedback.remarks_one",
-          "cr_remarks_feedback.remarks_two",
-          "cr_remarks_feedback.remarks_three",
           "cr_remarks_feedback.status",
           "cr_remarks_feedback.file_upload_id",
           "cr_feedback_file_upload.sys_date",
@@ -577,10 +577,10 @@ FileUpload.getRemarksFeedback = function (req) {
 
       let loan_calculation_ids = [];
 
-      for (let i = 0; i < remarks_result.length; i++) {
-        let loan_calculation_id = remarks_result[i].remarks_id.split(",");
-        loan_calculation_ids.push(loan_calculation_id);
-      }
+      // for (let i = 0; i < remarks_result.length; i++) {
+      //   let loan_calculation_id = remarks_result[i].remarks_id.split(",");
+      //   loan_calculation_ids.push(loan_calculation_id);
+      // }
 
       console.log(loan_calculation_ids);
       let loan_details_array = [];
@@ -593,7 +593,7 @@ FileUpload.getRemarksFeedback = function (req) {
         .leftJoin("APSISIPDC.cr_retailer",
           "cr_retailer.id",
           "cr_retailer_loan_calculation.retailer_id")
-        .where("cr_retailer_loan_calculation.id", loan_calculation_id_arr[i])
+        // .where("cr_retailer_loan_calculation.id", loan_calculation_id_arr[i])
         .select("cr_retailer_loan_calculation.id",
           "cr_retailer_loan_calculation.principal_outstanding",
           "cr_retailer_loan_calculation.transaction_cost",
