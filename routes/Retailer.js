@@ -15,6 +15,7 @@ router.get("/retailer/:retailer_id", retailer.getRetailerDetailsById);
 router.put("/updateLimit/:rmnID", retailer.updateLimit);
 router.get("/retailer-monthly-report", retailer.generateRetailersMonthlyReport);
 router.get("/retailer-individual-report", retailer.generateRetailersIndividualReport);
+router.get("/retailer-district", retailer.getRetailerDistrict);
 
 router.post("/retailer-upload-list", retailer.retailerUploadList);
 

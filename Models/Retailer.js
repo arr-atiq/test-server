@@ -808,7 +808,6 @@ Retailer.updateSchemaByRetailers = function (req) {
   });
 };
 
-
 Retailer.updateLimitMapping = async (req, res) => {
   const {
     type,
@@ -1349,5 +1348,22 @@ Retailer.retailerListExcelDownload = function (req) {
 		}
 	})
 }
+
+Retailer.getRetailerDistrict = function (req) {
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_retailer")
+        .select(
+          "district"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 
 module.exports = Retailer;
