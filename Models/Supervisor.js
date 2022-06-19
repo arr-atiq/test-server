@@ -554,9 +554,9 @@ FileUpload.getSalesAgentListBySupervisor = function (req) {
 };
 
 FileUpload.getRemarksFeedbackAdmin = function (req) {
-  const { start_date, end_date, page, per_page } = req.query;
+  const { start_date, end_date, page, per_page, transaction_type  } = req.query;
   const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
-  const endDate = moment(end_date).add(1,'days').format('YYYY-MM-DD');
+  const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
   console.log(startDate);
   console.log(endDate);
 
@@ -569,24 +569,30 @@ FileUpload.getRemarksFeedbackAdmin = function (req) {
         .leftJoin("APSISIPDC.cr_remarks_loan_calculation_ids",
           "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
           "cr_remarks_feedback.id")
+        .leftJoin("APSISIPDC.cr_disbursement",
+          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
+          "cr_disbursement.id")
         .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
         .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
-        .where("cr_remarks_feedback.supervisor_status", 1)
-        .where("cr_remarks_feedback.admin_status", 0)
+        .where("cr_remarks_loan_calculation_ids.supervisor_status", 1)
+        .where("cr_remarks_loan_calculation_ids.admin_status", 0)
+        .where("cr_remarks_feedback.transaction_type", transaction_type)
         .select(
-          "cr_remarks_feedback.id",
+          "cr_remarks_loan_calculation_ids.id",
+          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
           "cr_remarks_feedback.remarks_one",
           "cr_remarks_feedback.status",
           "cr_remarks_feedback.file_upload_id",
           "cr_remarks_feedback.created_by",
-          "cr_remarks_feedback.supervisor_status",
-          "cr_remarks_feedback.admin_status",
+          "cr_remarks_loan_calculation_ids.supervisor_status",
+          "cr_remarks_loan_calculation_ids.admin_status",
           "cr_remarks_feedback.transaction_type",
           "cr_feedback_file_upload.sys_date",
           "cr_feedback_file_upload.file_for",
           "cr_feedback_file_upload.file_path",
           "cr_feedback_file_upload.file_name",
-          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id"
+          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id",
+          "cr_disbursement.disbursement_amount"
         )
         .paginate({
           perPage: per_page,
