@@ -316,6 +316,15 @@ exports.generateRetailersMonthlyReport = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 }
+
+exports.RetailersMonthlyReport = async (req, res) => {
+  try {
+    const result = await model.RetailersMonthlyReport(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
 exports.retailerUploadList = async (req, res) => {
   try {
     const result = await model.retailerUploadList(req);
