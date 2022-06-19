@@ -553,7 +553,7 @@ FileUpload.getSalesAgentListBySupervisor = function (req) {
   });
 };
 
-FileUpload.getRemarksFeedback = function (req) {
+FileUpload.getRemarksFeedbackAdmin = function (req) {
   const { start_date, end_date, page, per_page } = req.query;
   const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
   const endDate = moment(end_date).add(1,'days').format('YYYY-MM-DD');
@@ -571,6 +571,8 @@ FileUpload.getRemarksFeedback = function (req) {
           "cr_remarks_feedback.id")
         .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
         .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+        .where("cr_remarks_feedback.supervisor_status", 1)
+        .where("cr_remarks_feedback.admin_status", 0)
         .select(
           "cr_remarks_feedback.id",
           "cr_remarks_feedback.remarks_one",
