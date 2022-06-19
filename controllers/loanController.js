@@ -970,8 +970,6 @@ var getDataLoanTable =async (onermn_acc) => {
   .where("onermn_acc", onermn_acc).first()
 }
 
-
-
 var getAllDisbursement =async (onermn_acc) => {
   return await knex
   .from("APSISIPDC.cr_retailer_loan_calculation")
@@ -987,7 +985,6 @@ var getAllRepayment =async (onermn_acc) => {
   .where("onermn_acc", onermn_acc)
   .where("transaction_type", 'REPAYMENT');
 }
-
 
  var findLoanTenorIndays =async (oneRMn , schemeValue) => {
   var allDisbursements = await getAllDisbursement(oneRMn)
@@ -1034,7 +1031,6 @@ var getAllRepayment =async (onermn_acc) => {
   }
 }
 
-
 var findRepaymentInterest =async (onermn_acc ,firstId , secondId) => {
   return await knex
   .from("APSISIPDC.cr_retailer_loan_calculation")
@@ -1042,7 +1038,6 @@ var findRepaymentInterest =async (onermn_acc ,firstId , secondId) => {
   .where("onermn_acc", onermn_acc)
   .whereBetween('id', [firstId, secondId-1]);
 }
-
 
 var findRepaymentInterestFirstTime =async (onermn_acc ,firstId , secondId) => {
   return await knex
