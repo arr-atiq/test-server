@@ -25,13 +25,14 @@ router.get("/salesagents/:supervisor_code", supervisor.getSalesAgentListBySuperv
 router.get("/remarks-feedback-details", supervisor.getRemarksFeedback);
 router.post(
     "/remarks-feedback",
+    uploadFile.single("file"),
     supervisor.saveRemarksFeedback
 );
 
-router.post(
-    "/upload-remarks_feedback",
-    uploadFile.single("file"),
-    supervisor.uploadFileReamarks
-);
+// router.post(
+//     "/upload-remarks_feedback",
+//     uploadFile.single("file"),
+//     supervisor.uploadFileReamarks
+// );
 
 module.exports = router;

@@ -332,70 +332,91 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
 };
 
 FileUpload.saveRemarksFeedback = function (req) {
-  const { remarks_id, remarks_one, remarks_two, remarks_three, file_upload_id, created_by } = req.body;
 
-  const insertValue = {
-    remarks_one,
-    remarks_two,
-    remarks_three,
-    created_by,
-    file_upload_id
-  }
+  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+  const userID = req.body.user_id;
+  const folder_name = req.body.file_for;
+  const filename = req.file.filename;
+  const file_insert_log = {
+    sys_date: new Date(date),
+    file_for: folder_name,
+    file_path: `public/feedback_file/${folder_name}`,
+    file_name: filename,
+    created_by: parseInt(userID)
+  };
+  const { remarks_id, remarks_one, supervisor_status, admin_status,transaction_type } = req.body;
 
   const remarks_loan_cal_idsArr = remarks_id.split(",");
-  console.log(remarks_loan_cal_idsArr);
 
   return new Promise(async (resolve, reject) => {
     try {
+
+      const file_upload_id = await knex("APSISIPDC.cr_feedback_file_upload").insert(
+        file_insert_log
+      ).returning("id");
+
+      if (file_upload_id == 0) reject(sendApiResult(false, "Not Upload"));
+
+      const insertValue = {
+        remarks_one,
+        supervisor_status,
+        admin_status,
+        transaction_type,
+        created_by: parseInt(userID),
+        file_upload_id: file_upload_id[0]
+      }
+
+
       const cr_remarks_feedback_id = await knex("APSISIPDC.cr_remarks_feedback")
         .insert(insertValue).returning("id");
 
       if (cr_remarks_feedback_id == 0) reject(sendApiResult(false, "Not Save"));
 
-      // for (let i = 0; i < remarks_loan_cal_idsArr.length; i++) {
-          const value1 =  cr_remarks_feedback_id;
-          var value2 = remarks_loan_cal_idsArr[0];
+      for (let i = 0; i < remarks_loan_cal_idsArr.length; i++) {
 
-     
-      // }
+      const feedback_loan_ids = {
+        cr_remarks_feedback_id: cr_remarks_feedback_id[0],
+        cr_remarks_loan_calculation_id: remarks_loan_cal_idsArr[i]
+      };
 
+      await knex("APSISIPDC.cr_remarks_loan_calculation_ids")
+        .insert(feedback_loan_ids);
 
-         await knex("APSISIPDC.cr_remarks_loan_calculation_ids")
-          .insert({value1,value2});
+      }
 
-      resolve(sendApiResult(true, "Data Saved successfully", data));
+      resolve(sendApiResult(true, "Data Saved successfully", cr_remarks_feedback_id));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   });
 };
 
-FileUpload.uploadFileReamarks = (filename, req) => {
-  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
-  const folder_name = req.file_for;
-  const file_insert_log = {
-    sys_date: new Date(date),
-    file_for: folder_name,
-    file_path: `public/feedback_file/${folder_name}`,
-    file_name: filename,
-    created_by: parseInt(req.user_id)
-  };
+// FileUpload.uploadFileReamarks = (filename, req) => {
+//   const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+//   const folder_name = req.file_for;
+//   const file_insert_log = {
+//     sys_date: new Date(date),
+//     file_for: folder_name,
+//     file_path: `public/feedback_file/${folder_name}`,
+//     file_name: filename,
+//     created_by: parseInt(req.user_id)
+//   };
 
-  return new Promise(async (resolve, reject) => {
-    try {
-      const file_upload = await knex("APSISIPDC.cr_feedback_file_upload").insert(
-        file_insert_log
-      ).returning("id");
+//   return new Promise(async (resolve, reject) => {
+//     try {
+//       const file_upload = await knex("APSISIPDC.cr_feedback_file_upload").insert(
+//         file_insert_log
+//       ).returning("id");
 
-      if (file_upload == 0) reject(sendApiResult(false, "Not Upload"));
-      resolve(sendApiResult(true, "file Upload successfully", file_upload));
-    } catch (error) {
-      reject(sendApiResult(false, error.message));
-    }
-  });
+//       if (file_upload == 0) reject(sendApiResult(false, "Not Upload"));
+//       resolve(sendApiResult(true, "file Upload successfully", file_upload));
+//     } catch (error) {
+//       reject(sendApiResult(false, error.message));
+//     }
+//   });
 
 
-}
+// }
 
 FileUpload.getAllManufacturerOfSalesagentUnderSupervisor = function (req) {
   const { supervisor_id } = req.params;
