@@ -106,6 +106,42 @@ exports.getRepaymentRemarksFeedbackAdmin = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.getRepaymentRemarksFeedbackHistoryAdmin = async (req, res) => {
+  try {
+    const result = await superModel.getRepaymentRemarksFeedbackHistoryAdmin(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+exports.getDisbursementRemarksFeedbackHistoryAdmin = async (req, res) => {
+  try {
+    const result = await superModel.getDisbursementRemarksFeedbackHistoryAdmin(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getRepaymentRemarksFeedbackHistorySupervisor = async (req, res) => {
+  try {
+    const result = await superModel.getRepaymentRemarksFeedbackHistorySupervisor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getDisbursementRemarksFeedbackHistorySupervisor = async (req, res) => {
+  try {
+    const result = await superModel.getDisbursementRemarksFeedbackHistorySupervisor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.updateAdminStatus = async (req, res) => {
   try {
     const result = await superModel.updateAdminStatus(req);
