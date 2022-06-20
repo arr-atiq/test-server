@@ -24,6 +24,10 @@ router.get("/invalidated-supervisor-data", supervisor.generateSupervisorInvalida
 router.get("/salesagents/:supervisor_code", supervisor.getSalesAgentListBySupervisor);
 router.get("/admin-remarks-feedback-details", supervisor.getRemarksFeedbackAdmin);
 router.get("/admin-repayment-remarks-feedback-details", supervisor.getRepaymentRemarksFeedbackAdmin);
+router.get("/admin-repayment-remarks-feedback-details-history", supervisor.getRepaymentRemarksFeedbackHistoryAdmin);
+router.get("/supervisor-repayment-remarks-feedback-details-history", supervisor.getRepaymentRemarksFeedbackHistorySupervisor);
+router.get("/admin-disbursement-remarks-feedback-details-history", supervisor.getDisbursementRemarksFeedbackHistoryAdmin);
+router.get("/supervisor-disbursement-remarks-feedback-details-history", supervisor.getDisbursementRemarksFeedbackHistorySupervisor);
 router.put("/admin-remarks-feedback-updated", supervisor.updateAdminStatus);
 router.post(
     "/remarks-feedback",
