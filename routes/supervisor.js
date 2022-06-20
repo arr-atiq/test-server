@@ -23,6 +23,7 @@ router.get("/invalidated-supervisor-data", supervisor.generateSupervisorInvalida
 //12/6/2022
 router.get("/salesagents/:supervisor_code", supervisor.getSalesAgentListBySupervisor);
 router.get("/admin-remarks-feedback-details", supervisor.getRemarksFeedbackAdmin);
+router.get("/admin-repayment-remarks-feedback-details", supervisor.getRepaymentRemarksFeedbackAdmin);
 router.put("/admin-remarks-feedback-updated", supervisor.updateAdminStatus);
 router.post(
     "/remarks-feedback",

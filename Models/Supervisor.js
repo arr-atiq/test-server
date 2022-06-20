@@ -385,6 +385,19 @@ FileUpload.saveRemarksFeedback = function (req) {
         await knex("APSISIPDC.cr_remarks_loan_calculation_ids")
           .insert(feedback_loan_ids);
 
+        if (transaction_type == "DISBURSEMENT") {
+          await knex("APSISIPDC.cr_disbursement")
+            .where("cr_disbursement.id", remarks_loan_cal_idsArr[i])
+            .update({ supervisor_status_disbursement: 1 });
+        }
+
+        if (transaction_type == "REPAYMENT") {
+          await knex("APSISIPDC.cr_retailer_loan_calculation")
+            .where("cr_retailer_loan_calculation.id", remarks_loan_cal_idsArr[i])
+            .update({ supervisor_status_repayment: 1 });
+        }
+
+
       }
 
       resolve(sendApiResult(true, "Data Saved successfully", cr_remarks_feedback_id));
@@ -553,8 +566,59 @@ FileUpload.getSalesAgentListBySupervisor = function (req) {
   });
 };
 
+FileUpload.getRepaymentRemarksFeedbackAdmin = function (req) {
+  const { start_date, end_date, page, per_page, transaction_type } = req.query;
+  const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
+  const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const remarks_result = await knex("APSISIPDC.cr_remarks_feedback")
+        .leftJoin("APSISIPDC.cr_feedback_file_upload",
+          "cr_feedback_file_upload.id",
+          "cr_remarks_feedback.file_upload_id")
+        .leftJoin("APSISIPDC.cr_remarks_loan_calculation_ids",
+          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
+          "cr_remarks_feedback.id")
+        .leftJoin("APSISIPDC.cr_retailer_loan_calculation",
+          "cr_retailer_loan_calculation.id",
+          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id")
+        .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+        .where("cr_remarks_loan_calculation_ids.supervisor_status", 1)
+        .where("cr_remarks_loan_calculation_ids.admin_status", 0)
+        .where("cr_remarks_feedback.transaction_type", transaction_type)
+        .select(
+          "cr_remarks_loan_calculation_ids.id",
+          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
+          "cr_remarks_feedback.remarks_one",
+          "cr_remarks_feedback.status",
+          "cr_remarks_feedback.file_upload_id",
+          "cr_remarks_feedback.created_by",
+          "cr_remarks_loan_calculation_ids.supervisor_status",
+          "cr_remarks_loan_calculation_ids.admin_status",
+          "cr_remarks_feedback.transaction_type",
+          "cr_feedback_file_upload.sys_date",
+          "cr_feedback_file_upload.file_for",
+          "cr_feedback_file_upload.file_path",
+          "cr_feedback_file_upload.file_name",
+          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id",
+          "cr_retailer_loan_calculation.repayment"
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (remarks_result == 0) reject(sendApiResult(false, "Not found"));
+      resolve(sendApiResult(true, "Data fetched successfully", remarks_result));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 FileUpload.getRemarksFeedbackAdmin = function (req) {
-  const { start_date, end_date, page, per_page, transaction_type  } = req.query;
+  const { start_date, end_date, page, per_page, transaction_type } = req.query;
   const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
   const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
   console.log(startDate);
@@ -570,8 +634,8 @@ FileUpload.getRemarksFeedbackAdmin = function (req) {
           "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
           "cr_remarks_feedback.id")
         .leftJoin("APSISIPDC.cr_disbursement",
-          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
-          "cr_disbursement.id")
+          "cr_disbursement.id",
+          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id")
         .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
         .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
         .where("cr_remarks_loan_calculation_ids.supervisor_status", 1)
@@ -661,7 +725,7 @@ FileUpload.updateAdminStatus = function (req) {
 
       const admin_status_update_array = [];
 
-      for(let i=0; i<idsArr.length; i++){
+      for (let i = 0; i < idsArr.length; i++) {
         await knex.transaction(async (trx) => {
           const admin_status_update = await trx("APSISIPDC.cr_remarks_loan_calculation_ids")
             .where({ id: idsArr[i] })
@@ -670,21 +734,21 @@ FileUpload.updateAdminStatus = function (req) {
             });
 
           admin_status_update_array.push(admin_status_update);
-          
+
         });
-        
+
       }
 
       if (admin_status_update_array.length <= 0)
-            reject(sendApiResult(false, "Admin Status is not updated"));
-          resolve(
-            sendApiResult(
-              true,
-              "Admin Status Updated Successfully",
-              {Total_updated : admin_status_update_array.length}
-            )
-          );
-      
+        reject(sendApiResult(false, "Admin Status is not updated"));
+      resolve(
+        sendApiResult(
+          true,
+          "Admin Status Updated Successfully",
+          { Total_updated: admin_status_update_array.length }
+        )
+      );
+
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -708,6 +772,7 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
           "cr_disbursement.sales_agent_id")
         //.where("cr_disbursement.sales_agent_id", salesagent_id)
         .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
+        .where("cr_disbursement.supervisor_status_disbursement", null)
         .whereRaw(`"cr_disbursement"."created_at" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
         .whereRaw(`"cr_disbursement"."created_at" < TO_DATE('${end_date}', 'YYYY-MM-DD')`)
         .select(
@@ -757,6 +822,7 @@ FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
           "cr_retailer_loan_calculation.sales_agent_id")
         //.where("cr_disbursement.sales_agent_id", salesagent_id)
         .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
+        .where("cr_retailer_loan_calculation.supervisor_status_repayment", null)
         .whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
         .whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${end_date}', 'YYYY-MM-DD')`)
         .where("cr_retailer_loan_calculation.transaction_type", "REPAYMENT")
