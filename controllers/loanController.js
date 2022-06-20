@@ -101,7 +101,7 @@ exports.insertLoanCalculation = async (req, res) => {
       
       
             totalInterest = (parseFloat(dailyInterest) +  parseFloat(interestOfCharge) + parseFloat(interestOftherCharge) + parseFloat(interestOfreimbursment) )
-            totalLoan = parseFloat(principalAmount.total_outstanding) + parseFloat(totalInterest) + parseFloat(interestOfreimbursment)
+            totalLoan = parseFloat(principalAmount.total_outstanding) + parseFloat(totalInterest) 
           
             console.log('graceValue',graceValue)
             console.log('LoanTenorIndays',LoanTenorIndays?.days)
@@ -326,7 +326,6 @@ exports.repayment = async (req, res) => {
     * If scheme not found . Then in future we will hir global parameter
     */
   }
-console.log('principalAmount?.total_outstanding',principalAmount?.total_outstanding)
   if(principalAmount?.total_outstanding >= repayment ){
     let repaymentType = {
       'retailer_id' : retailer_id,
@@ -336,7 +335,7 @@ console.log('principalAmount?.total_outstanding',principalAmount?.total_outstand
       'sales_agent_id' :sales_agent_id,
       'repayment' : repayment,
     }
-    let calculateRepaymentInterest =( parseFloat(principalAmount.total_outstanding) - parseFloat(principalAmount.principal_outstanding)).toFixed(2) ?? 0 ;
+    let calculateRepaymentInterest =( parseFloat(principalAmount.total_outstanding) - parseFloat(principalAmount.principal_outstanding)) ?? 0 ;
     
     const createRepayment = await knex("APSISIPDC.cr_disbursement").insert(repaymentType).returning('id');
     if(createRepayment) {
@@ -355,23 +354,27 @@ console.log('principalAmount?.total_outstanding',principalAmount?.total_outstand
     var intersetPaid = 0;
   
     if(calculateRepaymentInterest > repayment){
-      intersetPaid = parseFloat(calculateRepaymentInterest) - parseFloat(repayment)
-      let totalInterestResponse = {
-        'totalInterest' : calculateRepaymentInterest
-      }
-      return res.send((sendApiResult(false, "Your repayment is less than your total interest",totalInterestResponse)));
+      intersetPaid = parseFloat(repayment)
+      // intersetPaid = parseFloat(calculateRepaymentInterest) - parseFloat(repayment)
+      // let totalInterestResponse = {
+      //   'totalInterest' : calculateRepaymentInterest
+      // }
+      // return res.send((sendApiResult(false, "Your repayment is less than your total interest",totalInterestResponse)));
     }else{
-      intersetPaid = parseFloat(repayment) - parseFloat(calculateRepaymentInterest)
+      // intersetPaid = parseFloat(repayment) - parseFloat(calculateRepaymentInterest)
+      intersetPaid = parseFloat(calculateRepaymentInterest)
+
     }
   
+    console.log('intersetPaidintersetPaid',intersetPaid)
     // let dailyInterestValue = {...principalAmount,
     let repaymentValueAll = {
-       'principal_outstanding': calculateRepaymentInterest > repayment ? (parseFloat(principalAmount.principal_outstanding)) :
-       (parseFloat(principalAmount.principal_outstanding) - parseFloat(intersetPaid)),
+       'principal_outstanding': calculateRepaymentInterest >= repayment ? (parseFloat(principalAmount.principal_outstanding)) :
+       (parseFloat(principalAmount.principal_outstanding) - parseFloat(repayment) + parseFloat(intersetPaid)),
        'retailer_id': principalAmount.retailer_id,
        'onermn_acc': principalAmount.onermn_acc,
        'disbursement_id': principalAmount.disbursement_id,
-       'total_outstanding': (parseFloat(principalAmount.total_outstanding) - repayment) ,
+       'total_outstanding': (parseFloat(principalAmount.total_outstanding) - parseFloat(repayment)) ,
        'repayment' :repayment,
        'sales_agent_id' :sales_agent_id,
       //  'transaction_cost_type':principalAmount.transaction_cost_type,
@@ -389,22 +392,24 @@ console.log('principalAmount?.total_outstanding',principalAmount?.total_outstand
   //     'transaction_cost':parseFloat(transaction_cost),
   //     'transaction_type':'TRANSACTION'
   //  }
-  console.log('parseFloat(getLimitAmountValue[0]?.current_limit)',parseFloat(getLimitAmountValue[0]?.current_limit))
-  console.log('parseFloat(repayment)',parseFloat(repayment))
-  console.log('parseFloat(calculateRepaymentInterest)',parseFloat(calculateRepaymentInterest))
-
     var limitUpdate = {
-      current_limit: parseFloat(getLimitAmountValue[0]?.current_limit) - parseFloat(repayment) + parseFloat(calculateRepaymentInterest)
+      current_limit: parseFloat(getLimitAmountValue[0]?.current_limit) - parseFloat(repayment) 
     }
   
       await knex("APSISIPDC.cr_retailer_loan_calculation").insert(repaymentValueAll).returning('id').then(async (response)=>{
         // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(transactionCost).then(async ()=>{
           console.log('firstRepaymentID',firstRepaymentID)
           console.log('response',response)
+          var interest ;
           if(firstRepaymentID){
-          var interest =await findRepaymentInterest(onermn_acc , parseInt(firstRepaymentID?.id) , parseInt(response[0]))
-          console.log('interestinterestinterest',interest)
-          if(interest?.length > 0){
+            interest =await findRepaymentInterest(onermn_acc , parseInt(firstRepaymentID?.id) , parseInt(response[0]))
+          }else{
+            interest =await findRepaymentInterestFirstTime(onermn_acc)
+          }
+          
+          
+
+         if(interest?.length > 0){
             let sumofReimbursement = interest.reduce(function (accumulator, curValue) {
               return parseFloat(accumulator) + parseFloat(curValue.interest_reimbursment)
             }, 0) ?? 0;
@@ -428,33 +433,148 @@ console.log('principalAmount?.total_outstanding',principalAmount?.total_outstand
             let sumOfcharge= interest.reduce(function (accumulator, curValue) {
               return parseFloat(accumulator) + parseFloat(curValue.charge)
             }, 0) ?? 0;
-
-            
+  
             let sumOfother_charge= interest.reduce(function (accumulator, curValue) {
               return parseFloat(accumulator) + parseFloat(curValue.other_charge)
             }, 0) ?? 0;
 
-            // console.log('interest',interest)
+            var interest_reimbursment = sumofReimbursement;
+            var penal_interest = sumOFpenal_interest;
+            var overdue_amount = sumOfoverdue_amount;
+            var penal_charge = sumOfpenal_charge;
+            var daily_principal_interest = sumOfdaily_principal_interest;
+            var charge = sumOfcharge;
+            var other_charge = sumOfother_charge;
+
+         
+
+            var payInterest_reimbursment = 0;
+            var paypenal_interest = 0;
+            var payoverdue_amount = 0;
+            var paypenal_charge = 0;
+            var paydaily_principal_interest = 0;
+            var paycharge = 0;
+            var payintersetPaid = 0;
+
+            console.log('intersetPaidintersetPaidintersetPaid',intersetPaid)
+
+            console.log('sumofReimbursement',sumofReimbursement)
+            console.log('sumOFpenal_interest',sumOFpenal_interest)
+            console.log('sumOfoverdue_amount',sumOfoverdue_amount)
+            console.log('sumOfpenal_charge',sumOfpenal_charge)
+            console.log('sumOfdaily_principal_interest',sumOfdaily_principal_interest)
+            console.log('sumOfcharge',sumOfcharge)
+            console.log('sumOfother_charge',sumOfother_charge)
+          
+
+              if(intersetPaid > 0){
+                if(parseFloat(intersetPaid) >= parseFloat(sumofReimbursement)){
+                  intersetPaid = parseFloat(intersetPaid) - parseFloat(sumofReimbursement)
+                  payInterest_reimbursment = parseFloat(sumofReimbursement)
+                  interest_reimbursment = 0
+                }else{
+                  interest_reimbursment =  parseFloat(sumofReimbursement) - parseFloat(intersetPaid)
+                  payInterest_reimbursment = parseFloat(intersetPaid)
+                  intersetPaid = 0
+                }
+              }
+              if(intersetPaid > 0){
+                if(parseFloat(intersetPaid) >= parseFloat(sumOFpenal_interest)){
+                  intersetPaid = parseFloat(intersetPaid) - parseFloat(sumOFpenal_interest)
+                  paypenal_interest = parseFloat(sumOFpenal_interest)
+                  penal_interest = 0
+                }else{
+                  penal_interest =  parseFloat(sumOFpenal_interest) - parseFloat(intersetPaid)
+                  paypenal_interest = parseFloat(intersetPaid)
+                  intersetPaid = 0
+                }
+              }
+              if(intersetPaid > 0){
+                if(parseFloat(intersetPaid) >= parseFloat(sumOfoverdue_amount)){
+                  intersetPaid = parseFloat(intersetPaid) - parseFloat(sumOfoverdue_amount)
+                  payoverdue_amount = parseFloat(sumOfoverdue_amount)
+                  overdue_amount = 0
+                }else{
+                  overdue_amount =  parseFloat(sumOfoverdue_amount) - parseFloat(intersetPaid)
+                  payoverdue_amount = parseFloat(intersetPaid)
+                  intersetPaid = 0
+                }
+              }
+              if(intersetPaid > 0){
+                if(parseFloat(intersetPaid) >= parseFloat(sumOfpenal_charge)){
+                  intersetPaid = parseFloat(intersetPaid) - parseFloat(sumOfpenal_charge)
+                  paypenal_charge = parseFloat(sumOfpenal_charge)
+                  penal_charge=0
+                }else{
+                  penal_charge = parseFloat(sumOfpenal_charge) - parseFloat(intersetPaid)
+                  paypenal_charge = parseFloat(intersetPaid)
+                  intersetPaid = 0
+                }
+              }
+              if(intersetPaid > 0){
+                if(parseFloat(intersetPaid) >= parseFloat(sumOfdaily_principal_interest)){
+                  intersetPaid = parseFloat(intersetPaid) - parseFloat(sumOfdaily_principal_interest)
+                  paydaily_principal_interest = parseFloat(sumOfdaily_principal_interest)
+                  daily_principal_interest = 0
+                }else{
+                  daily_principal_interest = parseFloat(sumOfdaily_principal_interest) - parseFloat(intersetPaid)
+                  paydaily_principal_interest = parseFloat(intersetPaid)
+                  intersetPaid = 0
+                }
+              }
+              if(intersetPaid > 0){
+                if(parseFloat(intersetPaid) >= parseFloat(sumOfcharge)){
+                  intersetPaid = parseFloat(intersetPaid) - parseFloat(sumOfcharge)
+                  paycharge = parseFloat(sumOfcharge)
+                  charge = 0
+
+                }else{
+                  charge = parseFloat(sumOfcharge) - parseFloat(intersetPaid)
+                  paycharge = parseFloat(intersetPaid)
+                  intersetPaid = 0
+                }
+              }
+              if(intersetPaid > 0){
+                if(parseFloat(intersetPaid) >= parseFloat(sumOfother_charge)){
+                  intersetPaid = parseFloat(intersetPaid) - parseFloat(sumOfother_charge)
+                  payintersetPaid =  parseFloat(sumOfother_charge)
+                  other_charge =0
+                }else{
+                  other_charge = parseFloat(other_charge) - parseFloat(intersetPaid)
+                  payintersetPaid =  parseFloat(intersetPaid)
+                  intersetPaid = 0
+                }
+                // intersetPaid = parseFloat(intersetPaid) - parseFloat(other_charge)
+              }
             
-            // console.log('sumofReimbursement',sumofReimbursement)
-            // console.log('interest',interest)
-            // console.log('sumOFpenal_interest',sumOFpenal_interest)
-            // console.log('sumOfoverdue_amount',sumOfoverdue_amount)
-            // console.log('sumOfpenal_charge',sumOfpenal_charge)
-            // console.log('sumOfdaily_principal_interest',sumOfdaily_principal_interest)
-            // console.log('sumOfcharge',sumOfcharge)
-            // console.log('sumOfother_charge',sumOfother_charge)
 
             let  updateInterest = {
-              'interest_reimbursment' :sumofReimbursement,
-              'penal_interest' :sumOFpenal_interest,
-              'overdue_amount' :sumOfoverdue_amount,
-              'penal_charge' :sumOfpenal_charge,
-              'daily_principal_interest' :sumOfdaily_principal_interest,
-              'charge' :sumOfcharge,
-              'other_charge' :sumOfother_charge,
-
+              'interest_reimbursment' :parseFloat(interest_reimbursment).toFixed(2),
+              'penal_interest' :parseFloat(penal_interest).toFixed(2),
+              'overdue_amount' :parseFloat(overdue_amount).toFixed(2),
+              'penal_charge' :parseFloat(penal_charge).toFixed(2),
+              'daily_principal_interest' :parseFloat(daily_principal_interest).toFixed(2),
+              'charge' :parseFloat(charge).toFixed(2),
+              'other_charge' :parseFloat(other_charge).toFixed(2),
             }
+
+            let  InterestCalculation = {
+              'retailer_id':retailer_id,
+              'onermn_acc':onermn_acc,
+              'interest_reimbursment' :parseFloat(payInterest_reimbursment).toFixed(2),
+              'penal_interest' :parseFloat(paypenal_interest).toFixed(2),
+              'overdue_amount' :parseFloat(payoverdue_amount).toFixed(2),
+              'penal_charge' :parseFloat(paypenal_charge).toFixed(2),
+              'daily_principal_interest' :parseFloat(paydaily_principal_interest).toFixed(2),
+              'charge' :parseFloat(paycharge).toFixed(2),
+              'other_charge' :parseFloat(payintersetPaid).toFixed(2),
+            }
+
+            console.log('InterestCalculation',InterestCalculation)
+
+            await knex("APSISIPDC.cr_retailer_loan_interest_calculation").insert(InterestCalculation).then(async (resPonseSaveInterest)=>{
+              console.log('resPonseSaveInterest',resPonseSaveInterest)
+            })
 
             await knex.transaction(async (trx) => {
               const interest_update = await trx("APSISIPDC.cr_retailer_loan_calculation")
@@ -467,8 +587,8 @@ console.log('principalAmount?.total_outstanding',principalAmount?.total_outstand
                 return res.send((sendApiResult(false, "failed to update one rmn account ")));
               }
               });
-            }
           }
+          
 
           // let sumOfother_charge= allRepayment.reduce(function (accumulator, curValue) {
           //   return parseFloat(accumulator) + parseFloat(curValue.other_charge:)
@@ -924,7 +1044,16 @@ var findRepaymentInterest =async (onermn_acc ,firstId , secondId) => {
   .from("APSISIPDC.cr_retailer_loan_calculation")
   .select()
   .where("onermn_acc", onermn_acc)
-  .whereBetween('id', [firstId+1, secondId-1]);
+  .whereBetween('id', [firstId, secondId-1]);
+}
+
+
+var findRepaymentInterestFirstTime =async (onermn_acc ,firstId , secondId) => {
+  return await knex
+  .from("APSISIPDC.cr_retailer_loan_calculation")
+  .select()
+  .where("onermn_acc", onermn_acc)
+  // .whereBetween('id', [firstId+1, secondId-1]);
 }
 
 

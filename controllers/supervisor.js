@@ -36,11 +36,11 @@ const importExcelData2DB = async function (filename, req) {
   }
 };
 
-exports.uploadFileReamarks = async (req, res) => {
-  req.body.user_id = req.user_id;
-  const upload = await superModel.uploadFileReamarks(req.file.filename, req.body);
-  res.status(200).send(upload);
-};
+// exports.uploadFileReamarks = async (req, res) => {
+//   req.body.user_id = req.user_id;
+//   const upload = await superModel.uploadFileReamarks(req.file.filename, req.body);
+//   res.status(200).send(upload);
+// };
 
 exports.saveRemarksFeedback = async (req, res) => {
   try {
@@ -89,9 +89,26 @@ exports.getSalesAgentListBySupervisor = async (req, res) => {
   }
 };
 
-exports.getRemarksFeedback = async (req, res) => {
+exports.getRemarksFeedbackAdmin = async (req, res) => {
   try {
-    const result = await superModel.getRemarksFeedback(req);
+    const result = await superModel.getRemarksFeedbackAdmin(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getRepaymentRemarksFeedbackAdmin = async (req, res) => {
+  try {
+    const result = await superModel.getRepaymentRemarksFeedbackAdmin(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+exports.updateAdminStatus = async (req, res) => {
+  try {
+    const result = await superModel.updateAdminStatus(req);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));

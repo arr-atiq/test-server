@@ -29,7 +29,47 @@ services:
     ports:
       - 83:5000
     command: bash -c /usr/src/app/start.sh
-    env_file: .env        
+    env_file: .env 
+  app4:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    container_name: ipdc-dana-platform-4
+    restart: always
+    ports:
+      - 84:5000
+    command: bash -c /usr/src/app/start.sh
+    env_file: .env   
+  app5:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    container_name: ipdc-dana-platform-5
+    restart: always
+    ports:
+      - 85:5000
+    command: bash -c /usr/src/app/start.sh
+    env_file: .env    
+  app6:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    container_name: ipdc-dana-platform-6
+    restart: always
+    ports:
+      - 86:5000
+    command: bash -c /usr/src/app/start.sh
+    env_file: .env  
+  app7:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    container_name: ipdc-dana-platform-7
+    restart: always
+    ports:
+      - 87:5000
+    command: bash -c /usr/src/app/start.sh
+    env_file: .env                   
   nginx:
     build: ./nginx
     ports:
@@ -38,3 +78,7 @@ services:
       - app1
       - app2
       - app3
+      - app4
+      - app5
+      - app6
+      - app7

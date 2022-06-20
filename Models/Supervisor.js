@@ -332,70 +332,107 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
 };
 
 FileUpload.saveRemarksFeedback = function (req) {
-  const { remarks_id, remarks_one, remarks_two, remarks_three, file_upload_id, created_by } = req.body;
 
-  const insertValue = {
-    remarks_one,
-    remarks_two,
-    remarks_three,
-    created_by,
-    file_upload_id
-  }
+  console.log(req.body.file_for);
+  //console.log(req.file.filename);
+
+  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+  const userID = req.body.user_id;
+  const folder_name = req.body.file_for;
+  const filename = req.file.filename;
+  const file_insert_log = {
+    sys_date: new Date(date),
+    file_for: folder_name,
+    file_path: `public/feedback_file/${folder_name}`,
+    file_name: filename,
+    created_by: parseInt(userID)
+  };
+  const { remarks_id, remarks_one, supervisor_status, admin_status, transaction_type } = req.body;
 
   const remarks_loan_cal_idsArr = remarks_id.split(",");
-  console.log(remarks_loan_cal_idsArr);
 
   return new Promise(async (resolve, reject) => {
     try {
+
+      const file_upload_id = await knex("APSISIPDC.cr_feedback_file_upload").insert(
+        file_insert_log
+      ).returning("id");
+
+      if (file_upload_id == 0) reject(sendApiResult(false, "Not Upload"));
+
+      const insertValue = {
+        remarks_one,
+        transaction_type,
+        created_by: parseInt(userID),
+        file_upload_id: file_upload_id[0]
+      }
+
+
       const cr_remarks_feedback_id = await knex("APSISIPDC.cr_remarks_feedback")
         .insert(insertValue).returning("id");
 
       if (cr_remarks_feedback_id == 0) reject(sendApiResult(false, "Not Save"));
 
-      // for (let i = 0; i < remarks_loan_cal_idsArr.length; i++) {
-          const value1 =  cr_remarks_feedback_id;
-          var value2 = remarks_loan_cal_idsArr[0];
+      for (let i = 0; i < remarks_loan_cal_idsArr.length; i++) {
 
-     
-      // }
+        const feedback_loan_ids = {
+          cr_remarks_feedback_id: cr_remarks_feedback_id[0],
+          cr_remarks_loan_calculation_id: remarks_loan_cal_idsArr[i],
+          supervisor_status,
+          admin_status
+        };
+
+        await knex("APSISIPDC.cr_remarks_loan_calculation_ids")
+          .insert(feedback_loan_ids);
+
+        if (transaction_type == "DISBURSEMENT") {
+          await knex("APSISIPDC.cr_disbursement")
+            .where("cr_disbursement.id", remarks_loan_cal_idsArr[i])
+            .update({ supervisor_status_disbursement: 1 });
+        }
+
+        if (transaction_type == "REPAYMENT") {
+          await knex("APSISIPDC.cr_retailer_loan_calculation")
+            .where("cr_retailer_loan_calculation.id", remarks_loan_cal_idsArr[i])
+            .update({ supervisor_status_repayment: 1 });
+        }
 
 
-         await knex("APSISIPDC.cr_remarks_loan_calculation_ids")
-          .insert({value1,value2});
+      }
 
-      resolve(sendApiResult(true, "Data Saved successfully", data));
+      resolve(sendApiResult(true, "Data Saved successfully", cr_remarks_feedback_id));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   });
 };
 
-FileUpload.uploadFileReamarks = (filename, req) => {
-  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
-  const folder_name = req.file_for;
-  const file_insert_log = {
-    sys_date: new Date(date),
-    file_for: folder_name,
-    file_path: `public/feedback_file/${folder_name}`,
-    file_name: filename,
-    created_by: parseInt(req.user_id)
-  };
+// FileUpload.uploadFileReamarks = (filename, req) => {
+//   const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+//   const folder_name = req.file_for;
+//   const file_insert_log = {
+//     sys_date: new Date(date),
+//     file_for: folder_name,
+//     file_path: `public/feedback_file/${folder_name}`,
+//     file_name: filename,
+//     created_by: parseInt(req.user_id)
+//   };
 
-  return new Promise(async (resolve, reject) => {
-    try {
-      const file_upload = await knex("APSISIPDC.cr_feedback_file_upload").insert(
-        file_insert_log
-      ).returning("id");
+//   return new Promise(async (resolve, reject) => {
+//     try {
+//       const file_upload = await knex("APSISIPDC.cr_feedback_file_upload").insert(
+//         file_insert_log
+//       ).returning("id");
 
-      if (file_upload == 0) reject(sendApiResult(false, "Not Upload"));
-      resolve(sendApiResult(true, "file Upload successfully", file_upload));
-    } catch (error) {
-      reject(sendApiResult(false, error.message));
-    }
-  });
+//       if (file_upload == 0) reject(sendApiResult(false, "Not Upload"));
+//       resolve(sendApiResult(true, "file Upload successfully", file_upload));
+//     } catch (error) {
+//       reject(sendApiResult(false, error.message));
+//     }
+//   });
 
 
-}
+// }
 
 FileUpload.getAllManufacturerOfSalesagentUnderSupervisor = function (req) {
   const { supervisor_id } = req.params;
@@ -529,8 +566,10 @@ FileUpload.getSalesAgentListBySupervisor = function (req) {
   });
 };
 
-FileUpload.getRemarksFeedback = function (req) {
-  const { date } = req.query;
+FileUpload.getRepaymentRemarksFeedbackAdmin = function (req) {
+  const { start_date, end_date, page, per_page, transaction_type } = req.query;
+  const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
+  const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -538,55 +577,116 @@ FileUpload.getRemarksFeedback = function (req) {
         .leftJoin("APSISIPDC.cr_feedback_file_upload",
           "cr_feedback_file_upload.id",
           "cr_remarks_feedback.file_upload_id")
-        .whereRaw(`"cr_feedback_file_upload"."create" >= TO_DATE('${date}', 'YYYY-MM-DD')`)
+        .leftJoin("APSISIPDC.cr_remarks_loan_calculation_ids",
+          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
+          "cr_remarks_feedback.id")
+        .leftJoin("APSISIPDC.cr_retailer_loan_calculation",
+          "cr_retailer_loan_calculation.id",
+          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id")
+        .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+        .where("cr_remarks_loan_calculation_ids.supervisor_status", 1)
+        .where("cr_remarks_loan_calculation_ids.admin_status", 0)
+        .where("cr_remarks_feedback.transaction_type", transaction_type)
         .select(
-          "cr_remarks_feedback.id",
-          "cr_remarks_feedback.remarks_id",
+          "cr_remarks_loan_calculation_ids.id",
+          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
           "cr_remarks_feedback.remarks_one",
-          "cr_remarks_feedback.remarks_two",
-          "cr_remarks_feedback.remarks_three",
           "cr_remarks_feedback.status",
           "cr_remarks_feedback.file_upload_id",
+          "cr_remarks_feedback.created_by",
+          "cr_remarks_loan_calculation_ids.supervisor_status",
+          "cr_remarks_loan_calculation_ids.admin_status",
+          "cr_remarks_feedback.transaction_type",
           "cr_feedback_file_upload.sys_date",
           "cr_feedback_file_upload.file_for",
           "cr_feedback_file_upload.file_path",
           "cr_feedback_file_upload.file_name",
-        );
+          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id",
+          "cr_retailer_loan_calculation.repayment"
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (remarks_result == 0) reject(sendApiResult(false, "Not found"));
+      resolve(sendApiResult(true, "Data fetched successfully", remarks_result));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+FileUpload.getRemarksFeedbackAdmin = function (req) {
+  const { start_date, end_date, page, per_page, transaction_type } = req.query;
+  const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
+  const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
+  console.log(startDate);
+  console.log(endDate);
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const remarks_result = await knex("APSISIPDC.cr_remarks_feedback")
+        .leftJoin("APSISIPDC.cr_feedback_file_upload",
+          "cr_feedback_file_upload.id",
+          "cr_remarks_feedback.file_upload_id")
+        .leftJoin("APSISIPDC.cr_remarks_loan_calculation_ids",
+          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
+          "cr_remarks_feedback.id")
+        .leftJoin("APSISIPDC.cr_disbursement",
+          "cr_disbursement.id",
+          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id")
+        .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+        .where("cr_remarks_loan_calculation_ids.supervisor_status", 1)
+        .where("cr_remarks_loan_calculation_ids.admin_status", 0)
+        .where("cr_remarks_feedback.transaction_type", transaction_type)
+        .select(
+          "cr_remarks_loan_calculation_ids.id",
+          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
+          "cr_remarks_feedback.remarks_one",
+          "cr_remarks_feedback.status",
+          "cr_remarks_feedback.file_upload_id",
+          "cr_remarks_feedback.created_by",
+          "cr_remarks_loan_calculation_ids.supervisor_status",
+          "cr_remarks_loan_calculation_ids.admin_status",
+          "cr_remarks_feedback.transaction_type",
+          "cr_feedback_file_upload.sys_date",
+          "cr_feedback_file_upload.file_for",
+          "cr_feedback_file_upload.file_path",
+          "cr_feedback_file_upload.file_name",
+          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id",
+          "cr_disbursement.disbursement_amount"
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
       if (remarks_result == 0) reject(sendApiResult(false, "Not found"));
 
-      let loan_calculation_ids = [];
+      // console.log(loan_calculation_ids);
+      // let loan_details_array = [];
+      // var loan_calculation_id_arr = [];
 
-      for (let i = 0; i < remarks_result.length; i++) {
-        let loan_calculation_id = remarks_result[i].remarks_id.split(",");
-        loan_calculation_ids.push(loan_calculation_id);
-      }
+      // for (let i = 0; i < loan_calculation_ids.length; i++) {
 
-      console.log(loan_calculation_ids);
-      let loan_details_array = [];
-      var loan_calculation_id_arr = [];
+      // }
+      // const loan_calculation_data = await knex("APSISIPDC.cr_retailer_loan_calculation")
+      //   .leftJoin("APSISIPDC.cr_retailer",
+      //     "cr_retailer.id",
+      //     "cr_retailer_loan_calculation.retailer_id")
+      //   // .where("cr_retailer_loan_calculation.id", loan_calculation_id_arr[i])
+      //   .select("cr_retailer_loan_calculation.id",
+      //     "cr_retailer_loan_calculation.principal_outstanding",
+      //     "cr_retailer_loan_calculation.transaction_cost",
+      //     "cr_retailer_loan_calculation.charge",
+      //     "cr_retailer_loan_calculation.other_charge",
+      //     "cr_retailer_loan_calculation.processing_fee",
+      //     "cr_retailer.retailer_name",
+      //     "cr_retailer.retailer_code");
 
-      for (let i = 0; i < loan_calculation_ids.length; i++) {
-
-      }
-      const loan_calculation_data = await knex("APSISIPDC.cr_retailer_loan_calculation")
-        .leftJoin("APSISIPDC.cr_retailer",
-          "cr_retailer.id",
-          "cr_retailer_loan_calculation.retailer_id")
-        .where("cr_retailer_loan_calculation.id", loan_calculation_id_arr[i])
-        .select("cr_retailer_loan_calculation.id",
-          "cr_retailer_loan_calculation.principal_outstanding",
-          "cr_retailer_loan_calculation.transaction_cost",
-          "cr_retailer_loan_calculation.charge",
-          "cr_retailer_loan_calculation.other_charge",
-          "cr_retailer_loan_calculation.processing_fee",
-          "cr_retailer.retailer_name",
-          "cr_retailer.retailer_code");
-
-      console.log(loan_calculation_data);
-
-      loan_details_array.push(loan_calculation_data);
-
-      resolve(sendApiResult(true, "Data fetched successfully", { remarks_result, loan_details_array }));
+      resolve(sendApiResult(true, "Data fetched successfully", remarks_result));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -613,9 +713,52 @@ FileUpload.getRetailerListByManufacturerAndSalesagent = function (req) {
   });
 };
 
+FileUpload.updateAdminStatus = function (req) {
+  const {
+    ids,
+    admin_status,
+  } = req.body;
+
+  const idsArr = ids.split(",");
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const admin_status_update_array = [];
+
+      for (let i = 0; i < idsArr.length; i++) {
+        await knex.transaction(async (trx) => {
+          const admin_status_update = await trx("APSISIPDC.cr_remarks_loan_calculation_ids")
+            .where({ id: idsArr[i] })
+            .update({
+              admin_status
+            });
+
+          admin_status_update_array.push(admin_status_update);
+
+        });
+
+      }
+
+      if (admin_status_update_array.length <= 0)
+        reject(sendApiResult(false, "Admin Status is not updated"));
+      resolve(
+        sendApiResult(
+          true,
+          "Admin Status Updated Successfully",
+          { Total_updated: admin_status_update_array.length }
+        )
+      );
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+
 FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
   const { supervisor_code } = req.params;
-  const { start_date, end_date } = req.query;
+  const { start_date, end_date, page, per_page } = req.query;
 
 
   return new Promise(async (resolve, reject) => {
@@ -629,6 +772,7 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
           "cr_disbursement.sales_agent_id")
         //.where("cr_disbursement.sales_agent_id", salesagent_id)
         .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
+        .where("cr_disbursement.supervisor_status_disbursement", null)
         .whereRaw(`"cr_disbursement"."created_at" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
         .whereRaw(`"cr_disbursement"."created_at" < TO_DATE('${end_date}', 'YYYY-MM-DD')`)
         .select(
@@ -642,7 +786,12 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
           "cr_disbursement.created_at",
           //(knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`))
 
-        );
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
       //.knex.raw(`IF(sum(cr_disbursement.disbursement_amount) IS NULL,0.00,sum(cr_disbursement.disbursement_amount)) AS total_disbursement_amount`);
       let total_amount = 0;
       for (let i = 0; i < data.length; i++) {
@@ -659,7 +808,7 @@ FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
 };
 FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
   const { supervisor_code } = req.params;
-  const { start_date, end_date } = req.query;
+  const { start_date, end_date, page, per_page } = req.query;
 
 
   return new Promise(async (resolve, reject) => {
@@ -673,6 +822,7 @@ FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
           "cr_retailer_loan_calculation.sales_agent_id")
         //.where("cr_disbursement.sales_agent_id", salesagent_id)
         .where("cr_sales_agent.autho_supervisor_employee_code", supervisor_code)
+        .where("cr_retailer_loan_calculation.supervisor_status_repayment", null)
         .whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
         .whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${end_date}', 'YYYY-MM-DD')`)
         .where("cr_retailer_loan_calculation.transaction_type", "REPAYMENT")
@@ -695,7 +845,12 @@ FileUpload.getRepaymentBySalesagentAndRetailer = function (req) {
           "cr_retailer.phone",
           "cr_retailer.email",
           "cr_retailer_loan_calculation.created_at"
-        );
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
       let total_amount = 0;
       let total_principal_outstanding = 0;
       let total_daily_principal_interest = 0;

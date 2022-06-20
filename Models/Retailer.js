@@ -369,7 +369,7 @@ Retailer.checkRetailerEligibility = function (req) {
 
                     if (Object.keys(checkRetailerManuMapping).length == 0) {
                       let max_r_number_rmn = 0;
-                      let retailerInfo = await trx("APSISIPDC.cr_retailer")
+                      let retailerInfo = await trx("APSISIPDC.cr_retailer")                        
                         .where("retailer_nid", parseInt(value.retailer_nid))
                         .select("id AS retailer_id")
                         .first();

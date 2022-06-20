@@ -182,20 +182,21 @@ User.getDashboard = function (req, res) {
         disbursement_count[0].count
       );
 
-      const dashboardArray = [
-        { total_retailers: total_retailers_count_val },
-        { retailers_diff: total_retailers_diff_current_prev },
-        { total_sanctioned_amount: total_crm_approve_limit },
-        { sanctioned_amount_rate: sanctioned_amount_rate },
-        { total_live_accounts: count_live_acc_val },
-        { total_npl_accounts: npl_acc_val },
-        { total_npl_amount: 0 },
-        { total_idle_retailers: total_idle_retailers },
-        { total_pending_retailers_onboarding: pending_retailers_value },
-        { total_rejected_retailers: rejected_retailers_value },
-        { total_disbursements: disbursement_count_value },
-        { total_processing_fees: processing_fees[0].total_processing_fees },
-        { total_disbursement_amount: disbursement[0].total_disbursement_amount }
+      const dashboardArray = [{
+         'total_retailers': total_retailers_count_val ,
+         'retailers_diff': total_retailers_diff_current_prev ,
+         'total_sanctioned_amount': total_crm_approve_limit ,
+         'sanctioned_amount_rate': sanctioned_amount_rate ,
+         'total_live_accounts': count_live_acc_val ,
+         'total_npl_accounts': npl_acc_val ,
+         'total_npl_amount': 0 ,
+         'total_idle_retailers': total_idle_retailers ,
+         'total_pending_retailers_onboarding': pending_retailers_value ,
+         'total_rejected_retailers': rejected_retailers_value ,
+         'total_disbursements': disbursement_count_value ,
+         'total_processing_fees': processing_fees[0].total_processing_fees ,
+         'total_disbursement_amount': disbursement[0].total_disbursement_amount 
+      }
       ]
 
 
