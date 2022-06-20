@@ -362,8 +362,6 @@ FileUpload.saveRemarksFeedback = function (req) {
 
       const insertValue = {
         remarks_one,
-        supervisor_status,
-        admin_status,
         transaction_type,
         created_by: parseInt(userID),
         file_upload_id: file_upload_id[0]
@@ -379,7 +377,9 @@ FileUpload.saveRemarksFeedback = function (req) {
 
         const feedback_loan_ids = {
           cr_remarks_feedback_id: cr_remarks_feedback_id[0],
-          cr_remarks_loan_calculation_id: remarks_loan_cal_idsArr[i]
+          cr_remarks_loan_calculation_id: remarks_loan_cal_idsArr[i],
+          supervisor_status,
+          admin_status
         };
 
         await knex("APSISIPDC.cr_remarks_loan_calculation_ids")
@@ -648,6 +648,49 @@ FileUpload.getRetailerListByManufacturerAndSalesagent = function (req) {
     }
   });
 };
+
+FileUpload.updateAdminStatus = function (req) {
+  const {
+    ids,
+    admin_status,
+  } = req.body;
+
+  const idsArr = ids.split(",");
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const admin_status_update_array = [];
+
+      for(let i=0; i<idsArr.length; i++){
+        await knex.transaction(async (trx) => {
+          const admin_status_update = await trx("APSISIPDC.cr_remarks_loan_calculation_ids")
+            .where({ id: idsArr[i] })
+            .update({
+              admin_status
+            });
+
+          admin_status_update_array.push(admin_status_update);
+          
+        });
+        
+      }
+
+      if (admin_status_update_array.length <= 0)
+            reject(sendApiResult(false, "Admin Status is not updated"));
+          resolve(
+            sendApiResult(
+              true,
+              "Admin Status Updated Successfully",
+              {Total_updated : admin_status_update_array.length}
+            )
+          );
+      
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 
 FileUpload.getDisbursementBySalesagentAndRetailer = function (req) {
   const { supervisor_code } = req.params;
