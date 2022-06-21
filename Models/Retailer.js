@@ -144,6 +144,7 @@ Retailer.getRetailerList = function (req) {
           "kyc_status",
           "cib_status"
         )
+        .orderBy("cr_retailer", "asc")
         .paginate({
           perPage: per_page,
           currentPage: page,
