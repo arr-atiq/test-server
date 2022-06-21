@@ -335,8 +335,6 @@ FileUpload.saveRemarksFeedback = function (req) {
 
   const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
   const userID = req.body.user_id;
-  console.log("haha");
-
 
   const { remarks_id, remarks_one, supervisor_status, admin_status, transaction_type } = req.body;
 
@@ -367,15 +365,12 @@ FileUpload.saveRemarksFeedback = function (req) {
 
       }
 
-      console.log(file_upload_id);
-
       const insertValue = {
         remarks_one,
         transaction_type,
         created_by: parseInt(userID),
         file_upload_id: file_upload_id[0]
       }
-
 
       const cr_remarks_feedback_id = await knex("APSISIPDC.cr_remarks_feedback")
         .insert(insertValue).returning("id");
@@ -492,6 +487,7 @@ FileUpload.getSupervisorList = function (req) {
           "supervisor_employee_code",
           "region_of_operation"
         )
+        .orderBy("cr_supervisor.id","asc")
         .paginate({
           perPage: per_page,
           currentPage: page,

@@ -216,14 +216,14 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 distributor_tin: invalidate_data_array[index].Distributor_TIN,
                 official_email: invalidate_data_array[index].Official_Email,
                 official_contact_number:
-                invalidate_data_array[index].Official_Contact_Number,
+                  invalidate_data_array[index].Official_Contact_Number,
                 is_distributor_or_third_party_agency:
-                invalidate_data_array[index].Is_Distributor_or_Third_Party_Agency,
+                  invalidate_data_array[index].Is_Distributor_or_Third_Party_Agency,
                 corporate_registration_no:
-                invalidate_data_array[index].Distributor_Corporate_Registration_No,
+                  invalidate_data_array[index].Distributor_Corporate_Registration_No,
                 trade_license_no: invalidate_data_array[index].Trade_License_No,
                 registered_office_bangladesh:
-                invalidate_data_array[index].Distributor_Registered_Office_in_Bangladesh,
+                  invalidate_data_array[index].Distributor_Registered_Office_in_Bangladesh,
                 ofc_address1: invalidate_data_array[index].Address_Line_1,
                 ofc_address2: invalidate_data_array[index].Address_Line_2,
                 ofc_postal_code: invalidate_data_array[index].Postal_Code,
@@ -232,14 +232,14 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 ofc_district: invalidate_data_array[index].District,
                 ofc_division: invalidate_data_array[index].Division,
                 name_of_authorized_representative:
-                invalidate_data_array[index].Name_of_Authorized_Representative,
+                  invalidate_data_array[index].Name_of_Authorized_Representative,
                 autho_rep_full_name: invalidate_data_array[index].Full_Name,
                 autho_rep_nid: invalidate_data_array[index].NID,
                 autho_rep_designation:
-                invalidate_data_array[index].Designation_of_Authorized_Representative,
+                  invalidate_data_array[index].Designation_of_Authorized_Representative,
                 autho_rep_phone: invalidate_data_array[index].Mobile_No,
                 autho_rep_email:
-                invalidate_data_array[index]
+                  invalidate_data_array[index]
                     .Official_Email_Id_of_Authorized_Representative,
                 region_of_operation: invalidate_data_array[index].Region_of_Operation,
                 created_by: req.user_id
@@ -507,6 +507,7 @@ FileUpload.getDistributorList = function (req) {
           "autho_rep_email",
           "region_of_operation"
         )
+        .orderBy("cr_distributor.id", "asc")
         .paginate({
           perPage: per_page,
           currentPage: page,

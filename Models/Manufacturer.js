@@ -690,6 +690,7 @@ FileUpload.getManufacturerList = function (req) {
           "autho_rep_phone",
           "autho_rep_email"
         )
+        .orderBy("cr_manufacturer.id", "asc")
         .paginate({
           perPage: per_page,
           currentPage: page,
