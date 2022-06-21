@@ -477,17 +477,28 @@ FileUpload.getSupervisorList = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_supervisor")
-        .where("activation_status", "Active")
-        .select(
-          "id",
-          "supervisor_name",
-          "supervisor_nid",
-          "phone",
-          "manufacturer_id",
-          "supervisor_employee_code",
-          "region_of_operation"
+        .leftJoin("APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_supervisor.manufacturer_id"
         )
-        .orderBy("cr_supervisor.id","asc")
+        .leftJoin("APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_supervisor.distributor_id"
+        )
+        .where("cr_supervisor.activation_status", "Active")
+        .select(
+          "cr_supervisor.id",
+          "cr_supervisor.supervisor_name",
+          "cr_supervisor.supervisor_nid",
+          "cr_supervisor.phone",
+          "cr_supervisor.manufacturer_id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_supervisor.distributor_id",
+          "cr_distributor.distributor_name",
+          "cr_supervisor.supervisor_employee_code",
+          "cr_supervisor.region_of_operation"
+        )
+        .orderBy("cr_supervisor.id", "asc")
         .paginate({
           perPage: per_page,
           currentPage: page,
