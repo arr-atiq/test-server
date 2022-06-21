@@ -352,6 +352,7 @@ FileUpload.getSalesAgentList = function (req) {
           "autho_supervisor_employee_code",
           "region_of_operation"
         )
+        .orderBy("cr_sales_agent.id", "asc")
         .paginate({
           perPage: per_page,
           currentPage: page,
