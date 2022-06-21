@@ -335,16 +335,9 @@ FileUpload.saveRemarksFeedback = function (req) {
 
   const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
   const userID = req.body.user_id;
-  const folder_name = req.body.file_for;
-  const filename = req.file.filename ? req.file.filename : "";
+  console.log("haha");
 
-  const file_insert_log = {
-    sys_date: new Date(date),
-    file_for: folder_name,
-    file_path: `public/feedback_file/${folder_name}`,
-    file_name: filename,
-    created_by: parseInt(userID)
-  };
+
   const { remarks_id, remarks_one, supervisor_status, admin_status, transaction_type } = req.body;
 
   const remarks_loan_cal_idsArr = remarks_id.split(",");
@@ -352,11 +345,29 @@ FileUpload.saveRemarksFeedback = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
 
-      const file_upload_id = await knex("APSISIPDC.cr_feedback_file_upload").insert(
-        file_insert_log
-      ).returning("id");
+      let file_upload_id = [];
 
-      if (file_upload_id == 0) reject(sendApiResult(false, "Not Upload"));
+      if (req.body.file_for && req.file.filename) {
+        const folder_name = req.body.file_for;
+        const filename = req.file.filename;
+
+        const file_insert_log = {
+          sys_date: new Date(date),
+          file_for: folder_name,
+          file_path: `public/feedback_file/${folder_name}`,
+          file_name: filename,
+          created_by: parseInt(userID)
+        };
+
+        file_upload_id = await knex("APSISIPDC.cr_feedback_file_upload").insert(
+          file_insert_log
+        ).returning("id");
+
+        if (file_upload_id == 0) reject(sendApiResult(false, "Not Upload"));
+
+      }
+
+      console.log(file_upload_id);
 
       const insertValue = {
         remarks_one,
