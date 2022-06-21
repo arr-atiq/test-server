@@ -3,11 +3,12 @@ node_modules
 package-lock.json
 log/error/*
 log/info/*
-public/configuration_file/*
-public/onboarding-sample-file/*
-public/unupload_report/*
-public/feedback_file/*
-public/reports_retailer/*
-public/ekyc/*
-public/cib/*
+# public/configuration_file/*
+# public/onboarding-sample-file/*
+# public/unupload_report/*
+# public/feedback_file/*
+# public/reports_retailer/*
+# public/ekyc/*
+# public/cib/*
 knexfile.js
+public/configuration_file/retaier_onboarding/file-1655220186674-Retailer_Onboarding (8).xlsx
