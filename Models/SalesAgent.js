@@ -341,16 +341,32 @@ FileUpload.getSalesAgentList = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_sales_agent")
-        .where("activation_status", "Active")
+        .where("cr_sales_agent.activation_status", "Active")
+        .leftJoin("APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_sales_agent.manufacturer_id"
+        )
+        .leftJoin("APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_sales_agent.distributor_id"
+        )
+        .leftJoin("APSISIPDC.cr_supervisor",
+          "cr_supervisor.supervisor_employee_code",
+          "cr_sales_agent.autho_supervisor_employee_code"
+        )
         .select(
-          "id",
-          "agent_name",
-          "agent_nid",
-          "phone",
-          "manufacturer_id",
-          "agent_employee_code",
-          "autho_supervisor_employee_code",
-          "region_of_operation"
+          "cr_sales_agent.id",
+          "cr_sales_agent.agent_name",
+          "cr_sales_agent.agent_nid",
+          "cr_sales_agent.phone",
+          "cr_sales_agent.manufacturer_id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_sales_agent.distributor_id",
+          "cr_distributor.distributor_name",
+          "cr_sales_agent.agent_employee_code",
+          "cr_sales_agent.autho_supervisor_employee_code",
+          "cr_supervisor.supervisor_name",
+          "cr_sales_agent.region_of_operation"
         )
         .orderBy("cr_sales_agent.id", "asc")
         .paginate({
