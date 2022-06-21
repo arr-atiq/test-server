@@ -10,3 +10,4 @@ public/feedback_file/*
 public/reports_retailer/*
 public/ekyc/*
 public/cib/*
+knexfile.js
