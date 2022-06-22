@@ -26,10 +26,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .whereIn("user_type", folder_name);
           const user_role_id = user_roles[0].id;
 
+          const all_NID_array = [];
+          const all_Phone_array = [];
+          const all_Emp_code_array = [];
           const data_array = [];
           const unuploaded_data_array = [];
           const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
+            for (let index = 0; index < rows.length; index++) {
+              all_NID_array[index] = rows[index].Supervisor_NID;
+              all_Phone_array[index] = rows[index].Phone;
+              all_Emp_code_array[index] = rows[index].Supervisor_Employee_Code;
+            }
             for (let index = 0; index < rows.length; index++) {
               const nid = rows[index].Supervisor_NID;
               const phoneNumber = rows[index].Phone;
@@ -91,6 +99,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 const duplication_check_val_emp_code = parseInt(
                   duplication_check_emp_code[0].count
                 );
+
+                const nidSubArray = all_NID_array.slice(0, index);
+
+                const nidDuplicateExcel = nidSubArray.includes(supervisor_nid);
+                const phoneDuplicateExcel = nidSubArray.includes(supervisor_phone);
+                const empCodeDuplicateExcel = nidSubArray.includes(supervisor_emp_code);
+
                 if (duplication_check_val_nid == 0 && duplication_check_val_phone == 0 && duplication_check_val_emp_code == 0) {
                   const temp_data = {
                     Supervisor_Name: rows[index].Supervisor_Name,

@@ -363,6 +363,7 @@ FileUpload.getSalesAgentList = function (req) {
           "cr_manufacturer.manufacturer_name",
           "cr_sales_agent.distributor_id",
           "cr_distributor.distributor_name",
+          "cr_distributor.distributor_code",
           "cr_sales_agent.agent_employee_code",
           "cr_sales_agent.autho_supervisor_employee_code",
           "cr_supervisor.supervisor_name",
