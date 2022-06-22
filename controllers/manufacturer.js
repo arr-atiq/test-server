@@ -374,6 +374,8 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
       // col_add++;
       row++;
     }
+
+    await knex("APSISIPDC.cr_manufacturer_unuploaded_data").del();
     await workbook.write("public/unupload_report/manufacturer_unuploaded_data_report.xlsx");
     const fileName = "./unupload_report/manufacturer_unuploaded_data_report.xlsx";
     setTimeout(() => {
@@ -564,6 +566,8 @@ exports.generateManufacturerInvalidatedReport = async (req, res) => {
       // col_add++;
       row++;
     }
+
+    await knex("APSISIPDC.cr_manufacturer_invalidated_data").del();
     await workbook.write("public/unupload_report/manufacturer_invalidated_data_report.xlsx");
     const fileName = "./unupload_report/manufacturer_invalidated_data_report.xlsx";
     setTimeout(() => {

@@ -218,8 +218,10 @@ exports.generateDistributorUnuploadedReport = async (req, res) => {
     	// col_add++;
     	row++;
     }
+    
     await workbook.write("public/unupload_report/distributor_unuploaded_data_report.xlsx");
     const fileName = "./unupload_report/distributor_unuploaded_data_report.xlsx";
+    await knex("APSISIPDC.cr_distributor_invalidated_data").del();
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);
@@ -374,8 +376,10 @@ exports.generateDistributorInvalidatedReport = async (req, res) => {
     	// col_add++;
     	row++;
     }
+
     await workbook.write("public/unupload_report/distributor_invlidated_data_report.xlsx");
     const fileName = "./unupload_report/distributor_invlidated_data_report.xlsx";
+    await knex("APSISIPDC.cr_distributor_unuploaded_data").del();
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);
