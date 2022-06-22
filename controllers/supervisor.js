@@ -293,6 +293,7 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
     }
     await workbook.write("public/unupload_report/supervisorUnuploadedDataDownload.xlsx");
     const fileName = "./unupload_report/supervisorUnuploadedDataDownload.xlsx";
+    await knex("APSISIPDC.cr_supervisor_unuploaded_data").del();
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);
@@ -381,6 +382,7 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
     }
     await workbook.write("public/unupload_report/supervisorInvalidateDataDownload.xlsx");
     const fileName = "./unupload_report/supervisorInvalidateDataDownload.xlsx";
+    await knex("APSISIPDC.cr_supervisor_invalidated_data").del();
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);

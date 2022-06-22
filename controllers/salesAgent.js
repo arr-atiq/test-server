@@ -192,6 +192,7 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
     }
     await workbook.write("public/unupload_report/sales_agent_unuploaded_report.xlsx");
     const fileName = "./unupload_report/sales_agent_unuploaded_report.xlsx";
+    await knex("APSISIPDC.cr_salesagent_unuploaded_data").del();
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);
@@ -282,8 +283,9 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
     	// col_add++;
     	row++;
     }
-    await workbook.write("public/unupload_report/sales_agent_unuploaded_report.xlsx");
-    const fileName = "./unupload_report/sales_agent_unuploaded_report.xlsx";
+    await workbook.write("public/unupload_report/sales_agent_invalidated_data.xlsx");
+    const fileName = "./unupload_report/sales_agent_invalidated_data.xlsx";
+    await knex("APSISIPDC.cr_sales_agent_invalidated_data").del();
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);
