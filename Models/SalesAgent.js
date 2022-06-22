@@ -26,10 +26,20 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .whereIn("user_type", folder_name);
           const user_role_id = user_roles[0].id;
 
+          const all_NID_array = [];
+          const all_Phone_array = [];
+          const all_Emp_code_array = [];
           const data_array = [];
           const unuploaded_data_array = [];
           const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
+            for (let index = 0; index < rows.length; index++) {
+              all_NID_array[index] = rows[index].Sales_Agent_NID;
+              all_Phone_array[index] = rows[index].Phone;
+              all_Emp_code_array[index] = rows[index].Sales_Agent_Employee_Code;
+            }
+
+
             for (let index = 0; index < rows.length; index++) {
               const agent_nid = rows[index].Sales_Agent_NID;
               const phoneNumber = rows[index].Phone;
@@ -110,7 +120,20 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check_emp_code[0].count
               );
 
-              if (duplication_check_val_nid == 0 && duplication_check_val_phone == 0 && duplication_check_val_emp_code == 0) {
+              const nidSubArray = all_NID_array.slice(0, index);
+              const phoneSubArray = all_Phone_array.slice(0, index);
+              const emp_code_SubArray = all_Emp_code_array.slice(0, index);
+
+              const nidDuplicateExcel = nidSubArray.includes(salesagent_nid);
+              const phoneDuplicateExcel = phoneSubArray.includes(salesagent_phone);
+              const empCodeDuplicateExcel = emp_code_SubArray.includes(salesagent_emp_code);
+
+              if (duplication_check_val_nid == 0
+                && duplication_check_val_phone == 0
+                && duplication_check_val_emp_code == 0
+                && !nidDuplicateExcel
+                && !phoneDuplicateExcel
+                && !empCodeDuplicateExcel) {
                 const temp_data = {
                   Sales_Agent_Name: rows[index].Sales_Agent_Name,
                   Sales_Agent_NID: rows[index].Sales_Agent_NID,
