@@ -178,13 +178,15 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
     	.cell(row, col + col_add)
     	.string(e.phone ? e.phone : "");
     	col_add++;
+      worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "");
+    	col_add++;
+      worksheet.cell(row, col + col_add).string(e.autho_supervisor_employee_code ? e.autho_supervisor_employee_code : "");
+    	col_add++;
     	worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
     	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "");
+      worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
     	col_add++;
     	worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
     	col_add++;
     	// worksheet.cell(row, col + col_add).number(0);
     	// col_add++;
