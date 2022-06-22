@@ -26,10 +26,15 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .whereIn("user_type", folder_name);
           const user_role_id = user_roles[0].id;
 
+          const all_TIN_array = [];
           const data_array = [];
           const unuploaded_data_array = [];
           const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
+            for (let index = 0; index < rows.length; index++) {
+              all_TIN_array[index] = rows[index].Distributor_TIN;
+            }
+
             for (let index = 0; index < rows.length; index++) {
 
               const nid = rows[index].NID;
@@ -99,7 +104,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const duplication_check_val = parseInt(
                 duplication_check[0].count
               );
-              if (duplication_check_val == 0) {
+
+              const tinSubArray = all_TIN_array.slice(0, index);
+
+              const tinDuplicateExcel = tinSubArray.includes(distributor_tin);
+
+
+              if (duplication_check_val == 0 && !tinDuplicateExcel) {
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,
