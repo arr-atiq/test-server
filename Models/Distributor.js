@@ -479,33 +479,38 @@ FileUpload.getDistributorList = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_distributor")
-        .where("activation_status", "Active")
+        .leftJoin("APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_distributor.manufacturer_id"
+        )
+        .where("cr_distributor.activation_status", "Active")
         .select(
-          "id",
-          "distributor_name",
-          "manufacturer_id",
-          "distributor_code",
-          "distributor_tin",
-          "official_email",
-          "official_contact_number",
-          "is_distributor_or_third_party_agency",
-          "corporate_registration_no",
-          "trade_license_no",
-          "registered_office_bangladesh",
-          "ofc_address1",
-          "ofc_address2",
-          "ofc_postal_code",
-          "ofc_post_office",
-          "ofc_thana",
-          "ofc_district",
-          "ofc_division",
-          "name_of_authorized_representative",
-          "autho_rep_full_name",
-          "autho_rep_nid",
-          "autho_rep_designation",
-          "autho_rep_phone",
-          "autho_rep_email",
-          "region_of_operation"
+          "cr_distributor.id",
+          "cr_distributor.distributor_name",
+          "cr_distributor.manufacturer_id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_distributor.distributor_code",
+          "cr_distributor.distributor_tin",
+          "cr_distributor.official_email",
+          "cr_distributor.official_contact_number",
+          "cr_distributor.is_distributor_or_third_party_agency",
+          "cr_distributor.corporate_registration_no",
+          "cr_distributor.trade_license_no",
+          "cr_distributor.registered_office_bangladesh",
+          "cr_distributor.ofc_address1",
+          "cr_distributor.ofc_address2",
+          "cr_distributor.ofc_postal_code",
+          "cr_distributor.ofc_post_office",
+          "cr_distributor.ofc_thana",
+          "cr_distributor.ofc_district",
+          "cr_distributor.ofc_division",
+          "cr_distributor.name_of_authorized_representative",
+          "cr_distributor.autho_rep_full_name",
+          "cr_distributor.autho_rep_nid",
+          "cr_distributor.autho_rep_designation",
+          "cr_distributor.autho_rep_phone",
+          "cr_distributor.autho_rep_email",
+          "cr_distributor.region_of_operation"
         )
         .orderBy("cr_distributor.id", "asc")
         .paginate({
