@@ -3,11 +3,12 @@ node_modules
 package-lock.json
 log/error/*
 log/info/*
-public/configuration_file/*
-public/onboarding-sample-file/*
-public/unupload_report/*
-public/feedback_file/*
-public/reports_retailer/*
-public/ekyc/*
-public/cib/*
+public
+# public/configuration_file/*
+# public/onboarding-sample-file/*
+# public/unupload_report/*
+# public/feedback_file/*
+# public/reports_retailer/*
+# public/ekyc/*
+# public/cib/*
 knexfile.js
