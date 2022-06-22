@@ -1428,5 +1428,77 @@ Retailer.getRetailerDistrict = function (req) {
   });
 };
 
+Retailer.RetailersMonthlyReport = async (req, res) => {
+  return new Promise(async (resolve, reject) => {
+    const { month, distributor_id, manufacturer_id, district, page, per_page } = req.query;
+    try {
+      const filter_report_data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_retailer_manu_scheme_mapping.distributor_id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_loan_calculation",
+          "cr_retailer.id",
+          "cr_retailer_loan_calculation.retailer_id"
+        )
+        .where(function () {
+          if (district) {
+            this.where("cr_retailer.district", district)
+          }
+          if (manufacturer_id) {
+            this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+          }
+          if (distributor_id) {
+            this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          }
+          if (month) {
+            const monthNum = parseInt(month);
+            const monthStartDate = moment('2021-12-31').add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+            console.log(monthStartDate)
+            const monthEndDate = moment('2021-12-31').add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+            console.log(monthEndDate)
+            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            console.log("haha");
+          }
+        })
+        .select(
+          "cr_retailer.retailer_name",
+          "cr_retailer.retailer_code",
+          "cr_retailer.district",
+          "cr_manufacturer.manufacturer_name",
+          "cr_distributor.distributor_name",
+          "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+          "cr_retailer_loan_calculation.transaction_cost",
+          "cr_retailer_loan_calculation.total_outstanding",
+          "cr_retailer_loan_calculation.repayment"
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+
+      if (filter_report_data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Data filter successfully", filter_report_data));
+    } catch (error) {
+      res.send(sendApiResult(false, error.message));
+    }
+
+  });
+};
 
 module.exports = Retailer;
