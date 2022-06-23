@@ -40,10 +40,13 @@ exports.insertLoanCalculation = async (req, res) => {
           const schemavalue = schemaGetvalue.data.data[0]
           var LoanTenorIndays = await findLoanTenorIndays(rmnAccount.ac_number_1rmn ,schemavalue)
           var dailyInterestValue;
-          // console.log('LoanTenorIndays',LoanTenorIndays)
-          // return 
-          var date = moment(schemavalue?.expiry_date?.split('T')[0])
+          console.log('rmnAccountrmnAccount',rmnAccount?.crm_approve_date)
+        
+          var date = moment(moment(rmnAccount?.crm_approve_date), "YYYY-MM-DD").add((schemavalue.expiry_date*30), 'days')
           var now = moment();
+          // console.log('new_date---------------------------------',date)
+          // console.log('now---------------------------------- ',now)
+          // return
           var checkExpiry = false
           if (now > date) {
             checkExpiry = true
@@ -622,6 +625,10 @@ exports.slab = async (req, res) => {
   let { onermn_acc , repayment } = req.query
   const getSlabDateValue = await getSlabDate(onermn_acc)
   const dateSlab = getSlabDateValue?.created_at
+  // console.log('getSlabDateValue',getSlabDateValue)
+  // return
+  // const dateSlab = getSlabDateValue?.crm_approve_date
+  
   let transaction_cost = 0;
   var getSchemeId =await getSchemeID(onermn_acc)
   var SchemeValue;
@@ -933,6 +940,13 @@ var getSlabDate =async (onermn_acc) => {
   .orderBy('id', 'desc').first()
 }
 
+var oneRMnAccDateValue =async (onermn_acc) => {
+  return await knex
+  .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
+  .select()
+  .where("ac_number_1rmn", onermn_acc)
+}
+
 var getLimitAmount =async (onermn_acc) => {
   return await knex
   .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
@@ -948,14 +962,12 @@ var getSlabAmount =async (repayment , days) => {
   .where("upper_limit",">=", repayment)
   .where("day_dis_lower_limit","<=", days)
   .where("day_dis_upper_limit",">=", days)
-
-
 }
 
 var getAllRmnAccount =async (page ,per_page  ) => {
   return await knex
   .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
-  .select('ac_number_1rmn','retailer_id','retailer_code','manufacturer_id','distributor_id') 
+  .select('ac_number_1rmn','retailer_id','retailer_code','manufacturer_id','distributor_id','crm_approve_date') 
   // .paginate({
   //   perPage: per_page,
   //   currentPage: page,
