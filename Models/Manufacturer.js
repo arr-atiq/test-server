@@ -58,10 +58,22 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
           // Nature of business scope - end
 
+          const all_Reg_No_array = [];
+          const all_Official_Email_array = [];
+          const all_Official_Phone_array = [];
+          const all_Name_array = [];
           const data_array = [];
           const unuploaded_data_array = [];
           const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
+
+            for (let index = 0; index < rows.length; index++) {
+              all_Reg_No_array[index] = rows[index].Manufacturer_Registration_No;
+              all_Official_Email_array[index] = rows[index].Official_Email_ID;
+              all_Official_Phone_array[index] = rows[index].Official_Phone_Number;
+              all_Name_array[index] = rows[index].Manufacturer_Name;
+            }
+
             for (let index = 0; index < rows.length; index++) {
               const reg_no = rows[index].Manufacturer_Registration_No;
               const email = rows[index].Official_Email_ID;
@@ -207,7 +219,24 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_checkNID[0].count
               );
 
-              if (duplication_check_val_reg == 0 && duplication_check_val_email == 0 && duplication_check_val_phone == 0 && duplication_check_val_name == 0) {
+              const regNoSubArray = all_Reg_No_array.slice(0, index);
+              const officialEmailSubArray = all_Official_Email_array.slice(0, index);
+              const officialPhoneSubArray = all_Official_Phone_array.slice(0, index);
+              const name_SubArray = all_Name_array.slice(0, index);
+
+              const regNoDuplicateExcel = regNoSubArray.includes(reg_no);
+              const officialEmailDuplicateExcel = officialEmailSubArray.includes(email);
+              const officialPhoneDuplicateExcel = officialPhoneSubArray.includes(phone);
+              const empCodeDuplicateExcel = name_SubArray.includes(name);
+
+              if (duplication_check_val_reg == 0
+                && duplication_check_val_email == 0
+                && duplication_check_val_phone == 0
+                && duplication_check_val_name == 0
+                && !regNoDuplicateExcel
+                && !officialEmailDuplicateExcel
+                && !officialPhoneDuplicateExcel
+                && !empCodeDuplicateExcel) {
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],

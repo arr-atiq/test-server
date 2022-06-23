@@ -665,6 +665,16 @@ Retailer.getRnRmnMappingById = function (req) {
           "cr_retailer_manu_scheme_mapping.distributor_id",
           "cr_distributor.id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_vs_sales_agent",
+          "cr_retailer_vs_sales_agent.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_sales_agent",
+          "cr_sales_agent.id",
+          "cr_retailer_vs_sales_agent.sales_agent_id"
+        )
         .where("cr_retailer.status", "Active")
         .where("cr_retailer_manu_scheme_mapping.status", "Active")
         .where("cr_retailer.id", retailer_id)
@@ -684,7 +694,9 @@ Retailer.getRnRmnMappingById = function (req) {
           "cr_distributor.region_of_operation",
           "cr_retailer_manu_scheme_mapping.system_limit",
           "cr_retailer_manu_scheme_mapping.propose_limit",
-          "cr_retailer_manu_scheme_mapping.crm_approve_limit"
+          "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+          "cr_sales_agent.id as sales_agent_id",
+          "cr_sales_agent.agent_name"
         );
 
       /* const getRnRmnMapping = {} */
@@ -711,6 +723,8 @@ Retailer.getRnRmnMappingById = function (req) {
           "system_limit": value.system_limit,
           "propose_limit": value.propose_limit,
           "crm_approve_limit": value.crm_approve_limit,
+          "sales_agent_id": value.sales_agent_id,
+          "sales_agent_name": value.agent_name
         });
       }
       /* getRnRmnMapping[account_exist[0]] = accountInfoArray; */

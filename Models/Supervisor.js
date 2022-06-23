@@ -101,12 +101,19 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 );
 
                 const nidSubArray = all_NID_array.slice(0, index);
+                const phoneSubArray = all_Phone_array.slice(0, index);
+                const emp_code_SubArray = all_Emp_code_array.slice(0, index);
 
                 const nidDuplicateExcel = nidSubArray.includes(supervisor_nid);
-                const phoneDuplicateExcel = nidSubArray.includes(supervisor_phone);
-                const empCodeDuplicateExcel = nidSubArray.includes(supervisor_emp_code);
+                const phoneDuplicateExcel = phoneSubArray.includes(supervisor_phone);
+                const empCodeDuplicateExcel = emp_code_SubArray.includes(supervisor_emp_code);
 
-                if (duplication_check_val_nid == 0 && duplication_check_val_phone == 0 && duplication_check_val_emp_code == 0) {
+                if (duplication_check_val_nid == 0
+                  && duplication_check_val_phone == 0
+                  && duplication_check_val_emp_code == 0
+                  && !nidDuplicateExcel
+                  && !phoneDuplicateExcel
+                  && !empCodeDuplicateExcel) {
                   const temp_data = {
                     Supervisor_Name: rows[index].Supervisor_Name,
                     Supervisor_NID: rows[index].Supervisor_NID,
