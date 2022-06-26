@@ -883,6 +883,8 @@ Retailer.updateSchemaByRetailers = function (req) {
 
 
 Retailer.updateLimitMapping = async (req, res) => {
+
+  console.log("haha start");
   const {
     type,
     limitValue,
@@ -915,10 +917,11 @@ Retailer.updateLimitMapping = async (req, res) => {
           const updateData = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
             .where({ ac_number_1rmn: req.params.rmnID })
             .update({
-              crm_approve_limit: limitValue,
+              crm_approve_limit: limitValue, 
+              crm_approve_date: knex.fn.now(),
               crm_approve_by: user_id
             });
-
+          console.log('updateData',updateData)
           if (updateData <= 0) res.send(sendApiResult(false, 'Could not Found ac_number_1rmn'));
           resolve(sendApiResult(
             true,
