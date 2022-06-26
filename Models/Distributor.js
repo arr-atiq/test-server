@@ -352,6 +352,22 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   distributor_id: insert_distributor[0],
                   created_by: req.user_id,
                 };
+                var distributorIDUpdate = {
+                  distributor_code:`${data_array[index].Distributor_Code}-${insert_distributor[0]}`
+                };
+                console.log('insert_user[0]',insert_distributor[0])
+
+                console.log('distributorIDUpdate',distributorIDUpdate)
+
+                await knex.transaction(async (trx) => {
+                  let updateData =  await trx(
+                    "APSISIPDC.cr_distributor"
+                  )
+                    .where({ id: insert_distributor[0] })
+                    .update(distributorIDUpdate);
+                     console.log('updateData',updateData)
+                });
+
                 const insert_manufacturer_vs_distributor = await knex(
                   "APSISIPDC.cr_manufacturer_vs_distributor"
                 ).insert(temp_manufacturer_vs_distributor_map);
