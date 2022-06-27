@@ -213,7 +213,6 @@ exports.generateRetailersMonthlyReport = async (req, res) => {
           console.log(monthEndDate)
           this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
           this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
-          console.log("haha");
         }
       })
       .select(

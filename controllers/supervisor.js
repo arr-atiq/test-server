@@ -160,9 +160,9 @@ exports.getRetailerListByManufacturerAndSalesagent = async (req, res) => {
   }
 };
 
-exports.getDisbursementBySalesagentAndRetailer = async (req, res) => {
+exports.getDisbursementByManufacturerAndSupervisor = async (req, res) => {
   try {
-    const result = await superModel.getDisbursementBySalesagentAndRetailer(req);
+    const result = await superModel.getDisbursementByManufacturerAndSupervisor(req);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
