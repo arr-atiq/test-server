@@ -49,10 +49,9 @@ exports.login = async (req, res) => {
   }
 
   const userData = await knex("APSISIPDC.cr_users")
-    .select("id", "name", "email", "phone", "password")
+    .select("id", "name", "email", "phone", "password", "device_token")
     .where({ email, status: "Active" })
     .first();
-
   if (!userData || !(md5(`++${password}--`) === userData.password)) {
     res.send(sendApiResult(false, "Oops! Invalid email or Password."));
   } else {
@@ -110,6 +109,7 @@ exports.login = async (req, res) => {
     userData.user_level_name = (userLevel?.name != undefined) ? userLevel?.name : null;
     userData.token = token;
     userData.refreshToken = refreshToken;
+    userData.device_token = userData.device_token;
 
     return res.send(
       sendApiResult(true, "You have Successfully Logged In.", userData)
@@ -121,3 +121,13 @@ exports.keepAliveDb = async (req, res) => {
   const data = await knex("APSISIPDC.cr_manufacturer").select("id").first().returning("id");
   return data;
 };
+
+
+exports.deviceToken = async(req,res) =>{
+  const { id, device_token } = req.body;
+  const data = await knex("APSISIPDC.cr_users").where("id", id).update({
+    device_token: device_token,
+  });
+  return res.send(true, "You have Successfully Logged In.", data);
+
+}
