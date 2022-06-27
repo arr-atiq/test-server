@@ -183,19 +183,19 @@ User.getDashboard = function (req, res) {
       );
 
       const dashboardArray = [{
-         'total_retailers': total_retailers_count_val ,
-         'retailers_diff': total_retailers_diff_current_prev ,
-         'total_sanctioned_amount': total_crm_approve_limit ,
-         'sanctioned_amount_rate': sanctioned_amount_rate ,
-         'total_live_accounts': count_live_acc_val ,
-         'total_npl_accounts': npl_acc_val ,
-         'total_npl_amount': 0 ,
-         'total_idle_retailers': total_idle_retailers ,
-         'total_pending_retailers_onboarding': pending_retailers_value ,
-         'total_rejected_retailers': rejected_retailers_value ,
-         'total_disbursements': disbursement_count_value ,
-         'total_processing_fees': processing_fees[0].total_processing_fees ,
-         'total_disbursement_amount': disbursement[0].total_disbursement_amount 
+        'total_retailers': total_retailers_count_val,
+        'retailers_diff': total_retailers_diff_current_prev,
+        'total_sanctioned_amount': total_crm_approve_limit,
+        'sanctioned_amount_rate': sanctioned_amount_rate,
+        'total_live_accounts': count_live_acc_val,
+        'total_npl_accounts': npl_acc_val,
+        'total_npl_amount': 0,
+        'total_idle_retailers': total_idle_retailers,
+        'total_pending_retailers_onboarding': pending_retailers_value,
+        'total_rejected_retailers': rejected_retailers_value,
+        'total_disbursements': disbursement_count_value,
+        'total_processing_fees': processing_fees[0].total_processing_fees,
+        'total_disbursement_amount': disbursement[0].total_disbursement_amount
       }
       ]
 
@@ -203,6 +203,62 @@ User.getDashboard = function (req, res) {
 
       if (dashboardArray.length == 0) reject(sendApiResult(false, "Not found."));
       resolve(sendApiResult(true, "Data fetched successfully", dashboardArray));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+User.getCountNotifications = function (req) {
+  const { salesagent_id } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const unseenNotify = await knex
+        //.count("cr_push_notification.id as count")
+        .from("APSISIPDC.cr_push_notification")
+        .where("cr_push_notification.sales_agent_id", salesagent_id)
+        .where("cr_push_notification.seen_by", null)
+        .select(
+          "id",
+          "receiver_token",
+          "action",
+          "title",
+          "body"
+        )
+
+      // const total_unseen_notify = parseInt(
+      //   unseenNotify[0].count
+      //   );
+      if (unseenNotify == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", unseenNotify));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+User.updateNotificationsSeen = function (req) {
+  const { salesagent_id } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex.transaction(async (trx) => {
+        const seen_update = await trx("APSISIPDC.cr_push_notification")
+          .where({ sales_agent_id: salesagent_id })
+          .where({ seen_by: null })
+          .update({
+            seen_by:salesagent_id,
+          });
+        if (seen_update <= 0)
+          reject(sendApiResult(false, "Could not Found unseen notify"));
+        resolve(
+          sendApiResult(
+            true,
+            "notifications seen updated Successfully",
+            seen_update
+          )
+        );
+      });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }

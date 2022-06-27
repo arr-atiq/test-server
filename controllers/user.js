@@ -18,3 +18,19 @@ exports.getDashboard = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+exports.getCountNotifications = async (req, res) => {
+  try {
+    const result = await User.getCountNotifications(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+exports.updateNotificationsSeen = async (req, res) => {
+  try {
+    const result = await User.updateNotificationsSeen(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
