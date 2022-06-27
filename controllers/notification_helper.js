@@ -53,6 +53,11 @@ module.exports.pushNotification = (retailer_id, sales_agent_id, action, title, b
             else
             {
                 console.log("Device token is not registered!");
+                await knex("APSISIPDC.cr_push_notification")
+                    .insert(payload)
+                    .then(() => {
+                        console.log("Sent push notification not sent");
+                    });  
             }
     }
     catch(error){
