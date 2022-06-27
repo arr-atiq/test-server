@@ -401,7 +401,7 @@ exports.disbursement = async (req, res) => {
           .select(
             "cr_users.device_token"
           );
-        console.log("device_token", device_token)  
+        console.log("device_token", device_token_response)  
         let receiver_token = device_token_response[0].device_token;
         await pushNotification(retailer_id, sales_agent_id, "DISBURSEMENT", "Disbursement completed!", body, receiver_token)
       }
