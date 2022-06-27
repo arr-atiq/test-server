@@ -35,6 +35,7 @@ exports.insertLoanCalculation = async (req, res) => {
         var loanTableData = await getDataLoanTable(rmnAccount.ac_number_1rmn);
         if (loanTableData?.onermn_acc) {
           const getSchemeId = await getSchemeID(rmnAccount.ac_number_1rmn);
+         
           const principalAmount = await getPrincipalAmount(
             rmnAccount.ac_number_1rmn
           );
@@ -48,16 +49,17 @@ exports.insertLoanCalculation = async (req, res) => {
             schemavalue
           );
           var dailyInterestValue;
-          console.log("rmnAccountrmnAccount", rmnAccount?.crm_approve_date);
 
           var date = moment(
             moment(rmnAccount?.crm_approve_date),
             "YYYY-MM-DD"
           ).add(schemavalue.expiry_date * 30, "days");
           var now = moment();
+
           // console.log('new_date---------------------------------',date)
           // console.log('now---------------------------------- ',now)
           // return
+
           var checkExpiry = false;
           if (now > date) {
             checkExpiry = true;
@@ -109,6 +111,7 @@ exports.insertLoanCalculation = async (req, res) => {
                 // 'disbursement_id': principalAmount.disbursement_id,
                 total_outstanding:
                   totalLoan + parseFloat(interestAfterGracePenal),
+                manu_scheme_mapping_id : getSchemeId[0]?.id,
                 // 'transaction_cost_type':principalAmount.transaction_cost_type,
                 transaction_type: "EXPIRYINTEREST",
               };
@@ -120,6 +123,7 @@ exports.insertLoanCalculation = async (req, res) => {
                   principalAmount.principal_outstanding
                 ),
                 retailer_id: principalAmount.retailer_id,
+                manu_scheme_mapping_id : getSchemeId[0]?.id,
                 onermn_acc: principalAmount.onermn_acc,
                 // 'disbursement_id': principalAmount.disbursement_id,
                 total_outstanding: totalLoan,
@@ -199,6 +203,7 @@ exports.insertLoanCalculation = async (req, res) => {
                 penal_charge: interestAfterGracePenal,
                 //  'transaction_cost_type':principalAmount.transaction_cost_type,
                 processing_fee: 0,
+                manu_scheme_mapping_id : getSchemeId[0]?.id,
                 transaction_type: "INTERESTANDOTHERS",
               };
             } else {
@@ -215,6 +220,7 @@ exports.insertLoanCalculation = async (req, res) => {
                 total_outstanding: totalLoan,
                 //  'transaction_cost_type':principalAmount.transaction_cost_type,
                 processing_fee: 0,
+                manu_scheme_mapping_id : getSchemeId[0]?.id,
                 transaction_type: "INTERESTANDOTHERS",
               };
             }
@@ -274,7 +280,7 @@ exports.disbursement = async (req, res) => {
   let totalLimit =
     parseInt(getLimitAmountValue[0]?.crm_approve_limit) -
     parseInt(getLimitAmountValue[0]?.current_limit);
-  console.log("findSalesAgent", findSalesAgent);
+
   if (findSalesAgent[0]?.id) {
     if (totalLimit > disbursement_amount) {
       const getSchemeId = await getSchemeID(onermn_acc);
@@ -329,9 +335,10 @@ exports.disbursement = async (req, res) => {
           disbursement_id: createDisbursment[0],
           total_outstanding: outstanding + disbursement_amount,
           sales_agent_id: sales_agent_id,
+          manu_scheme_mapping_id : getLimitAmountValue[0]?.id
           // 'transaction_cost_type':transaction_cost_type
         };
-
+        console.log("loan",loan);
         var limitUpdate = {
           current_limit:
             parseFloat(getLimitAmountValue[0]?.current_limit) +
@@ -478,6 +485,7 @@ exports.repayment = async (req, res) => {
         sales_agent_id: sales_agent_id,
         //  'transaction_cost_type':principalAmount.transaction_cost_type,
         transaction_cost: parseFloat(transaction_cost),
+        manu_scheme_mapping_id : getLimitAmountValue[0]?.id,
         transaction_type: "REPAYMENT",
       };
       //   let transactionCost = {
@@ -1049,6 +1057,19 @@ exports.loanTenorInDays = async (req, res) => {
   // });
 };
 
+
+exports.addSlab = async (req, res) => {
+  let reqValue = req.body;
+  console.log(reqValue);
+  const createSlab = await knex(
+    "APSISIPDC.cr_slab"
+  ).insert(reqValue);
+  return res.send(
+    sendApiResult(true, "You have Successfully Add Slab.", createSlab)
+  );
+};
+
+
 var calculateInterest = function (total, days, ratePercent, roundToPlaces) {
   var interestRate = ratePercent / 100;
   return ((days / 360) * total * interestRate).toFixed(roundToPlaces);
@@ -1238,3 +1259,6 @@ var findRepaymentInterestFirstTime = async (onermn_acc, firstId, secondId) => {
     .where("onermn_acc", onermn_acc);
   // .whereBetween('id', [firstId+1, secondId-1]);
 };
+
+
+
