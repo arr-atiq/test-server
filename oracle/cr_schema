@@ -53,6 +53,13 @@ begin
 end;
 
 
+CREATE TABLE "cr_push_notification" ( "id" NUMBER generated AS identity, "reatiler_id"  NUMBER NOT NULL, 
+"sales_agent_id" NUMBER NOT NULL, "receiver_token" VARCHAR ( 2000 ) NOT NULL, "action" VARCHAR ( 250 ) NOT NULL,
+"title" VARCHAR ( 250 ) NOT NULL, "body" VARCHAR ( 250 ) NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+
+
 
 
 
