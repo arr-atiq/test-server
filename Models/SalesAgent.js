@@ -13,6 +13,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
         .transaction(async (trx) => {
           let msg;
           const folder_name = req.file_for;
+          console.log(folder_name);
           if (Object.keys(rows).length == 0) {
             resolve(
               sendApiResult(false, "No Rows Found in your Uploaded File.")
@@ -25,6 +26,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .where("status", "Active")
             .whereIn("user_type", folder_name);
           const user_role_id = user_roles[0].id;
+          console.log(user_role_id);
 
           const all_NID_array = [];
           const all_Phone_array = [];

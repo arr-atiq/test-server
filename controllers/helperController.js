@@ -681,6 +681,16 @@ exports.duplication_manufacturer = async function (reg_no) {
   await duplication_check_val;
 };
 
+exports.hasDupsManuNameInsertArray = function(array) {
+
+  return array.map(function(value) {
+    return value.Manufacturer_Name;
+
+  }).some(function(value, index, array) { 
+       return array.indexOf(value) !== array.lastIndexOf(value);  
+     })
+};
+
 exports.timeout = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
