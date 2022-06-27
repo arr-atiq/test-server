@@ -5,6 +5,7 @@ const { sendApiResult, blockunblock } = require("./helperController");
 const model = require("../Models/Retailer");
 const { default: axios } = require("axios");
 const knex = require("../config/database");
+const { pushNotification } = require("./notification_helper")
 // var moment = require('moment');
 
 /**
@@ -35,7 +36,7 @@ exports.insertLoanCalculation = async (req, res) => {
         var loanTableData = await getDataLoanTable(rmnAccount.ac_number_1rmn);
         if (loanTableData?.onermn_acc) {
           const getSchemeId = await getSchemeID(rmnAccount.ac_number_1rmn);
-         
+
           const principalAmount = await getPrincipalAmount(
             rmnAccount.ac_number_1rmn
           );
@@ -111,7 +112,7 @@ exports.insertLoanCalculation = async (req, res) => {
                 // 'disbursement_id': principalAmount.disbursement_id,
                 total_outstanding:
                   totalLoan + parseFloat(interestAfterGracePenal),
-                manu_scheme_mapping_id : getSchemeId[0]?.id,
+                manu_scheme_mapping_id: getSchemeId[0]?.id,
                 // 'transaction_cost_type':principalAmount.transaction_cost_type,
                 transaction_type: "EXPIRYINTEREST",
               };
@@ -123,7 +124,7 @@ exports.insertLoanCalculation = async (req, res) => {
                   principalAmount.principal_outstanding
                 ),
                 retailer_id: principalAmount.retailer_id,
-                manu_scheme_mapping_id : getSchemeId[0]?.id,
+                manu_scheme_mapping_id: getSchemeId[0]?.id,
                 onermn_acc: principalAmount.onermn_acc,
                 // 'disbursement_id': principalAmount.disbursement_id,
                 total_outstanding: totalLoan,
@@ -203,7 +204,7 @@ exports.insertLoanCalculation = async (req, res) => {
                 penal_charge: interestAfterGracePenal,
                 //  'transaction_cost_type':principalAmount.transaction_cost_type,
                 processing_fee: 0,
-                manu_scheme_mapping_id : getSchemeId[0]?.id,
+                manu_scheme_mapping_id: getSchemeId[0]?.id,
                 transaction_type: "INTERESTANDOTHERS",
               };
             } else {
@@ -220,7 +221,7 @@ exports.insertLoanCalculation = async (req, res) => {
                 total_outstanding: totalLoan,
                 //  'transaction_cost_type':principalAmount.transaction_cost_type,
                 processing_fee: 0,
-                manu_scheme_mapping_id : getSchemeId[0]?.id,
+                manu_scheme_mapping_id: getSchemeId[0]?.id,
                 transaction_type: "INTERESTANDOTHERS",
               };
             }
@@ -327,7 +328,7 @@ exports.disbursement = async (req, res) => {
           retailer_id: retailer_id,
           principal_outstanding: principalAmount?.principal_outstanding
             ? parseInt(principalAmount.principal_outstanding) +
-              parseFloat(disbursement_amount)
+            parseFloat(disbursement_amount)
             : parseFloat(disbursement_amount),
           disburshment: disbursement_amount,
           onermn_acc: onermn_acc,
@@ -335,10 +336,10 @@ exports.disbursement = async (req, res) => {
           disbursement_id: createDisbursment[0],
           total_outstanding: outstanding + disbursement_amount,
           sales_agent_id: sales_agent_id,
-          manu_scheme_mapping_id : getLimitAmountValue[0]?.id
+          manu_scheme_mapping_id: getLimitAmountValue[0]?.id
           // 'transaction_cost_type':transaction_cost_type
         };
-        console.log("loan",loan);
+        console.log("loan", loan);
         var limitUpdate = {
           current_limit:
             parseFloat(getLimitAmountValue[0]?.current_limit) +
@@ -388,9 +389,24 @@ exports.disbursement = async (req, res) => {
             // });
             // })
           });
+
+        /* Implementin push notification */
+        let body = `BDT ${disbursement_amount} has been disbursed to your bank account upon your request. Your account number is : ${onermn_acc} `;
+        const device_token_response = await knex("APSISIPDC.cr_users")
+          .leftJoin("APSISIPDC.cr_sales_agent_user",
+            "cr_sales_agent_user.user_id",
+            "cr_users.id")
+          .where("cr_users.status", "Active")
+          .where("cr_sales_agent_user.sales_agent_id", sales_agent_id)
+          .select(
+            "cr_users.device_token"
+          );
+        console.log("device_token", device_token)  
+        let receiver_token = device_token_response[0].device_token;
+        await pushNotification(retailer_id, sales_agent_id, "DISBURSEMENT", "Disbursement completed!", body, receiver_token)
       }
       return res.send(
-        sendApiResult(true, "You have Successfully Add Credit.", loan)
+        sendApiResult(true, "You have Successfully Added Credit.", loan)
       );
     } else {
       return res.send(
@@ -437,7 +453,7 @@ exports.repayment = async (req, res) => {
     };
     let calculateRepaymentInterest =
       parseFloat(principalAmount.total_outstanding) -
-        parseFloat(principalAmount.principal_outstanding) ?? 0;
+      parseFloat(principalAmount.principal_outstanding) ?? 0;
 
     const createRepayment = await knex("APSISIPDC.cr_disbursement")
       .insert(repaymentType)
@@ -474,8 +490,8 @@ exports.repayment = async (req, res) => {
           calculateRepaymentInterest >= repayment
             ? parseFloat(principalAmount.principal_outstanding)
             : parseFloat(principalAmount.principal_outstanding) -
-              parseFloat(repayment) +
-              parseFloat(intersetPaid),
+            parseFloat(repayment) +
+            parseFloat(intersetPaid),
         retailer_id: principalAmount.retailer_id,
         onermn_acc: principalAmount.onermn_acc,
         disbursement_id: principalAmount.disbursement_id,
@@ -485,7 +501,7 @@ exports.repayment = async (req, res) => {
         sales_agent_id: sales_agent_id,
         //  'transaction_cost_type':principalAmount.transaction_cost_type,
         transaction_cost: parseFloat(transaction_cost),
-        manu_scheme_mapping_id : getLimitAmountValue[0]?.id,
+        manu_scheme_mapping_id: getLimitAmountValue[0]?.id,
         transaction_type: "REPAYMENT",
       };
       //   let transactionCost = {
