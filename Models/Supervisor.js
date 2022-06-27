@@ -222,8 +222,22 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const insert_supervisor = await knex("APSISIPDC.cr_supervisor")
                 .insert(team_supervisor)
                 .returning("id");
+             
+             
               if (insert_supervisor) {
                 supervisor_insert_ids.push(insert_supervisor[0]);
+                var supervisorIDUpdate = {
+                  supervisor_employee_code:`${data_array[index].Supervisor_Employee_Code}-${insert_supervisor[0]}`
+                };
+
+                await knex.transaction(async (trx) => {
+                  let updateData =  await trx(
+                    "APSISIPDC.cr_supervisor"
+                  )
+                    .where({ id: insert_supervisor[0] })
+                    .update(supervisorIDUpdate);
+                     console.log('updateData',updateData)
+                });
               }
 
               const temp_user = {

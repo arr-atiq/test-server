@@ -35,5 +35,8 @@ localhost:80
 ## KIll PORT
 npx kill-port 5000
 
+` "(DESCRIPTION= (ADDRESS_LIST=  (ADDRESS=(PROTOCOL=TCP) (HOST=172.16.19.43)(PORT=1521) ) ) (CONNECT_DATA=(SID=DANADB) ) )",`
+
+
 
 

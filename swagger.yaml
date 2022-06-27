@@ -36,6 +36,30 @@ paths:
           description: Invalid Fields
         '500':
           description: Internal Server Error  
+  /login/device_token:
+    put:
+      tags:
+        - Authentication
+      summary: Device Token
+      description: API for updating device token.
+      parameters:
+        - in: body
+          name: body
+          description: device token update
+          required: true
+          schema:
+            $ref: "#/definitions/updateDeviceToken"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Device token Update
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "400":
+          description: Invalid Fields
+        '500':
+          description: Internal Server Error  
   /manufacturer/manufacturers:
     get:
       tags:
@@ -1761,3 +1785,11 @@ definitions:
       download_for:
         type: string
         description: download_for the specific file. string must be in eligible/kyc/cib 
+  updateDeviceToken:      
+    properties:      
+      id:
+        type: integer
+        description: id you have received from login api response
+      device_token:
+        type: string
+        description: your device token   

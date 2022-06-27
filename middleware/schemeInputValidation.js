@@ -15,6 +15,8 @@ module.exports.schemaValidation = async (req, res, next) => {
     other_charge,
     overdue_amount,
     penal_charge,
+    reimbursment_cost,
+    penal_interest,
     transaction_type
   } = req.body;
   const { user_id } = req;
@@ -22,7 +24,7 @@ module.exports.schemaValidation = async (req, res, next) => {
     scheme_name,
     rate_of_interest,
     loan_tenor_in_days,
-    expiry_date: new Date(expiry_date),
+    expiry_date,
     grace_periods_in_days,
     penalty_periods,
     daily_penalty,
@@ -34,6 +36,8 @@ module.exports.schemaValidation = async (req, res, next) => {
     overdue_amount,
     penal_charge,
     transaction_type,
+    reimbursment_cost,
+    penal_interest,
     created_by: user_id,
   };
 
@@ -42,7 +46,7 @@ module.exports.schemaValidation = async (req, res, next) => {
     transaction_type: Joi.string().required(),
     rate_of_interest: Joi.number().required(),
     loan_tenor_in_days: Joi.number(),
-    expiry_date: Joi.date(),
+    expiry_date: Joi.number(),
     grace_periods_in_days: Joi.number(),
     penalty_periods: Joi.number(),
     daily_penalty: Joi.number(),
@@ -52,6 +56,8 @@ module.exports.schemaValidation = async (req, res, next) => {
     other_charge: Joi.number(),
     overdue_amount: Joi.number(),
     penal_charge: Joi.number(),
+    reimbursment_cost: Joi.number(),
+    penal_interest: Joi.number(),
     collection_fee_sharing_with_agency: Joi.number(),
     created_by: Joi.required(),
   });
