@@ -102,9 +102,9 @@ exports.login = async (req, res) => {
     const refreshOptions = { expiresIn: process.env.REFRESH_TOKEN_LIFE };
     const refreshSecret = process.env.REFRESH_TOKEN_SECRET;
     const refreshToken = jwt.sign(payload, refreshSecret, refreshOptions);
-    await knex("APSISIPDC.cr_users").where("id", userData.id).update({
-      remember_token: refreshToken,
-    });
+    // await knex("APSISIPDC.cr_users").where("id", userData.id).update({
+    //   remember_token: refreshToken,
+    // });
 
     userData.user_level_id = (userLevel?.role_id != undefined) ? userLevel?.role_id : null;
     userData.user_level_name = (userLevel?.name != undefined) ? userLevel?.name : null;
