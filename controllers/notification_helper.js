@@ -1,13 +1,13 @@
 const knex = require("../config/database");
 const axios = require("axios")
 
-module.exports.pushNotification = (retailer_id, sales_agent_id, action, title, body, receiver_token) =>{
-    console.log(".............")
-    console.log(retailer_id, sales_agent_id, action, title, body, receiver_token)
-    let receiver_token = "d4V-VDYSTyObqGE9sglOBl:APA91bGZiEYV7ToddGTDPbpXrAPcfDcHiAIxwsQTt5FLO_RtB_sFI8404xyLrKpls5RGyadO0aU9Eqhcy2r7MyQydeKK0-B-ESTC8vZkSEpt5bactjeN9HkgQIGUzceB-WC3ypneLiBh"
-    let title = "no-title"
-    let body = "no-body"
-    let action = "disbursement"
+module.exports.pushNotification =async (retailer_id, sales_agent_id, action, title, body, receiver_token) =>{
+    // console.log(".............")
+    // console.log(retailer_id, sales_agent_id, action, title, body, receiver_token)
+    //  receiver_token = "d4V-VDYSTyObqGE9sglOBl:APA91bGZiEYV7ToddGTDPbpXrAPcfDcHiAIxwsQTt5FLO_RtB_sFI8404xyLrKpls5RGyadO0aU9Eqhcy2r7MyQydeKK0-B-ESTC8vZkSEpt5bactjeN9HkgQIGUzceB-WC3ypneLiBh"
+    //  title = "no-title"
+    //  body = "no-body"
+    //  action = "disbursement"
     let fcmPayload = {
         "to": receiver_token,
         "content_available": true,
@@ -25,8 +25,8 @@ module.exports.pushNotification = (retailer_id, sales_agent_id, action, title, b
     }
 
     let payload = {
-        retailer_id: 12,
-        sales_agent_id: 13,
+        retailer_id: retailer_id,
+        sales_agent_id: sales_agent_id,
         action: action,
         title: title,
         body: body,
@@ -52,12 +52,7 @@ module.exports.pushNotification = (retailer_id, sales_agent_id, action, title, b
             }
             else
             {
-                console.log("Device token is not registered!");
-                await knex("APSISIPDC.cr_push_notification")
-                    .insert(payload)
-                    .then(() => {
-                        console.log("Sent push notification not sent");
-                    });  
+                console.log("Device token is not registered!"); 
             }
     }
     catch(error){

@@ -400,7 +400,8 @@ exports.disbursement = async (req, res) => {
           .where("cr_sales_agent_user.sales_agent_id", sales_agent_id)
           .select(
             "cr_users.device_token"
-          ); 
+          );
+        console.log("device_token", device_token_response)  
         let receiver_token = device_token_response[0].device_token;
         console.log("device_token", device_token_response)
 
