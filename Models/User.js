@@ -231,7 +231,7 @@ User.getCountNotifications = function (req) {
   });
 };
 User.getNotificationsList = function (req) {
-  const { salesagent_id } = req.query;
+  const { salesagent_id, page, per_page } = req.query;
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -246,7 +246,13 @@ User.getNotificationsList = function (req) {
           "body",
           "created_at",
           "seen_by"
-        );
+        )
+        .orderBy("id", "desc")
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
       if (NotifyList == 0) reject(sendApiResult(false, "Not found."));
       resolve(sendApiResult(true, "Data fetched successfully", NotifyList));
 
