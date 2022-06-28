@@ -790,6 +790,24 @@ exports.repayment = async (req, res) => {
             }
           });
           //  });
+
+
+
+          /* Implementin push notification */
+          let body = `BDT ${repayment} has been collected in our bank account upon your request <Request ID>. . Your account number is : ${onermn_acc} `;
+          const device_token_response = await knex("APSISIPDC.cr_users")
+            .leftJoin("APSISIPDC.cr_sales_agent_user",
+              "cr_sales_agent_user.user_id",
+              "cr_users.id")
+            .where("cr_users.status", "Active")
+            .where("cr_sales_agent_user.sales_agent_id", sales_agent_id)
+            .select(
+              "cr_users.device_token"
+            );
+
+          let receiver_token = device_token_response[0].device_token;
+          await pushNotification(retailer_id, sales_agent_id, "REPAYMENT", "Collection completed!", body, receiver_token)
+
           return res.send(
             sendApiResult(true, "Sucessly Repayment", repaymentValueAll)
           );
