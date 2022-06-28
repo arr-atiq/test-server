@@ -60,12 +60,12 @@ paths:
           description: Invalid Fields
         '500':
           description: Internal Server Error  
-  /login/notifications-count:
+  /user/notifications-count:
     get:
       tags:
-        - Authentication
-      summary: Get notifications and count
-      description: API to get unread notifications.
+        - User
+      summary: Get notification count
+      description: API to get unread notifications count by sales id.
       parameters:
         - in: query
           name: salesagent_id
@@ -81,11 +81,11 @@ paths:
           description: Invalid Fields
         '500':
           description: Internal Server Error  
-  /login/notifications-seen:
-    put:
+  /user/notifications:
+    get:
       tags:
-        - Authentication
-      summary: Update notification on open
+        - User
+      summary: Update notification on open and see the list
       description: API to update notification list.
       parameters:
         - in: query
