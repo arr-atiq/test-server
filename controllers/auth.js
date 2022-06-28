@@ -89,7 +89,14 @@ exports.login = async (req, res) => {
         .where("cr_supervisor_user.status", 'Active')
         .first();
 
+      const supervisorUserCode = await knex("APSISIPDC.cr_supervisor")
+        .select("cr_supervisor.supervisor_employee_code")
+        .where("cr_supervisor.id", supervisorUser.supervisor_id)
+        .where("cr_supervisor.status", 'Active')
+        .first();
+
       userData.supervisor_id = (supervisorUser?.supervisor_id != undefined) ? supervisorUser?.supervisor_id : null;
+      userData.supervisor_code = (supervisorUserCode?.supervisor_employee_code != undefined) ? supervisorUserCode?.supervisor_employee_code : null;
 
     }
 
@@ -101,9 +108,9 @@ exports.login = async (req, res) => {
     const refreshOptions = { expiresIn: process.env.REFRESH_TOKEN_LIFE };
     const refreshSecret = process.env.REFRESH_TOKEN_SECRET;
     const refreshToken = jwt.sign(payload, refreshSecret, refreshOptions);
-    await knex("APSISIPDC.cr_users").where("id", userData.id).update({
-      remember_token: refreshToken,
-    });
+    // await knex("APSISIPDC.cr_users").where("id", userData.id).update({
+    //   remember_token: refreshToken,
+    // });
 
     userData.user_level_id = (userLevel?.role_id != undefined) ? userLevel?.role_id : null;
     userData.user_level_name = (userLevel?.name != undefined) ? userLevel?.name : null;
@@ -123,7 +130,7 @@ exports.keepAliveDb = async (req, res) => {
 };
 
 
-exports.deviceToken = async(req,res) =>{
+exports.deviceToken = async (req, res) => {
   const { id, device_token } = req.body;
   const data = await knex("APSISIPDC.cr_users").where("id", id).update({
     device_token: device_token,

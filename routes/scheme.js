@@ -7,6 +7,7 @@ const {
 } = require("../middleware/schemeInputValidation");
 
 router.post("/", schemaValidation, scheme.createScheme);
+router.get("/SchemelistSlab", scheme.getSchemesListSlab);
 router.get("/list", scheme.getSchemes);
 router.get("/:id", scheme.getSchemeDetails);
 
