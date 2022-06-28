@@ -55,6 +55,16 @@ module.exports.getSchemesListSlab = async (req, res) => {
   });
 };
 
+module.exports.getSlabListSchme = async (req, res) => {
+  const { id } = req.params;
+  const schemas = await knex.from("APSISIPDC.cr_slab").select().where("scheme_id",id);
+  return res.status(200).send({
+    success: true,
+    message: "Success :: Available scheme list ",
+    data: schemas,
+  });
+};
+
 
 module.exports.getSchemeDetails = async (req, res) => {
   const { id } = req.params;
