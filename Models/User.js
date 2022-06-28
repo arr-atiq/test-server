@@ -215,39 +215,47 @@ User.getCountNotifications = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const unseenNotify = await knex
-        //.count("cr_push_notification.id as count")
+        .count("cr_push_notification.id as count")
         .from("APSISIPDC.cr_push_notification")
         .where("cr_push_notification.sales_agent_id", salesagent_id)
-        .where("cr_push_notification.seen_by", null)
-        .select(
-          "id",
-          "receiver_token",
-          "action",
-          "title",
-          "body"
-        )
+        .where("cr_push_notification.seen_by", null);
 
-      // const total_unseen_notify = parseInt(
-      //   unseenNotify[0].count
-      //   );
-      if (unseenNotify == 0) reject(sendApiResult(false, "Not found."));
-      resolve(sendApiResult(true, "Data fetched successfully", unseenNotify));
+      const total_unseen_notify = parseInt(
+        unseenNotify[0].count
+      );
+      if (total_unseen_notify == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", total_unseen_notify));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   });
 };
-User.updateNotificationsSeen = function (req) {
+User.getNotificationsList = function (req) {
   const { salesagent_id } = req.query;
 
   return new Promise(async (resolve, reject) => {
     try {
+      const NotifyList = await knex
+        .from("APSISIPDC.cr_push_notification")
+        .where("cr_push_notification.sales_agent_id", salesagent_id)
+        .select(
+          "id",
+          //"receiver_token",
+          "action",
+          "title",
+          "body",
+          "created_at",
+          "seen_by"
+        );
+      if (NotifyList == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", NotifyList));
+
       await knex.transaction(async (trx) => {
         const seen_update = await trx("APSISIPDC.cr_push_notification")
           .where({ sales_agent_id: salesagent_id })
           .where({ seen_by: null })
           .update({
-            seen_by:salesagent_id,
+            seen_by: salesagent_id,
           });
         if (seen_update <= 0)
           reject(sendApiResult(false, "Could not Found unseen notify"));

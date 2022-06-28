@@ -6,6 +6,6 @@ const user = require("../controllers/user");
 router.get("/user-list/", user.userList);
 router.get("/dashboard/", user.getDashboard);
 router.get("/notifications-count", user.getCountNotifications);
-router.put("/notifications-seen", user.updateNotificationsSeen);
+router.get("/notifications", user.getNotificationsList);
 
 module.exports = router;
