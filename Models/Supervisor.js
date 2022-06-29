@@ -613,7 +613,7 @@ FileUpload.getAdminFeedbackListHistory = function (req) {
 };
 
 FileUpload.getSupervisorFeedbackListHistory = function (req) {
-  const {supervisor_code} = req.params;
+  const { supervisor_code } = req.params;
   const { manufacturer_id, page, per_page, transaction_type, start_date, end_date } = req.query;
   const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
   const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
@@ -651,6 +651,42 @@ FileUpload.getSupervisorFeedbackListHistory = function (req) {
     }
   });
 };
+
+FileUpload.getDetailsFeedbackListDisbursementRepayment = function (req) {
+  const { feedback_id, transaction_type } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_retailer_loan_calculation")
+        .leftJoin("APSISIPDC.cr_retailer",
+          "cr_retailer.id",
+          "cr_retailer_loan_calculation.retailer_id")
+        .leftJoin("APSISIPDC.cr_sales_agent",
+          "cr_sales_agent.id",
+          "cr_retailer_loan_calculation.sales_agent_id")
+        .where("cr_retailer_loan_calculation.feedback_reference_id", feedback_id)
+        .where("cr_retailer_loan_calculation.transaction_type", transaction_type)
+        .select(
+          "cr_retailer_loan_calculation.id",
+          knex.raw('TO_CHAR("cr_retailer_loan_calculation"."created_at", \'DD-MON-YYYY\') AS create_date'),
+          "cr_retailer_loan_calculation.retailer_id",
+          "cr_retailer.retailer_name",
+          "cr_retailer_loan_calculation.sales_agent_id",
+          "cr_sales_agent.agent_name",
+          "cr_retailer_loan_calculation.disburshment",
+          "cr_retailer_loan_calculation.repayment",
+          "cr_retailer.phone",
+          "cr_retailer.email"
+        );
+
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 
 FileUpload.updateAdminFeedback = function (req) {
 
