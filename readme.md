@@ -38,5 +38,10 @@ npx kill-port 5000
 ` "(DESCRIPTION= (ADDRESS_LIST=  (ADDRESS=(PROTOCOL=TCP) (HOST=172.16.19.43)(PORT=1521) ) ) (CONNECT_DATA=(SID=DANADB) ) )",`
 
 
+## FOLDER CLEANING
+shopt -s extglob
+rm -Rf !("index.html") Ex. index.html is the file that you dont want to delete except others.
+
+
 
 
