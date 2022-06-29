@@ -35,6 +35,19 @@ router.post(
     supervisor.saveRemarksFeedback
 );
 
+router.post(
+    "/supervisor-remarks-feedback",
+    supervisor.insertRemarksFeedback
+);
+router.put(
+    "/admin-remarks-feedback/:admin_id",
+    supervisor.updateAdminFeedback
+);
+router.get(
+    "/admin-remarks-feedback",
+    supervisor.getAdminFeedbackList
+);
+
 // router.post(
 //     "/upload-remarks_feedback",
 //     uploadFile.single("file"),
