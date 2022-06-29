@@ -16,7 +16,7 @@ router.delete("/supervisor/:id", supervisor.deleteSupervisor);
 router.get("/salesagents-manufacturers/:supervisor_id", supervisor.getAllManufacturerOfSalesagentUnderSupervisor);
 router.get("/salesagents/:manufacturer_id/:supervisor_code", supervisor.getSalesAgentListByManufacturerAndSupervisor);
 router.get("/retailers/:manufacturer_id/:salesagent_id", supervisor.getRetailerListByManufacturerAndSalesagent);
-router.get("/disbursement/:manufacturer_id/:supervisor_code", supervisor.getDisbursementByManufacturerAndSupervisor);
+router.get("/disbursement-repayment/:manufacturer_id/:supervisor_code", supervisor.getDisbursementByManufacturerAndSupervisor);
 router.get("/repayment/:supervisor_code", supervisor.getRepaymentBySalesagentAndRetailer);
 router.get("/unuploaded-supervisor-data", supervisor.generateSupervisorUnuploadedReport);
 router.get("/invalidated-supervisor-data", supervisor.generateSupervisorInvalidatedReport);
