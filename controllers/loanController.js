@@ -827,9 +827,11 @@ exports.slab = async (req, res) => {
 
   let { onermn_acc, repayment } = req.query;
   const getSlabDateValue = await getSlabDate(onermn_acc);
-  const dateSlab = getSlabDateValue?.created_at;
-  // console.log('getSlabDateValue',getSlabDateValue)
-  // return
+
+  // const dateSlab = getSlabDateValue?.created_at;
+  const dateSlab =await getSlapValueDate(onermn_acc)
+  console.log('dateSlabdateSlab',dateSlab)
+
   // const dateSlab = getSlabDateValue?.crm_approve_date
 
   let transaction_cost = 0;
@@ -847,11 +849,17 @@ exports.slab = async (req, res) => {
     const now = moment.utc();
     var end = moment(dateSlab);
     var days = now.diff(end, "days");
-    const getSlabValue = await getSlabAmount(repayment, days);
+    console.log('daysdaysdays')
+
+    console.log('daysdaysdays',days)
+
+    const getSlabValue = await getSlabAmount(repayment, days , getSchemeId[0]?.scheme_id);
     transaction_cost = getSlabValue[0]?.transaction_fee ?? 0;
   } else {
     transaction_cost = repayment * (SchemeValue[0]?.transaction_fee / 100) ?? 0;
   }
+  console.log('transaction_costtransaction_cost',transaction_cost)
+  return
   var value = {
     transaction_cost: transaction_cost,
   };
@@ -872,7 +880,6 @@ exports.totalLoan = async (req, res) => {
   }
   let totalValue = await getPrincipalAmount(onermn_acc);
 
-  console.log("loanTenorDays", loanTenorDays);
   var resPonseVaslue = {
     ...loanTenorDays,
     total_outstanding: totalValue?.total_outstanding.toFixed(2) ?? 0,
@@ -1178,14 +1185,17 @@ var getLimitAmount = async (onermn_acc) => {
     .where("ac_number_1rmn", onermn_acc);
 };
 
-var getSlabAmount = async (repayment, days) => {
+var getSlabAmount = async (repayment, days , scheme_id) => {
+  console.log('repayment days scheme_id',repayment, days , scheme_id)
   return await knex
     .from("APSISIPDC.cr_slab")
     .select()
     .where("lower_limit", "<=", repayment)
     .where("upper_limit", ">=", repayment)
     .where("day_dis_lower_limit", "<=", days)
-    .where("day_dis_upper_limit", ">=", days);
+    .where("day_dis_upper_limit", ">=", days)
+    .where("scheme_id", scheme_id)
+    ;
 };
 
 var getAllRmnAccount = async (page, per_page) => {
@@ -1249,19 +1259,20 @@ var findLoanTenorIndays = async (oneRMn, schemeValue) => {
       break;
     }
   }
+  
   // const todayDate = new Date(tenorValue?.created_at.toString().replaceAll(/\s/g, ''))
   const todayDate = new Date(tenorValue?.created_at);
-  console.log("parseFloat(disbursementAdd)", parseFloat(disbursementAdd));
-  console.log("parseFloat(sumRepayment)", parseFloat(sumRepayment));
+  // console.log("parseFloat(disbursementAdd)", parseFloat(disbursementAdd));
+  // console.log("parseFloat(sumRepayment)", parseFloat(sumRepayment));
 
   const now = moment.utc();
   var end = moment(todayDate);
   days = now.diff(end, "days");
-  console.log("days", days);
-  console.log(
-    "schemeValue?.loan_tenor_in_days",
-    schemeValue?.loan_tenor_in_days
-  );
+  // console.log("days", days);
+  // console.log(
+  //   "schemeValue?.loan_tenor_in_days",
+  //   schemeValue?.loan_tenor_in_days
+  // );
 
   if (days >= schemeValue?.loan_tenor_in_days) {
     response = {
@@ -1297,4 +1308,25 @@ var findRepaymentInterestFirstTime = async (onermn_acc, firstId, secondId) => {
 };
 
 
+var getSlapValueDate = async (oneRMn, schemeValue) => {
+  var allDisbursements = await getAllDisbursement(oneRMn);
+  var allRepayment = await getAllRepayment(oneRMn);
+  var response = {};
+  var days;
+  let sumRepayment =
+    allRepayment.reduce(function (accumulator, curValue) {
+      return accumulator + curValue.repayment;
+    }, 0) ?? 0;
+  var tenorValue;
+  let disbursementAdd = 0;
+  for (var i = 0; i < allDisbursements.length; i++) {
+    disbursementAdd = allDisbursements[i].disburshment + disbursementAdd;
+    if (disbursementAdd > sumRepayment) {
+      tenorValue = allDisbursements[i];
+      break;
+    }
+  }
+  
+  return tenorValue?.created_at ?? [];
 
+};
