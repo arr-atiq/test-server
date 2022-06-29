@@ -68,8 +68,8 @@ cron.schedule('*/2 * * * *', async() =>  {
 });
 
 cron.schedule('00 30 02 * * *', async() =>  {
-  const data = await cleanFile();
-  if(data) console.log('Cleaning done!');
+  await cleanFile();
+  console.log('Cleaning done!');
   /* Keep backup of deleted file in Phase-2 */
 });
 
