@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const md5 = require("md5");
 const knex = require("../config/database");
 const { sendApiResult } = require("./helper");
+const rimraf = require('rimraf');
 
 exports.refreshToken = async (req, res) => {
   const { email } = req.body;
@@ -127,6 +128,27 @@ exports.login = async (req, res) => {
 exports.keepAliveDb = async (req, res) => {
   const data = await knex("APSISIPDC.cr_manufacturer").select("id").first().returning("id");
   return data;
+};
+
+exports.cleanFile = async (req, res) => {
+  
+  
+  rimraf('./public/configuration_file/distributor_onboarding/*', function () { console.log('done'); });
+  rimraf('./public/configuration_file/manufacturer_onboarding/*', function () { console.log('done'); });
+  rimraf('./public/configuration_file/retailer_cib/*', function () { console.log('done'); });
+  rimraf('./public/configuration_file/retailer_ekyc/*', function () { console.log('done'); });
+  rimraf('./public/configuration_file/retailer_onboarding/*', function () { console.log('done'); });
+  rimraf('./public/configuration_file/sales_agent_onboarding/*', function () { console.log('done'); });
+  rimraf('./public/configuration_file/supervisor_onboarding/*', function () { console.log('done'); });
+  
+  //rimraf('../public/cib/*', function () { console.log('done'); });
+  //rimraf('../public/ekyc/*', function () { console.log('done'); });
+  rimraf('./public/feedback_file/feedback_remarks/*', function () { console.log('done'); });
+  rimraf('./public/feedback_file/upload_remarks/*', function () { console.log('done'); });
+  rimraf('./public/reports_retailer/*', function () { console.log('done'); });
+  rimraf('./public/retailer/*', function () { console.log('done'); });
+  rimraf('./public/unupload_report/*', function () { console.log('done'); });
+
 };
 
 

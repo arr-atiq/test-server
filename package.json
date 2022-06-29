@@ -49,6 +49,7 @@
     "pm2": "^5.2.0",
     "read-excel-file": "^5.2.29",
     "redis": "^4.1.0",
+    "rimraf": "^3.0.2",
     "swagger-ui-express": "^4.4.0",
     "winston": "^3.7.2",
     "xlsx": "^0.18.5",
