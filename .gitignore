@@ -3,7 +3,7 @@ node_modules
 package-lock.json
 log/error/*
 log/info/*
-public
+# public
 # public/configuration_file/*
 # public/onboarding-sample-file/*
 # public/unupload_report/*
