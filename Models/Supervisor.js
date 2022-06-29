@@ -509,6 +509,22 @@ FileUpload.insertRemarksFeedback = function (req) {
           .update({ feedback_reference_id: insert_obj_Id[0] })
           .where("id", cr_retailer_loan_calculation_idsArr[i])
           .where("transaction_type", transaction_type);
+
+        if (transaction_type == "DISBURSEMENT") {
+          await knex("APSISIPDC.cr_retailer_loan_calculation")
+            .update({ supervisor_status_disbursement: 1 })
+            .where("id", cr_retailer_loan_calculation_idsArr[i])
+            .where("transaction_type", transaction_type);
+
+        }
+
+        if (transaction_type == "REPAYMENT") {
+          await knex("APSISIPDC.cr_retailer_loan_calculation")
+            .update({ supervisor_status_repayment: 1 })
+            .where("id", cr_retailer_loan_calculation_idsArr[i])
+            .where("transaction_type", transaction_type);
+
+        }
       }
 
       resolve(sendApiResult(true, "Data Saved and Updated successfully", insert_obj_Id));
@@ -521,7 +537,7 @@ FileUpload.insertRemarksFeedback = function (req) {
 //getAdminFeedbackList
 
 FileUpload.getAdminFeedbackList = function (req) {
-  const { manufacturer_id, page, per_page } = req.query;
+  const { manufacturer_id, page, per_page, transaction_type } = req.query;
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -530,6 +546,7 @@ FileUpload.getAdminFeedbackList = function (req) {
           "cr_manufacturer.id",
           "cr_remarks_feedback.manufacturer_id")
         .where("cr_remarks_feedback.manufacturer_id", manufacturer_id)
+        .where("cr_remarks_feedback.transaction_type", transaction_type)
         .where("cr_remarks_feedback.admin_status", null)
         .select(
           "cr_remarks_feedback.id",
