@@ -51,6 +51,31 @@ exports.saveRemarksFeedback = async (req, res) => {
   }
 };
 
+exports.insertRemarksFeedback = async (req, res) => {
+  try {
+    const result = await superModel.insertRemarksFeedback(req);
+    res.status(200).send(result)
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+exports.updateAdminFeedback = async (req, res) => {
+  try {
+    const result = await superModel.updateAdminFeedback(req);
+    res.status(200).send(result)
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getAdminFeedbackList = async (req, res) => {
+  try {
+    const result = await superModel.getAdminFeedbackList(req);
+    res.status(200).send(result)
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
 // @ Arfin
 
 exports.getSupervisorList = async (req, res) => {

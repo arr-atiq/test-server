@@ -222,21 +222,21 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const insert_supervisor = await knex("APSISIPDC.cr_supervisor")
                 .insert(team_supervisor)
                 .returning("id");
-             
-             
+
+
               if (insert_supervisor) {
                 supervisor_insert_ids.push(insert_supervisor[0]);
                 var supervisorIDUpdate = {
-                  supervisor_employee_code:`${data_array[index].Supervisor_Employee_Code}-${insert_supervisor[0]}`
+                  supervisor_employee_code: `${data_array[index].Supervisor_Employee_Code}-${insert_supervisor[0]}`
                 };
 
                 await knex.transaction(async (trx) => {
-                  let updateData =  await trx(
+                  let updateData = await trx(
                     "APSISIPDC.cr_supervisor"
                   )
                     .where({ id: insert_supervisor[0] })
                     .update(supervisorIDUpdate);
-                     console.log('updateData',updateData)
+                  console.log('updateData', updateData)
                 });
               }
 
@@ -377,6 +377,7 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
 FileUpload.saveRemarksFeedback = function (req) {
 
   const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+
   const userID = req.body.user_id;
 
   const { remarks_id, remarks_one, supervisor_status, admin_status, transaction_type } = req.body;
@@ -448,6 +449,148 @@ FileUpload.saveRemarksFeedback = function (req) {
       }
 
       resolve(sendApiResult(true, "Data Saved successfully", cr_remarks_feedback_id));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.insertRemarksFeedback = function (req) {
+  const { supervisor_code,
+    manufacturer_id,
+    amount,
+    transaction_type,
+    cr_retailer_loan_calculation_ids
+
+  } = req.body;
+
+  const cr_retailer_loan_calculation_idsArr = cr_retailer_loan_calculation_ids.split(",");
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const insert_obj = {
+        manufacturer_id: manufacturer_id,
+        supervisor_emp_code: supervisor_code,
+        amount: amount,
+        supervisor_status: 1,
+        transaction_type: transaction_type
+      }
+
+      const insert_obj_Id = await knex("APSISIPDC.cr_remarks_feedback").insert(
+        insert_obj
+      ).returning("id");
+
+      if (insert_obj_Id == 0) reject(sendApiResult(false, "Not Insert"));
+
+      const manufacturer = await knex("APSISIPDC.cr_manufacturer")
+        .where("id", manufacturer_id)
+        .select(
+          "manufacturer_name"
+        );
+
+      if (manufacturer == 0) reject(sendApiResult(false, "Not found"));
+
+      // const supervisor = await knex("APSISIPDC.cr_supervisor")
+      //   .where("cr_supervisor.supervisor_employee_code", supervisor_code)
+      //   .select(
+      //     "supervisor_name"
+      //   );
+
+      // if (supervisor == 0) reject(sendApiResult(false, "Not found"));
+
+      const genereateSystemId = manufacturer[0].manufacturer_name + "-" + insert_obj_Id[0] + "-" + supervisor_code;
+
+      const system_Id = await knex("APSISIPDC.cr_remarks_feedback").update(
+        { system_id: genereateSystemId }
+      ).where("id", insert_obj_Id[0]);
+
+      for (let i = 0; i < cr_retailer_loan_calculation_idsArr.length; i++) {
+        await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .update({ feedback_reference_id: insert_obj_Id[0] })
+          .where("id", cr_retailer_loan_calculation_idsArr[i])
+          .where("transaction_type", transaction_type);
+      }
+
+      resolve(sendApiResult(true, "Data Saved and Updated successfully", insert_obj_Id));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+//getAdminFeedbackList
+
+FileUpload.getAdminFeedbackList = function (req) {
+  const { manufacturer_id, page, per_page } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const adminFeedBack = await knex("APSISIPDC.cr_remarks_feedback")
+        .leftJoin("APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_remarks_feedback.manufacturer_id")
+        .where("cr_remarks_feedback.manufacturer_id", manufacturer_id)
+        .where("cr_remarks_feedback.admin_status", null)
+        .select(
+          "cr_remarks_feedback.id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_remarks_feedback.amount",
+          knex.raw('TO_CHAR("cr_remarks_feedback"."created_at", \'DD-MON-YYYY\') AS feedback_date'),
+          "cr_remarks_feedback.system_id",
+          "cr_remarks_feedback.approve_status",
+          "cr_remarks_feedback.transaction_type",
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (adminFeedBack == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", adminFeedBack));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.updateAdminFeedback = function (req) {
+
+  const { admin_id } = req.params;
+  const {
+    feedback_id,
+    transaction_type
+  } = req.body;
+
+  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const update_obj = {
+        admin_status: 1,
+        admin_id: admin_id,
+        approve_status: "Done",
+        updated_at: new Date(date)
+      }
+
+      var admin_status_update = [];
+      await knex.transaction(async (trx) => {
+        admin_status_update = await trx("APSISIPDC.cr_remarks_feedback")
+          .where("id", feedback_id)
+          .where("transaction_type", transaction_type)
+          .update(update_obj);
+      });
+
+      if (admin_status_update.length <= 0)
+        reject(sendApiResult(false, "Admin Status is not updated"));
+      resolve(
+        sendApiResult(
+          true,
+          "Admin Status Updated Successfully",
+          admin_status_update
+        )
+      );
+
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
