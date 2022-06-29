@@ -51,6 +51,11 @@ router.get(
     supervisor.getAdminFeedbackList
 );
 
+router.get(
+    "/feedback-disbursement-repayment-details",
+    supervisor.getDetailsFeedbackListDisbursementRepayment
+);
+
 // router.post(
 //     "/upload-remarks_feedback",
 //     uploadFile.single("file"),
