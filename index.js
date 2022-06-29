@@ -6,7 +6,7 @@ const bodyParser = require("body-parser");
 const logger = require("pino")();
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
-const { keepAliveDb } = require("./controllers/auth");
+const { keepAliveDb,cleanFile } = require("./controllers/auth");
 const { informationLog, errorLog } = require("./log/log");
 const { PORT, NODE_ENV } = process.env;
 
@@ -65,6 +65,12 @@ app.use(
 cron.schedule('*/2 * * * *', async() =>  {
   const data = await keepAliveDb();
   if(data) console.log('Keeping DB connection alive..');
+});
+
+cron.schedule('00 30 02 * * *', async() =>  {
+  const data = await cleanFile();
+  if(data) console.log('Cleaning done!');
+  /* Keep backup of deleted file in Phase-2 */
 });
 
 app.get("/", (req, res) =>
