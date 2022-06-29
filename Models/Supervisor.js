@@ -627,7 +627,7 @@ FileUpload.getSupervisorFeedbackListHistory = function (req) {
         .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
         .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
         .where("cr_remarks_feedback.manufacturer_id", manufacturer_id)
-        .where("cr_remarks_feedback.transaction_type", supervisor_code)
+        .where("cr_remarks_feedback.supervisor_emp_code", supervisor_code)
         .where("cr_remarks_feedback.transaction_type", transaction_type)
         .where("cr_remarks_feedback.supervisor_status", 1)
         .select(
