@@ -76,6 +76,33 @@ exports.getAdminFeedbackList = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+exports.getDetailsFeedbackListDisbursementRepayment = async (req, res) => {
+  try {
+    const result = await superModel.getDetailsFeedbackListDisbursementRepayment(req);
+    res.status(200).send(result)
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getAdminFeedbackListHistory = async (req, res) => {
+  try {
+    const result = await superModel.getAdminFeedbackListHistory(req);
+    res.status(200).send(result)
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getSupervisorFeedbackListHistory = async (req, res) => {
+  try {
+    const result = await superModel.getSupervisorFeedbackListHistory(req);
+    res.status(200).send(result)
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 // @ Arfin
 
 exports.getSupervisorList = async (req, res) => {
