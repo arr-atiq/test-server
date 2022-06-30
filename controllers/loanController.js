@@ -805,7 +805,7 @@ exports.repayment = async (req, res) => {
               "cr_users.device_token"
             );
 
-          let receiver_token = device_token_response[0].device_token;
+          let receiver_token = device_token_response[0]?.device_token ?? '';
           await pushNotification(retailer_id, sales_agent_id, "REPAYMENT", "Collection completed!", body, receiver_token)
 
           return res.send(
