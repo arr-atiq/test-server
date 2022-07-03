@@ -1155,6 +1155,38 @@ exports.sequence = async (req, res) => {
   );
 };
 
+exports.updateSequence = async (req, res) => {
+  let reqValue = req?.body?.sequence;
+   console.log('reqValue',reqValue)
+  var responseValue = []
+  reqValue && reqValue.length > 0 && reqValue.map(async (seqValue , index) =>{
+    const myPromise = new Promise(async(resolve, reject) => {
+    let  update_sequence
+    await knex.transaction(async (trx) => {
+       update_sequence = await trx(
+        "APSISIPDC.cr_repayment_sequence"
+      )
+        .whereIn("name", seqValue.label)
+        .update({
+          'sequence' : seqValue.value,
+        });
+    });
+    responseValue.push(update_sequence)
+  
+    if(reqValue.length == index+1){
+      resolve(true)
+    }
+  })
+  .then(() => {
+    console.log('responseValue',responseValue)
+    return res.send(
+      sendApiResult(true, "You have Successfully Get Sequence.", responseValue)
+    );
+  })
+})
+    
+};
+
 
 var calculateInterest = function (total, days, ratePercent, roundToPlaces) {
   var interestRate = ratePercent / 100;
