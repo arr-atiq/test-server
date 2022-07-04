@@ -32,7 +32,7 @@ const importExcelData2DB = async function (filename, req) {
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, "File not uploaded");
+    return sendApiResult(false, "File format is not correct", error);
   }
 };
 
@@ -122,7 +122,8 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
         "agent_employee_code",
         "autho_supervisor_employee_code",
         "region_of_operation",
-        "distributor_id"
+        "distributor_id",
+        "remarks_duplications"
       );
     const headers = [
       "Sr.",
@@ -133,7 +134,8 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
       "Authorized_supervisor_emp_code",
       "Manufacturer",
       "Distributor",
-      "Region_of_Operation"
+      "Region_of_Operation",
+      "Duplications Remarked"
     ];
     const workbook = new excel.Workbook();
     const worksheet = workbook.addWorksheet("Sheet 1");
@@ -150,6 +152,27 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
         bold: true,
       },
     });
+
+    const errorStyle = workbook.createStyle({
+      fill: {
+        type: "pattern",
+        patternType: "solid",
+        fgColor: "#42a3ed",
+      },
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
+
+    const remarksStyle = workbook.createStyle({
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
     const col = 1;
     let row = 1;
     let col_addH = 0;
@@ -162,35 +185,48 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
     });
     row++;
     for (let i = 0; i < limit_data.length; i++) {
-    	var col_add = 0;
-    	let e = limit_data[i];
-    	worksheet.cell(row, col + col_add).number(i + 1);
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.agent_name ? e.agent_name : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.number(e.agent_nid ? e.agent_nid : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.phone ? e.phone : "");
-    	col_add++;
-      worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "");
-    	col_add++;
+      var col_add = 0;
+      let e = limit_data[i];
+      worksheet.cell(row, col + col_add).number(i + 1);
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.agent_name ? e.agent_name : "");
+      col_add++;
+      if (e.remarks_invalidated.includes("Sales_Agent_NID")) {
+        worksheet.cell(row, col + col_add).number(e.agent_nid ? e.agent_nid : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).number(e.agent_nid ? e.agent_nid : "");
+        col_add++;
+      }
+      if (e.remarks_invalidated.includes("Phone")) {
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
+        col_add++;
+      }
+      if (e.remarks_invalidated.includes("Sales_Agent_Employee_Code")) {
+        worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.autho_supervisor_employee_code ? e.autho_supervisor_employee_code : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
-    	col_add++;
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
+      col_add++;
       worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
-    	col_add++;
-    	// worksheet.cell(row, col + col_add).number(0);
-    	// col_add++;
-    	row++;
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.remarks_duplications ? e.remarks_duplications : "").style(remarksStyle);
+      col_add++;
+      // worksheet.cell(row, col + col_add).number(0);
+      // col_add++;
+      row++;
     }
     await workbook.write("public/unupload_report/sales_agent_unuploaded_report.xlsx");
     const fileName = "./unupload_report/sales_agent_unuploaded_report.xlsx";
@@ -215,7 +251,8 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
         "agent_employee_code",
         "autho_supervisor_employee_code",
         "region_of_operation",
-        "distributor_id"
+        "distributor_id",
+        "remarks_invalidated"
       );
     const headers = [
       "Sr.",
@@ -226,7 +263,8 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
       "Authorized_supervisor_emp_code",
       "Manufacturer",
       "Distributor",
-      "Region_of_Operation"
+      "Region_of_Operation",
+      "Invalidated Remarked"
     ];
     const workbook = new excel.Workbook();
     const worksheet = workbook.addWorksheet("Sheet 1");
@@ -243,6 +281,27 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
         bold: true,
       },
     });
+
+    const errorStyle = workbook.createStyle({
+      fill: {
+        type: "pattern",
+        patternType: "solid",
+        fgColor: "#FF0000",
+      },
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
+
+    const remarksStyle = workbook.createStyle({
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
     const col = 1;
     let row = 1;
     let col_addH = 0;
@@ -255,35 +314,43 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
     });
     row++;
     for (let i = 0; i < limit_data.length; i++) {
-    	var col_add = 0;
-    	let e = limit_data[i];
-    	worksheet.cell(row, col + col_add).number(i + 1);
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.agent_name ? e.agent_name : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.number(e.agent_nid ? e.agent_nid : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.phone ? e.phone : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "");
-    	col_add++;
+      var col_add = 0;
+      let e = limit_data[i];
+      worksheet.cell(row, col + col_add).number(i + 1);
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.agent_name ? e.agent_name : "");
+      col_add++;
+      if (e.remarks_invalidated.includes("Sales_Agent_NID")) {
+        worksheet.cell(row, col + col_add).number(e.agent_nid ? e.agent_nid : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).number(e.agent_nid ? e.agent_nid : "");
+        col_add++;
+      }
+      if (e.remarks_invalidated.includes("Phone")) {
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
+        col_add++;
+      }
+      worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "");
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_supervisor_employee_code ? e.autho_supervisor_employee_code : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
-    	col_add++;
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
+      col_add++;
       worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
-    	col_add++;
-    	// worksheet.cell(row, col + col_add).number(0);
-    	// col_add++;
-    	row++;
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.remarks_invalidated ? e.remarks_invalidated : "").style(remarksStyle);
+      col_add++;
+      // worksheet.cell(row, col + col_add).number(0);
+      // col_add++;
+      row++;
     }
     await workbook.write("public/unupload_report/sales_agent_invalidated_data.xlsx");
     const fileName = "./unupload_report/sales_agent_invalidated_data.xlsx";

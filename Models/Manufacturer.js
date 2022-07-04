@@ -58,26 +58,28 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           }
           // Nature of business scope - end
 
-          const all_Reg_No_array = [];
-          const all_Official_Email_array = [];
-          const all_Official_Phone_array = [];
-          const all_Name_array = [];
+          // const all_Reg_No_array = [];
+          // const all_Official_Email_array = [];
+          // const all_Official_Phone_array = [];
+          // const all_Name_array = [];
           const data_array = [];
           const unuploaded_data_array = [];
           const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
 
-            for (let index = 0; index < rows.length; index++) {
-              all_Reg_No_array[index] = rows[index].Manufacturer_Registration_No;
-              all_Official_Email_array[index] = rows[index].Official_Email_ID;
-              all_Official_Phone_array[index] = rows[index].Official_Phone_Number;
-              all_Name_array[index] = rows[index].Manufacturer_Name;
-            }
+            // for (let index = 0; index < rows.length; index++) {
+            //   all_Reg_No_array[index] = rows[index].Manufacturer_Registration_No;
+            //   all_Official_Email_array[index] = rows[index].Official_Email_ID;
+            //   all_Official_Phone_array[index] = rows[index].Official_Phone_Number;
+            //   all_Name_array[index] = rows[index].Manufacturer_Name;
+            // }
 
             for (let index = 0; index < rows.length; index++) {
               const reg_no = rows[index].Manufacturer_Registration_No;
               const email = rows[index].Official_Email_ID;
               const phone = rows[index].Official_Phone_Number;
+              const person_email = rows[index].Authorized_Representative_Official_Email_ID;
+              const person_phone = rows[index].Authorized_Representative_Mobile_No;
               const tin = rows[index].Manufacturer_TIN;
               const name = rows[index].Manufacturer_Name;
               const nid = rows[index].Authorized_Representative_NID;
@@ -86,62 +88,79 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const validNID = ValidateNID(nid);
               const validPhoneNumber = ValidatePhoneNumber(phone.toString());
               const validEmail = ValidateEmail(email);
+              const validPersonPhoneNumber = ValidatePhoneNumber(person_phone.toString());
+              const validPersonEmail = ValidateEmail(person_email);
 
-              if (!validNID || !validPhoneNumber || !validEmail) {
+              if (!validNID || !validPhoneNumber || !validEmail || !validPersonPhoneNumber || !validPersonEmail) {
+
+                let invalidStr = "invalid columns - ";
+                if (!validNID) {
+                  invalidStr = invalidStr + "NID " + ", ";
+                }
+                if (!validPhoneNumber) {
+                  invalidStr = invalidStr + "Official_Phone_Number " + ", ";
+                }
+                if (!validEmail) {
+                  invalidStr = invalidStr + "Official_Email_ID " + ", ";
+                }
+                if (!validPersonPhoneNumber) {
+                  invalidStr = invalidStr + "Authorized_Representative_Mobile_No " + ", ";
+                }
+                if (!validPersonEmail) {
+                  invalidStr = invalidStr + "Authorized_Representative_Official_Email_ID " + ", ";
+                }
+
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],
-                  Name_of_Scheme: rows[index]?.Name_of_Scheme ?? null,
+                  Name_of_Scheme: rows[index]?.Name_of_Scheme ?? " ",
                   Manufacturer_Registration_No:
                     rows[index].Manufacturer_Registration_No,
-                  Manufacturer_TIN: rows[index].Manufacturer_TIN,
-                  Manufacturer_BIN: rows[index].Manufacturer_BIN,
-                  Website_URL: rows[index].Website_URL,
+                  Manufacturer_TIN: rows[index]?.Manufacturer_TIN ?? " ",
+                  Manufacturer_BIN: rows[index]?.Manufacturer_BIN ?? " ",
+                  Website_URL: rows[index]?.Website_URL ?? " ",
                   Registered_Corporate_Office_Address_in_Bangladesh:
-                    rows[index]
-                      .Registered_Corporate_Office_Address_in_Bangladesh,
+                    rows[index]?.Registered_Corporate_Office_Address_in_Bangladesh ?? " ",
                   Corporate_Office_Address_Line_1:
-                    rows[index].Corporate_Office_Address_Line_1,
+                    rows[index]?.Corporate_Office_Address_Line_1 ?? " ",
                   Corporate_Office_Address_Line_2:
-                    rows[index].Corporate_Office_Address_Line_2,
+                    rows[index]?.Corporate_Office_Address_Line_2 ?? " ",
                   Corporate_Office_Postal_Code:
-                    rows[index].Corporate_Office_Postal_Code,
+                    rows[index]?.Corporate_Office_Postal_Code ?? " ",
                   Corporate_Office_Post_Office:
-                    rows[index].Corporate_Office_Post_Office,
-                  Corporate_Office_Thana: rows[index].Corporate_Office_Thana,
+                    rows[index]?.Corporate_Office_Post_Office ?? " ",
+                  Corporate_Office_Thana: rows[index]?.Corporate_Office_Thana ?? " ",
                   Corporate_Office_District:
-                    rows[index].Corporate_Office_District,
+                    rows[index]?.Corporate_Office_District ?? " ",
                   Corporate_Office_Division:
-                    rows[index].Corporate_Office_Division,
+                    rows[index]?.Corporate_Office_Division ?? " ",
                   Nature_of_Business:
                     nature_business_arr[rows[index].Nature_of_Business],
-                  Alternative_Addresses: rows[index].Alternative_Addresses,
+                  Alternative_Addresses: rows[index]?.Alternative_Addresses ?? " ",
                   Alternative_Address_Line_1:
-                    rows[index].Alternative_Address_Line_1,
+                    rows[index]?.Alternative_Address_Line_1 ?? " ",
                   Alternative_Address_Line_2:
-                    rows[index].Alternative_Address_Line_2,
-                  Alternative_Postal_Code: rows[index].Alternative_Postal_Code,
-                  Alternative_Post_Office: rows[index].Alternative_Post_Office,
-                  Alternative_Thana: rows[index].Alternative_Thana,
-                  Alternative_District: rows[index].Alternative_District,
-                  Alternative_Division: rows[index].Alternative_Division,
+                    rows[index]?.Alternative_Address_Line_2 ?? " ",
+                  Alternative_Postal_Code: rows[index]?.Alternative_Postal_Code ?? " ",
+                  Alternative_Post_Office: rows[index]?.Alternative_Post_Office ?? " ",
+                  Alternative_Thana: rows[index]?.Alternative_Thana ?? " ",
+                  Alternative_District: rows[index]?.Alternative_District ?? " ",
+                  Alternative_Division: rows[index]?.Alternative_Division ?? " ",
                   Official_Phone_Number: rows[index].Official_Phone_Number,
                   Official_Email_ID: rows[index].Official_Email_ID,
                   Authorized_Representative_Name:
-                    rows[index].Authorized_Representative_Name,
+                    rows[index]?.Authorized_Representative_Name ?? " ",
                   Authorized_Representative_Full_Name:
-                    rows[index].Authorized_Representative_Full_Name,
+                    rows[index]?.Authorized_Representative_Full_Name ?? " ",
                   Authorized_Representative_NID:
                     rows[index].Authorized_Representative_NID,
                   Authorized_Representative_Designation:
-                    rows[index].Authorized_Representative_Designation,
+                    rows[index]?.Authorized_Representative_Designation ?? " ",
                   Authorized_Representative_Mobile_No:
-                    rows[index]?.Authorized_Representative_Mobile_No ?? null,
+                    rows[index].Authorized_Representative_Mobile_No,
                   Authorized_Representative_Official_Email_ID:
-                    rows[index]?.Authorized_Representative_Official_Email_ID ?? null,
-                  Manufacturer_Name: rows[index].Manufacturer_Name,
-                  Official_Email_ID: rows[index].Official_Email_ID,
-                  Official_Phone_Number: rows[index].Official_Phone_Number,
+                    rows[index].Authorized_Representative_Official_Email_ID,
+                  Remarks_Invalidated: invalidStr,
                 };
                 invalidate_data_array.push(temp_data);
                 continue;
@@ -219,138 +238,141 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_checkNID[0].count
               );
 
-              const regNoSubArray = all_Reg_No_array.slice(0, index);
-              const officialEmailSubArray = all_Official_Email_array.slice(0, index);
-              const officialPhoneSubArray = all_Official_Phone_array.slice(0, index);
-              const name_SubArray = all_Name_array.slice(0, index);
+              // const regNoSubArray = all_Reg_No_array.slice(0, index);
+              // const officialEmailSubArray = all_Official_Email_array.slice(0, index);
+              // const officialPhoneSubArray = all_Official_Phone_array.slice(0, index);
+              // const name_SubArray = all_Name_array.slice(0, index);
 
-              const regNoDuplicateExcel = regNoSubArray.includes(reg_no);
-              const officialEmailDuplicateExcel = officialEmailSubArray.includes(email);
-              const officialPhoneDuplicateExcel = officialPhoneSubArray.includes(phone);
-              const empCodeDuplicateExcel = name_SubArray.includes(name);
+              // const regNoDuplicateExcel = regNoSubArray.includes(reg_no);
+              // const officialEmailDuplicateExcel = officialEmailSubArray.includes(email);
+              // const officialPhoneDuplicateExcel = officialPhoneSubArray.includes(phone);
+              // const empCodeDuplicateExcel = name_SubArray.includes(name);
 
               if (duplication_check_val_reg == 0
                 && duplication_check_val_email == 0
                 && duplication_check_val_phone == 0
-                && duplication_check_val_name == 0
-                && !regNoDuplicateExcel
-                && !officialEmailDuplicateExcel
-                && !officialPhoneDuplicateExcel
-                && !empCodeDuplicateExcel) {
+                && duplication_check_val_name == 0) {
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],
-                  Name_of_Scheme: rows[index]?.Name_of_Scheme ?? null,
+                  Name_of_Scheme: rows[index]?.Name_of_Scheme ?? " ",
                   Manufacturer_Registration_No:
                     rows[index].Manufacturer_Registration_No,
-                  Manufacturer_TIN: rows[index].Manufacturer_TIN,
-                  Manufacturer_BIN: rows[index].Manufacturer_BIN,
-                  Website_URL: rows[index].Website_URL,
+                  Manufacturer_TIN: rows[index]?.Manufacturer_TIN ?? " ",
+                  Manufacturer_BIN: rows[index]?.Manufacturer_BIN ?? " ",
+                  Website_URL: rows[index]?.Website_URL ?? " ",
                   Registered_Corporate_Office_Address_in_Bangladesh:
-                    rows[index]
-                      .Registered_Corporate_Office_Address_in_Bangladesh,
+                    rows[index]?.Registered_Corporate_Office_Address_in_Bangladesh ?? " ",
                   Corporate_Office_Address_Line_1:
-                    rows[index].Corporate_Office_Address_Line_1,
+                    rows[index]?.Corporate_Office_Address_Line_1 ?? " ",
                   Corporate_Office_Address_Line_2:
-                    rows[index].Corporate_Office_Address_Line_2,
+                    rows[index]?.Corporate_Office_Address_Line_2 ?? " ",
                   Corporate_Office_Postal_Code:
-                    rows[index].Corporate_Office_Postal_Code,
+                    rows[index]?.Corporate_Office_Postal_Code ?? " ",
                   Corporate_Office_Post_Office:
-                    rows[index].Corporate_Office_Post_Office,
-                  Corporate_Office_Thana: rows[index].Corporate_Office_Thana,
+                    rows[index]?.Corporate_Office_Post_Office ?? " ",
+                  Corporate_Office_Thana: rows[index]?.Corporate_Office_Thana ?? " ",
                   Corporate_Office_District:
-                    rows[index].Corporate_Office_District,
+                    rows[index]?.Corporate_Office_District ?? " ",
                   Corporate_Office_Division:
-                    rows[index].Corporate_Office_Division,
+                    rows[index]?.Corporate_Office_Division ?? " ",
                   Nature_of_Business:
                     nature_business_arr[rows[index].Nature_of_Business],
-                  Alternative_Addresses: rows[index].Alternative_Addresses,
+                  Alternative_Addresses: rows[index]?.Alternative_Addresses ?? " ",
                   Alternative_Address_Line_1:
-                    rows[index].Alternative_Address_Line_1,
+                    rows[index]?.Alternative_Address_Line_1 ?? " ",
                   Alternative_Address_Line_2:
-                    rows[index].Alternative_Address_Line_2,
-                  Alternative_Postal_Code: rows[index].Alternative_Postal_Code,
-                  Alternative_Post_Office: rows[index].Alternative_Post_Office,
-                  Alternative_Thana: rows[index].Alternative_Thana,
-                  Alternative_District: rows[index].Alternative_District,
-                  Alternative_Division: rows[index].Alternative_Division,
+                    rows[index]?.Alternative_Address_Line_2 ?? " ",
+                  Alternative_Postal_Code: rows[index]?.Alternative_Postal_Code ?? " ",
+                  Alternative_Post_Office: rows[index]?.Alternative_Post_Office ?? " ",
+                  Alternative_Thana: rows[index]?.Alternative_Thana ?? " ",
+                  Alternative_District: rows[index]?.Alternative_District ?? " ",
+                  Alternative_Division: rows[index]?.Alternative_Division ?? " ",
                   Official_Phone_Number: rows[index].Official_Phone_Number,
                   Official_Email_ID: rows[index].Official_Email_ID,
                   Authorized_Representative_Name:
-                    rows[index].Authorized_Representative_Name,
+                    rows[index]?.Authorized_Representative_Name ?? " ",
                   Authorized_Representative_Full_Name:
-                    rows[index].Authorized_Representative_Full_Name,
+                    rows[index]?.Authorized_Representative_Full_Name ?? " ",
                   Authorized_Representative_NID:
                     rows[index].Authorized_Representative_NID,
                   Authorized_Representative_Designation:
-                    rows[index].Authorized_Representative_Designation,
+                    rows[index]?.Authorized_Representative_Designation ?? " ",
                   Authorized_Representative_Mobile_No:
-                    rows[index]?.Authorized_Representative_Mobile_No ?? null,
+                    rows[index].Authorized_Representative_Mobile_No,
                   Authorized_Representative_Official_Email_ID:
-                    rows[index]?.Authorized_Representative_Official_Email_ID ?? null,
-                  Manufacturer_Name: rows[index].Manufacturer_Name,
-                  Official_Email_ID: rows[index].Official_Email_ID,
-                  Official_Phone_Number: rows[index].Official_Phone_Number,
+                    rows[index].Authorized_Representative_Official_Email_ID,
                 };
                 data_array.push(temp_data);
               } else {
+
+                let duplicateStr = "duplicate columns - ";
+                if (duplication_check_val_reg != 0) {
+                  duplicateStr = duplicateStr + "Manufacturer_Registration_No " + ", ";
+                }
+                if (duplication_check_val_email != 0) {
+                  duplicateStr = duplicateStr + "Official_Email_ID " + ", ";
+                }
+                if (duplication_check_val_phone != 0) {
+                  duplicateStr = duplicateStr + "Official_Phone_Number " + ", ";
+                }
+                if (duplication_check_val_name != 0) {
+                  duplicateStr = duplicateStr + "Manufacturer_Name " + ", ";
+                }
+
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],
                   Name_of_Scheme: rows[index]?.Name_of_Scheme ?? null,
                   Manufacturer_Registration_No:
                     rows[index].Manufacturer_Registration_No,
-                  Manufacturer_TIN: rows[index].Manufacturer_TIN,
-                  Manufacturer_BIN: rows[index].Manufacturer_BIN,
-                  Website_URL: rows[index].Website_URL,
+                  Manufacturer_TIN: rows[index]?.Manufacturer_TIN ?? " ",
+                  Manufacturer_BIN: rows[index]?.Manufacturer_BIN ?? " ",
+                  Website_URL: rows[index]?.Website_URL ?? " ",
                   Registered_Corporate_Office_Address_in_Bangladesh:
-                    rows[index]
-                      .Registered_Corporate_Office_Address_in_Bangladesh,
+                    rows[index]?.Registered_Corporate_Office_Address_in_Bangladesh ?? " ",
                   Corporate_Office_Address_Line_1:
-                    rows[index].Corporate_Office_Address_Line_1,
+                    rows[index]?.Corporate_Office_Address_Line_1 ?? " ",
                   Corporate_Office_Address_Line_2:
-                    rows[index].Corporate_Office_Address_Line_2,
+                    rows[index]?.Corporate_Office_Address_Line_2 ?? " ",
                   Corporate_Office_Postal_Code:
-                    rows[index].Corporate_Office_Postal_Code,
+                    rows[index]?.Corporate_Office_Postal_Code ?? " ",
                   Corporate_Office_Post_Office:
-                    rows[index].Corporate_Office_Post_Office,
-                  Corporate_Office_Thana: rows[index].Corporate_Office_Thana,
+                    rows[index]?.Corporate_Office_Post_Office ?? " ",
+                  Corporate_Office_Thana: rows[index]?.Corporate_Office_Thana ?? " ",
                   Corporate_Office_District:
-                    rows[index].Corporate_Office_District,
+                    rows[index]?.Corporate_Office_District ?? " ",
                   Corporate_Office_Division:
-                    rows[index].Corporate_Office_Division,
+                    rows[index]?.Corporate_Office_Division ?? " ",
                   Nature_of_Business:
                     nature_business_arr[rows[index].Nature_of_Business],
-                  Alternative_Addresses: rows[index].Alternative_Addresses,
+                  Alternative_Addresses: rows[index]?.Alternative_Addresses ?? " ",
                   Alternative_Address_Line_1:
-                    rows[index].Alternative_Address_Line_1,
+                    rows[index]?.Alternative_Address_Line_1 ?? " ",
                   Alternative_Address_Line_2:
-                    rows[index].Alternative_Address_Line_2,
-                  Alternative_Postal_Code: rows[index].Alternative_Postal_Code,
-                  Alternative_Post_Office: rows[index].Alternative_Post_Office,
-                  Alternative_Thana: rows[index].Alternative_Thana,
-                  Alternative_District: rows[index].Alternative_District,
-                  Alternative_Division: rows[index].Alternative_Division,
+                    rows[index]?.Alternative_Address_Line_2 ?? " ",
+                  Alternative_Postal_Code: rows[index]?.Alternative_Postal_Code ?? " ",
+                  Alternative_Post_Office: rows[index]?.Alternative_Post_Office ?? " ",
+                  Alternative_Thana: rows[index]?.Alternative_Thana ?? " ",
+                  Alternative_District: rows[index]?.Alternative_District ?? " ",
+                  Alternative_Division: rows[index]?.Alternative_Division ?? " ",
                   Official_Phone_Number: rows[index].Official_Phone_Number,
                   Official_Email_ID: rows[index].Official_Email_ID,
                   Authorized_Representative_Name:
-                    rows[index].Authorized_Representative_Name,
+                    rows[index]?.Authorized_Representative_Name ?? " ",
                   Authorized_Representative_Full_Name:
-                    rows[index].Authorized_Representative_Full_Name,
+                    rows[index]?.Authorized_Representative_Full_Name ?? " ",
                   Authorized_Representative_NID:
                     rows[index].Authorized_Representative_NID,
                   Authorized_Representative_Designation:
-                    rows[index].Authorized_Representative_Designation,
+                    rows[index]?.Authorized_Representative_Designation ?? " ",
                   Authorized_Representative_Mobile_No:
-                    rows[index]?.Authorized_Representative_Mobile_No ?? null,
+                    rows[index].Authorized_Representative_Mobile_No,
                   Authorized_Representative_Official_Email_ID:
-                    rows[index]?.Authorized_Representative_Official_Email_ID ?? null,
-                  Manufacturer_Name: rows[index].Manufacturer_Name,
-                  Official_Email_ID: rows[index].Official_Email_ID,
-                  Official_Phone_Number: rows[index].Official_Phone_Number,
+                    rows[index].Authorized_Representative_Official_Email_ID,
+                  Remarks_Duplicated: duplicateStr,
                 };
                 unuploaded_data_array.push(temp_data);
-
               }
             }
           }
@@ -381,7 +403,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const invalidated_manufacture = {
                 manufacturer_name: invalidate_data_array[index].Manufacturer_Name,
                 type_of_entity: invalidate_data_array[index].Type_of_Entity,
-                name_of_scheme: invalidate_data_array[index]?.Name_of_Scheme ?? 'hello',
+                name_of_scheme: invalidate_data_array[index]?.Name_of_Scheme ?? ' ',
                 registration_no: invalidate_data_array[index].Manufacturer_Registration_No,
                 manufacturer_tin: invalidate_data_array[index].Manufacturer_TIN,
                 manufacturer_bin: invalidate_data_array[index].Manufacturer_BIN,
@@ -429,6 +451,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   invalidate_data_array[index]?.Authorized_Representative_Mobile_No ?? '',
                 autho_rep_email:
                   invalidate_data_array[index]?.Authorized_Representative_Official_Email_ID ?? '',
+                remarks_invalidated:
+                  invalidate_data_array[index]?.Remarks_Invalidated ?? '',
                 created_by: req.user_id,
               };
 
@@ -443,7 +467,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const unuploaded_manufacture = {
                 manufacturer_name: unuploaded_data_array[index].Manufacturer_Name,
                 type_of_entity: unuploaded_data_array[index].Type_of_Entity,
-                name_of_scheme: unuploaded_data_array[index]?.Name_of_Scheme ?? 'hello',
+                name_of_scheme: unuploaded_data_array[index]?.Name_of_Scheme ?? ' ',
                 registration_no: unuploaded_data_array[index].Manufacturer_Registration_No,
                 manufacturer_tin: unuploaded_data_array[index].Manufacturer_TIN,
                 manufacturer_bin: unuploaded_data_array[index].Manufacturer_BIN,
@@ -491,6 +515,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   unuploaded_data_array[index]?.Authorized_Representative_Mobile_No ?? '',
                 autho_rep_email:
                   unuploaded_data_array[index]?.Authorized_Representative_Official_Email_ID ?? '',
+                remarks_duplications: unuploaded_data_array[index]?.Remarks_Duplicated ?? ' ',
                 created_by: req.user_id,
               };
 
@@ -504,10 +529,139 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             const manufacture_insert_ids = [];
             const user_insert_ids = [];
             for (let index = 0; index < data_array.length; index++) {
+              const reg_no_insert_data = data_array[index].Manufacturer_Registration_No;
+              const name_insert_data = data_array[index].Manufacturer_Name;
+              const email_insert_data = data_array[index].Official_Email_ID;
+              const mobile_insert_data = data_array[index].Official_Phone_Number;
+              const reg_no_string = reg_no_insert_data.toString();
+
+              const duplication_checkReg_insert_data = await knex
+                .count("cr_manufacturer.registration_no as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.registration_no",
+                  reg_no_string
+                );
+              const duplication_check_val_reg_insert_data = parseInt(
+                duplication_checkReg_insert_data[0].count
+              );
+
+              const duplication_checkEmail_insert_data = await knex
+                .count("cr_manufacturer.official_email as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.official_email",
+                  email_insert_data
+                );
+              const duplication_check_val_email_insert_data = parseInt(
+                duplication_checkEmail_insert_data[0].count
+              );
+
+              const duplication_checkPhone_insert_data = await knex
+                .count("cr_manufacturer.official_phone as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.official_phone",
+                  mobile_insert_data
+                );
+              const duplication_check_val_phone_insert_data = parseInt(
+                duplication_checkPhone_insert_data[0].count
+              );
+
+              const duplication_checkName_insert_data = await knex
+                .count("cr_manufacturer.manufacturer_name as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.manufacturer_name",
+                  name_insert_data
+                );
+              const duplication_check_val_name_insert_data = parseInt(
+                duplication_checkName_insert_data[0].count
+              );
+
+              if (duplication_check_val_reg_insert_data != 0
+                || duplication_check_val_email_insert_data != 0
+                || duplication_check_val_phone_insert_data != 0
+                || duplication_check_val_name_insert_data != 0) {
+
+                let duplicateStr = "duplicate columns - ";
+                if (duplication_check_val_reg_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Manufacturer_Registration_No " + ", ";
+                }
+                if (duplication_check_val_email_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Official_Email_ID " + ", ";
+                }
+                if (duplication_check_val_phone_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Official_Phone_Number " + ", ";
+                }
+                if (duplication_check_val_name_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Manufacturer_Name " + ", ";
+                }
+                const duplicate_data_array = {
+                  manufacturer_name: data_array[index].Manufacturer_Name,
+                  type_of_entity: data_array[index].Type_of_Entity,
+                  name_of_scheme: data_array[index]?.Name_of_Scheme ?? ' ',
+                  registration_no: data_array[index].Manufacturer_Registration_No,
+                  manufacturer_tin: data_array[index].Manufacturer_TIN,
+                  manufacturer_bin: data_array[index].Manufacturer_BIN,
+                  website_link: data_array[index].Website_URL,
+                  corporate_ofc_address:
+                    data_array[index]
+                      .Registered_Corporate_Office_Address_in_Bangladesh,
+                  corporate_ofc_address_1:
+                    data_array[index].Corporate_Office_Address_Line_1,
+                  corporate_ofc_address_2:
+                    data_array[index].Corporate_Office_Address_Line_2,
+                  corporate_ofc_postal_code:
+                    data_array[index].Corporate_Office_Postal_Code,
+                  corporate_ofc_post_office:
+                    data_array[index].Corporate_Office_Post_Office,
+                  corporate_ofc_thana: data_array[index].Corporate_Office_Thana,
+                  corporate_ofc_district:
+                    data_array[index].Corporate_Office_District,
+                  corporate_ofc_division:
+                    data_array[index].Corporate_Office_Division,
+                  nature_of_business: data_array[index].Nature_of_Business,
+                  alternative_ofc_address:
+                    data_array[index].Alternative_Addresses,
+                  alternative_address_1:
+                    data_array[index].Alternative_Address_Line_1,
+                  alternative_address_2:
+                    data_array[index].Alternative_Address_Line_2,
+                  alternative_postal_code:
+                    data_array[index].Alternative_Postal_Code,
+                  alternative_post_office:
+                    data_array[index].Alternative_Post_Office,
+                  alternative_thana: data_array[index].Alternative_Thana,
+                  alternative_district: data_array[index].Alternative_District,
+                  alternative_division: data_array[index].Alternative_Division,
+                  official_phone: data_array[index].Official_Phone_Number,
+                  official_email: data_array[index].Official_Email_ID,
+                  name_of_authorized_representative:
+                    data_array[index].Authorized_Representative_Name,
+                  autho_rep_full_name:
+                    data_array[index].Authorized_Representative_Full_Name,
+                  autho_rep_nid: data_array[index].Authorized_Representative_NID,
+                  autho_rep_designation:
+                    data_array[index].Authorized_Representative_Designation,
+                  autho_rep_phone:
+                    data_array[index]?.Authorized_Representative_Mobile_No ?? '',
+                  autho_rep_email:
+                    data_array[index]?.Authorized_Representative_Official_Email_ID ?? '',
+                  remarks_duplications: duplicateStr,
+                  created_by: req.user_id,
+                };
+                await knex("APSISIPDC.cr_manufacturer_unuploaded_data")
+                  .insert(duplicate_data_array);
+
+                continue;
+
+              }
+
               const team_manufacture = {
                 manufacturer_name: data_array[index].Manufacturer_Name,
                 type_of_entity: data_array[index].Type_of_Entity,
-                name_of_scheme: data_array[index]?.Name_of_Scheme ?? 'hello',
+                name_of_scheme: data_array[index]?.Name_of_Scheme ?? ' ',
                 registration_no: data_array[index].Manufacturer_Registration_No,
                 manufacturer_tin: data_array[index].Manufacturer_TIN,
                 manufacturer_bin: data_array[index].Manufacturer_BIN,

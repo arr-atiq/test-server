@@ -32,7 +32,7 @@ const importExcelData2DB = async function (filename, req) {
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, "File not uploaded");
+    return sendApiResult(false, "File format is not correct", error);
   }
 };
 
@@ -100,7 +100,8 @@ exports.generateDistributorUnuploadedReport = async (req, res) => {
         "autho_rep_nid",
         "autho_rep_designation",
         "autho_rep_phone",
-        "autho_rep_email"
+        "autho_rep_email",
+        "remarks_duplications"
       );
     const headers = [
       "Sr.",
@@ -127,7 +128,8 @@ exports.generateDistributorUnuploadedReport = async (req, res) => {
       "Designation_of_Authorized_Representative",
       "Mobile_No",
       "Official_Email_Id_of_Authorized_Representative",
-      "Region_of_Operation"
+      "Region_of_Operation",
+      "Duplications Remarked"
     ];
     const workbook = new excel.Workbook();
     const worksheet = workbook.addWorksheet("Sheet 1");
@@ -144,6 +146,26 @@ exports.generateDistributorUnuploadedReport = async (req, res) => {
         bold: true,
       },
     });
+    const errorStyle = workbook.createStyle({
+      fill: {
+        type: "pattern",
+        patternType: "solid",
+        fgColor: "#42a3ed",
+      },
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
+
+    const remarksStyle = workbook.createStyle({
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
     const col = 1;
     let row = 1;
     let col_addH = 0;
@@ -156,69 +178,78 @@ exports.generateDistributorUnuploadedReport = async (req, res) => {
     });
     row++;
     for (let i = 0; i < limit_data.length; i++) {
-    	var col_add = 0;
-    	let e = limit_data[i];
-    	worksheet.cell(row, col + col_add).number(i + 1);
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.number(e.manufacturer_id ? e.manufacturer_id : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.distributor_name ? e.distributor_name : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.distributor_code ? e.distributor_code : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.distributor_tin ? e.distributor_tin : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.official_contact_number ? e.official_contact_number : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.is_distributor_or_third_party_agency ? e.is_distributor_or_third_party_agency : "");
-    	col_add++;
+      var col_add = 0;
+      let e = limit_data[i];
+      worksheet.cell(row, col + col_add).number(i + 1);
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .number(e.manufacturer_id ? e.manufacturer_id : "");
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.distributor_name ? e.distributor_name : "");
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.distributor_code ? e.distributor_code : "");
+      col_add++;
+      if (e.remarks_duplications.includes("Distributor_TIN")) {
+        worksheet.cell(row, col + col_add).string(e.distributor_tin ? e.distributor_tin : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.distributor_tin ? e.distributor_tin : "");
+        col_add++;
+      }
+      worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.official_contact_number ? e.official_contact_number : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.is_distributor_or_third_party_agency ? e.is_distributor_or_third_party_agency : "");
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.corporate_registration_no ? e.corporate_registration_no : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.trade_license_no ? e.trade_license_no : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.registered_office_bangladesh ? e.registered_office_bangladesh : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_address1 ? e.ofc_address1 : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_address2 ? e.ofc_address2 : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).number(e.ofc_postal_code ? e.ofc_postal_code : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_post_office ? e.ofc_post_office : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_thana ? e.ofc_thana : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_district ? e.ofc_district : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_division ? e.ofc_division : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.name_of_authorized_representative ? e.name_of_authorized_representative : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).number(e.autho_rep_nid ? e.autho_rep_nid : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_designation ? e.autho_rep_designation : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_email ? e.autho_rep_email : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
-    	col_add++;
-    	// worksheet.cell(row, col + col_add).number(0);
-    	// col_add++;
-    	row++;
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.remarks_duplications ? e.remarks_duplications : "").style(remarksStyle);
+      col_add++;
+      // worksheet.cell(row, col + col_add).number(0);
+      // col_add++;
+      row++;
     }
-    
+
     await workbook.write("public/unupload_report/distributor_unuploaded_data_report.xlsx");
     const fileName = "./unupload_report/distributor_unuploaded_data_report.xlsx";
     await knex("APSISIPDC.cr_distributor_unuploaded_data").del();
@@ -258,7 +289,8 @@ exports.generateDistributorInvalidatedReport = async (req, res) => {
         "autho_rep_nid",
         "autho_rep_designation",
         "autho_rep_phone",
-        "autho_rep_email"
+        "autho_rep_email",
+        "remarks_invalidated"
       );
     const headers = [
       "Sr.",
@@ -285,7 +317,8 @@ exports.generateDistributorInvalidatedReport = async (req, res) => {
       "Designation_of_Authorized_Representative",
       "Mobile_No",
       "Official_Email_Id_of_Authorized_Representative",
-      "Region_of_Operation"
+      "Region_of_Operation",
+      "Invalidated Remarked"
     ];
     const workbook = new excel.Workbook();
     const worksheet = workbook.addWorksheet("Sheet 1");
@@ -302,6 +335,25 @@ exports.generateDistributorInvalidatedReport = async (req, res) => {
         bold: true,
       },
     });
+    const errorStyle = workbook.createStyle({
+      fill: {
+        type: "pattern",
+        patternType: "solid",
+        fgColor: "#FF0000",
+      },
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
+    const remarksStyle = workbook.createStyle({
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
     const col = 1;
     let row = 1;
     let col_addH = 0;
@@ -314,67 +366,94 @@ exports.generateDistributorInvalidatedReport = async (req, res) => {
     });
     row++;
     for (let i = 0; i < limit_data.length; i++) {
-    	var col_add = 0;
-    	let e = limit_data[i];
-    	worksheet.cell(row, col + col_add).number(i + 1);
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.number(e.manufacturer_id ? e.manufacturer_id : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.distributor_name ? e.distributor_name : "");
-    	col_add++;
-    	worksheet
-    	.cell(row, col + col_add)
-    	.string(e.distributor_code ? e.distributor_code : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.distributor_tin ? e.distributor_tin : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.official_contact_number ? e.official_contact_number : "");
-    	col_add++;
-    	worksheet.cell(row, col + col_add).string(e.is_distributor_or_third_party_agency ? e.is_distributor_or_third_party_agency : "");
-    	col_add++;
+      var col_add = 0;
+      let e = limit_data[i];
+      worksheet.cell(row, col + col_add).number(i + 1);
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .number(e.manufacturer_id ? e.manufacturer_id : "");
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.distributor_name ? e.distributor_name : "");
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.distributor_code ? e.distributor_code : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.distributor_tin ? e.distributor_tin : "");
+      col_add++;
+      if (e.remarks_invalidated.includes("Official_Email_ID")) {
+        worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "");
+        col_add++;
+      }
+      if (e.remarks_invalidated.includes("Official_Phone_Number")) {
+        worksheet.cell(row, col + col_add).string(e.official_contact_number ? e.official_contact_number : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.official_contact_number ? e.official_contact_number : "");
+        col_add++;
+      }
+      worksheet.cell(row, col + col_add).string(e.is_distributor_or_third_party_agency ? e.is_distributor_or_third_party_agency : "");
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.corporate_registration_no ? e.corporate_registration_no : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.trade_license_no ? e.trade_license_no : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.registered_office_bangladesh ? e.registered_office_bangladesh : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_address1 ? e.ofc_address1 : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_address2 ? e.ofc_address2 : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).number(e.ofc_postal_code ? e.ofc_postal_code : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_post_office ? e.ofc_post_office : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_thana ? e.ofc_thana : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_district ? e.ofc_district : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.ofc_division ? e.ofc_division : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.name_of_authorized_representative ? e.name_of_authorized_representative : "");
-    	col_add++;
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : "");
-    	col_add++;
-      worksheet.cell(row, col + col_add).number(e.autho_rep_nid ? e.autho_rep_nid : "");
-    	col_add++;
+      col_add++;
+      if (e.remarks_invalidated.includes("NID")) {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.autho_rep_designation ? e.autho_rep_designation : "");
-    	col_add++;
-      worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
-    	col_add++;
-      worksheet.cell(row, col + col_add).string(e.autho_rep_email ? e.autho_rep_email : "");
-    	col_add++;
+      col_add++;
+      if (e.remarks_invalidated.includes("Mobile_No")) {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
+        col_add++;
+      }
+      if (e.remarks_invalidated.includes("Official_Email_Id_of_Authorized_Representative")) {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_email ? e.autho_rep_email : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_email ? e.autho_rep_email : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
-    	col_add++;
-    	// worksheet.cell(row, col + col_add).number(0);
-    	// col_add++;
-    	row++;
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.remarks_invalidated ? e.remarks_invalidated : "").style(remarksStyle);
+      col_add++;
+      // worksheet.cell(row, col + col_add).number(0);
+      // col_add++;
+      row++;
     }
 
     await workbook.write("public/unupload_report/distributor_invalidated_data_report.xlsx");
