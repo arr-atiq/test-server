@@ -13,6 +13,8 @@ router.get("/getprocessingFeeAmount/:onermn_acc", loan.processingFeeAmout);
 router.put("/UpdateprocessingFeeAmount", loan.UpdateprocessingFeeAmount);
 router.post("/loanTenorInDays", loan.loanTenorInDays);
 router.post("/addSlab", loan.addSlab);
+router.post("/sequence", loan.sequence);
+router.put("/updatesequence", loan.updateSequence);
 
 // router.post("/totalLoan", loan.totalLoan);
 
