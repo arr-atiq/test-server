@@ -427,6 +427,7 @@ exports.repayment = async (req, res) => {
     req.body;
   // let transaction_cost = transaction_cost_value;
 
+
   const findSalesAgent = await findSalesrelation(sales_agent_id, retailer_id);
   const firstRepaymentID = await getfirstRepaymentID(onermn_acc);
 
@@ -620,104 +621,132 @@ exports.repayment = async (req, res) => {
             console.log("sumOfcharge", sumOfcharge);
             console.log("sumOfother_charge", sumOfother_charge);
 
-            if (intersetPaid > 0) {
-              if (parseFloat(intersetPaid) >= parseFloat(sumofReimbursement)) {
-                intersetPaid =
-                  parseFloat(intersetPaid) - parseFloat(sumofReimbursement);
-                payInterest_reimbursment = parseFloat(sumofReimbursement);
-                interest_reimbursment = 0;
-              } else {
-                interest_reimbursment =
-                  parseFloat(sumofReimbursement) - parseFloat(intersetPaid);
-                payInterest_reimbursment = parseFloat(intersetPaid);
-                intersetPaid = 0;
+
+
+            const sequenceData =await getSequenceData()
+
+            sequenceData && sequenceData.length > 0 && sequenceData?.map((sequenceValue)=>{
+
+            if(sequenceValue.name == 'interest_reimbursment'){
+              if (intersetPaid > 0) {
+                if (parseFloat(intersetPaid) >= parseFloat(sumofReimbursement)) {
+                  intersetPaid =
+                    parseFloat(intersetPaid) - parseFloat(sumofReimbursement);
+                  payInterest_reimbursment = parseFloat(sumofReimbursement);
+                  interest_reimbursment = 0;
+                } else {
+                  interest_reimbursment =
+                    parseFloat(sumofReimbursement) - parseFloat(intersetPaid);
+                  payInterest_reimbursment = parseFloat(intersetPaid);
+                  intersetPaid = 0;
+                }
               }
             }
-            if (intersetPaid > 0) {
-              if (parseFloat(intersetPaid) >= parseFloat(sumOFpenal_interest)) {
-                intersetPaid =
-                  parseFloat(intersetPaid) - parseFloat(sumOFpenal_interest);
-                paypenal_interest = parseFloat(sumOFpenal_interest);
-                penal_interest = 0;
-              } else {
-                penal_interest =
-                  parseFloat(sumOFpenal_interest) - parseFloat(intersetPaid);
-                paypenal_interest = parseFloat(intersetPaid);
-                intersetPaid = 0;
+
+            if(sequenceValue.name == 'penal_interest'){
+              if (intersetPaid > 0) {
+                if (parseFloat(intersetPaid) >= parseFloat(sumOFpenal_interest)) {
+                  intersetPaid =
+                    parseFloat(intersetPaid) - parseFloat(sumOFpenal_interest);
+                  paypenal_interest = parseFloat(sumOFpenal_interest);
+                  penal_interest = 0;
+                } else {
+                  penal_interest =
+                    parseFloat(sumOFpenal_interest) - parseFloat(intersetPaid);
+                  paypenal_interest = parseFloat(intersetPaid);
+                  intersetPaid = 0;
+                }
               }
             }
-            if (intersetPaid > 0) {
-              if (parseFloat(intersetPaid) >= parseFloat(sumOfoverdue_amount)) {
-                intersetPaid =
-                  parseFloat(intersetPaid) - parseFloat(sumOfoverdue_amount);
-                payoverdue_amount = parseFloat(sumOfoverdue_amount);
-                overdue_amount = 0;
-              } else {
-                overdue_amount =
-                  parseFloat(sumOfoverdue_amount) - parseFloat(intersetPaid);
-                payoverdue_amount = parseFloat(intersetPaid);
-                intersetPaid = 0;
+
+            if(sequenceValue.name == 'overdue_amount'){
+              if (intersetPaid > 0) {
+                if (parseFloat(intersetPaid) >= parseFloat(sumOfoverdue_amount)) {
+                  intersetPaid =
+                    parseFloat(intersetPaid) - parseFloat(sumOfoverdue_amount);
+                  payoverdue_amount = parseFloat(sumOfoverdue_amount);
+                  overdue_amount = 0;
+                } else {
+                  overdue_amount =
+                    parseFloat(sumOfoverdue_amount) - parseFloat(intersetPaid);
+                  payoverdue_amount = parseFloat(intersetPaid);
+                  intersetPaid = 0;
+                }
               }
             }
-            if (intersetPaid > 0) {
-              if (parseFloat(intersetPaid) >= parseFloat(sumOfpenal_charge)) {
-                intersetPaid =
-                  parseFloat(intersetPaid) - parseFloat(sumOfpenal_charge);
-                paypenal_charge = parseFloat(sumOfpenal_charge);
-                penal_charge = 0;
-              } else {
-                penal_charge =
-                  parseFloat(sumOfpenal_charge) - parseFloat(intersetPaid);
-                paypenal_charge = parseFloat(intersetPaid);
-                intersetPaid = 0;
+            
+            if(sequenceValue.name == 'penal_charge'){
+              if (intersetPaid > 0) {
+                if (parseFloat(intersetPaid) >= parseFloat(sumOfpenal_charge)) {
+                  intersetPaid =
+                    parseFloat(intersetPaid) - parseFloat(sumOfpenal_charge);
+                  paypenal_charge = parseFloat(sumOfpenal_charge);
+                  penal_charge = 0;
+                } else {
+                  penal_charge =
+                    parseFloat(sumOfpenal_charge) - parseFloat(intersetPaid);
+                  paypenal_charge = parseFloat(intersetPaid);
+                  intersetPaid = 0;
+                }
               }
             }
-            if (intersetPaid > 0) {
-              if (
-                parseFloat(intersetPaid) >=
-                parseFloat(sumOfdaily_principal_interest)
-              ) {
-                intersetPaid =
-                  parseFloat(intersetPaid) -
-                  parseFloat(sumOfdaily_principal_interest);
-                paydaily_principal_interest = parseFloat(
-                  sumOfdaily_principal_interest
-                );
-                daily_principal_interest = 0;
-              } else {
-                daily_principal_interest =
-                  parseFloat(sumOfdaily_principal_interest) -
-                  parseFloat(intersetPaid);
-                paydaily_principal_interest = parseFloat(intersetPaid);
-                intersetPaid = 0;
+            
+            if(sequenceValue.name == 'daily_principal_interest'){
+              if (intersetPaid > 0) {
+                if (
+                  parseFloat(intersetPaid) >=
+                  parseFloat(sumOfdaily_principal_interest)
+                ) {
+                  intersetPaid =
+                    parseFloat(intersetPaid) -
+                    parseFloat(sumOfdaily_principal_interest);
+                  paydaily_principal_interest = parseFloat(
+                    sumOfdaily_principal_interest
+                  );
+                  daily_principal_interest = 0;
+                } else {
+                  daily_principal_interest =
+                    parseFloat(sumOfdaily_principal_interest) -
+                    parseFloat(intersetPaid);
+                  paydaily_principal_interest = parseFloat(intersetPaid);
+                  intersetPaid = 0;
+                }
               }
             }
-            if (intersetPaid > 0) {
-              if (parseFloat(intersetPaid) >= parseFloat(sumOfcharge)) {
-                intersetPaid =
-                  parseFloat(intersetPaid) - parseFloat(sumOfcharge);
-                paycharge = parseFloat(sumOfcharge);
-                charge = 0;
-              } else {
-                charge = parseFloat(sumOfcharge) - parseFloat(intersetPaid);
-                paycharge = parseFloat(intersetPaid);
-                intersetPaid = 0;
+           
+            if(sequenceValue.name == 'charge'){
+              if (intersetPaid > 0) {
+                if (parseFloat(intersetPaid) >= parseFloat(sumOfcharge)) {
+                  intersetPaid =
+                    parseFloat(intersetPaid) - parseFloat(sumOfcharge);
+                  paycharge = parseFloat(sumOfcharge);
+                  charge = 0;
+                } else {
+                  charge = parseFloat(sumOfcharge) - parseFloat(intersetPaid);
+                  paycharge = parseFloat(intersetPaid);
+                  intersetPaid = 0;
+                }
               }
             }
-            if (intersetPaid > 0) {
-              if (parseFloat(intersetPaid) >= parseFloat(sumOfother_charge)) {
-                intersetPaid =
-                  parseFloat(intersetPaid) - parseFloat(sumOfother_charge);
-                payintersetPaid = parseFloat(sumOfother_charge);
-                other_charge = 0;
-              } else {
-                other_charge =
-                  parseFloat(other_charge) - parseFloat(intersetPaid);
-                payintersetPaid = parseFloat(intersetPaid);
-                intersetPaid = 0;
+            if(sequenceValue.name == 'other_charge'){
+              if (intersetPaid > 0) {
+                if (parseFloat(intersetPaid) >= parseFloat(sumOfother_charge)) {
+                  intersetPaid =
+                    parseFloat(intersetPaid) - parseFloat(sumOfother_charge);
+                  payintersetPaid = parseFloat(sumOfother_charge);
+                  other_charge = 0;
+                } else {
+                  other_charge =
+                    parseFloat(other_charge) - parseFloat(intersetPaid);
+                  payintersetPaid = parseFloat(intersetPaid);
+                  intersetPaid = 0;
+                }
+                // intersetPaid = parseFloat(intersetPaid) - parseFloat(other_charge)
               }
-              // intersetPaid = parseFloat(intersetPaid) - parseFloat(other_charge)
             }
+            
+          })
+           
 
             let updateInterest = {
               interest_reimbursment: parseFloat(interest_reimbursment).toFixed(
@@ -1113,6 +1142,52 @@ exports.addSlab = async (req, res) => {
 };
 
 
+exports.sequence = async (req, res) => {
+  let reqValue = req.body;
+  console.log(reqValue);
+  const showSequence = await knex
+  .from("APSISIPDC.cr_repayment_sequence")
+  .select()
+  .orderBy("sequence", "asc");
+
+  return res.send(
+    sendApiResult(true, "You have Successfully Get Sequence.", showSequence)
+  );
+};
+
+exports.updateSequence = async (req, res) => {
+  let reqValue = req?.body?.sequence;
+   console.log('reqValue',reqValue)
+  var responseValue = []
+  reqValue && reqValue.length > 0 && reqValue.map(async (seqValue , index) =>{
+    const myPromise = new Promise(async(resolve, reject) => {
+    let  update_sequence
+    await knex.transaction(async (trx) => {
+       update_sequence = await trx(
+        "APSISIPDC.cr_repayment_sequence"
+      )
+        .whereIn("name", seqValue.label)
+        .update({
+          'sequence' : seqValue.value,
+        });
+    });
+    responseValue.push(update_sequence)
+  
+    if(reqValue.length == index+1){
+      resolve(true)
+    }
+  })
+  .then(() => {
+    console.log('responseValue',responseValue)
+    return res.send(
+      sendApiResult(true, "You have Successfully Get Sequence.", responseValue)
+    );
+  })
+})
+    
+};
+
+
 var calculateInterest = function (total, days, ratePercent, roundToPlaces) {
   var interestRate = ratePercent / 100;
   return ((days / 360) * total * interestRate).toFixed(roundToPlaces);
@@ -1330,3 +1405,9 @@ var getSlapValueDate = async (oneRMn, schemeValue) => {
   return tenorValue?.created_at ?? [];
 
 };
+ var getSequenceData =async () =>{
+  return await knex
+    .from("APSISIPDC.cr_repayment_sequence")
+    .select()
+    .orderBy("sequence", "asc");
+ }
