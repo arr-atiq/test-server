@@ -32,7 +32,7 @@ const importExcelData2DB = async function (filename, req) {
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, "File not uploaded");
+    return sendApiResult(false, "File format is not correct", error);
   }
 };
 
@@ -275,7 +275,8 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
         "manufacturer_id",
         "supervisor_employee_code",
         "region_of_operation",
-        "distributor_id"
+        "distributor_id",
+        "remarks_duplications"
       );
     console.log(limit_data);
     const headers = [
@@ -287,6 +288,7 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
       "Supervisor_Employee_Code",
       "Region_of_Operation",
       "Distributor",
+      "Duplications Remarked"
     ];
     const workbook = new excel.Workbook();
     const worksheet = workbook.addWorksheet("Sheet 1");
@@ -300,6 +302,27 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
       font: {
         color: "#000000",
         size: "10",
+        bold: true,
+      },
+    });
+
+    const errorStyle = workbook.createStyle({
+      fill: {
+        type: "pattern",
+        patternType: "solid",
+        fgColor: "#42a3ed",
+      },
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
+
+    const remarksStyle = workbook.createStyle({
+      font: {
+        color: "#000000",
+        size: "8",
         bold: true,
       },
     });
@@ -323,21 +346,34 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
         .cell(row, col + col_add)
         .string(e.supervisor_name ? e.supervisor_name : "");
       col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .number(e.supervisor_nid ? e.supervisor_nid : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.phone ? e.phone : "");
-      col_add++;
+      if (e.remarks_duplications.includes("Supervisor_NID")) {
+        worksheet.cell(row, col + col_add).number(e.supervisor_nid ? e.supervisor_nid : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).number(e.supervisor_nid ? e.supervisor_nid : "");
+        col_add++;
+      }
+      if (e.remarks_duplications.includes("Phone")) {
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
       col_add++;
-      worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
-      col_add++;
+      if (e.remarks_duplications.includes("Supervisor_Employee_Code")) {
+        worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
       col_add++;
       worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.remarks_duplications ? e.remarks_duplications : "").style(remarksStyle);
       col_add++;
       // worksheet.cell(row, col + col_add).number(0);
       // col_add++;
@@ -365,7 +401,8 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
         "manufacturer_id",
         "supervisor_employee_code",
         "region_of_operation",
-        "distributor_id"
+        "distributor_id",
+        "remarks_invalidated"
       );
     const headers = [
       "Sr.",
@@ -376,6 +413,7 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
       "Supervisor_Employee_Code",
       "Region_of_Operation",
       "Distributor",
+      "Invalidated Remarked",
     ];
     const workbook = new excel.Workbook();
     const worksheet = workbook.addWorksheet("Sheet 1");
@@ -389,6 +427,27 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
       font: {
         color: "#000000",
         size: "10",
+        bold: true,
+      },
+    });
+
+    const errorStyle = workbook.createStyle({
+      fill: {
+        type: "pattern",
+        patternType: "solid",
+        fgColor: "#FF0000",
+      },
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
+
+    const remarksStyle = workbook.createStyle({
+      font: {
+        color: "#000000",
+        size: "8",
         bold: true,
       },
     });
@@ -412,14 +471,20 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
         .cell(row, col + col_add)
         .string(e.supervisor_name ? e.supervisor_name : "");
       col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .number(e.supervisor_nid ? e.supervisor_nid : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.phone ? e.phone : "");
-      col_add++;
+      if (e.remarks_invalidated.includes("Supervisor_NID")) {
+        worksheet.cell(row, col + col_add).number(e.supervisor_nid ? e.supervisor_nid : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).number(e.supervisor_nid ? e.supervisor_nid : "");
+        col_add++;
+      }
+      if (e.remarks_invalidated.includes("Phone")) {
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
@@ -427,6 +492,8 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
       worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
       col_add++;
       worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.remarks_invalidated ? e.remarks_invalidated : "").style(remarksStyle);
       col_add++;
       // worksheet.cell(row, col + col_add).number(0);
       // col_add++;

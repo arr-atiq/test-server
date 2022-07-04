@@ -38,7 +38,7 @@ const importExcelData2DB = async function (filename, req) {
     return insert;
   } catch (error) {
     console.log("-------------------", error)
-    return sendApiResult(false, "File not uploaded");
+    return sendApiResult(false, "File format  is not corrected", error);
   }
 };
 
@@ -197,40 +197,47 @@ exports.updateAllSchemasByManufacturer = async (req, res) => {
 exports.generateManufacturerUnuploadedReport = async (req, res) => {
   try {
     const limit_data = await knex("APSISIPDC.cr_manufacturer_unuploaded_data")
-      .where("status", "Active")
+      .leftJoin("APSISIPDC.cr_manufacturer_type_entity",
+        "cr_manufacturer_type_entity.id",
+        "cr_manufacturer_unuploaded_data.type_of_entity")
+      .leftJoin("APSISIPDC.cr_manufacturer_nature_business",
+        "cr_manufacturer_nature_business.id",
+        "cr_manufacturer_unuploaded_data.nature_of_business")
+      .where("cr_manufacturer_unuploaded_data.status", "Active")
       .select(
-        "manufacturer_name",
-        "type_of_entity",
-        "registration_no",
-        "manufacturer_tin",
-        "manufacturer_bin",
-        "website_link",
-        "corporate_ofc_address",
-        "corporate_ofc_address_1",
-        "corporate_ofc_address_2",
-        "corporate_ofc_postal_code",
-        "corporate_ofc_post_office",
-        "corporate_ofc_thana",
-        "corporate_ofc_district",
-        "corporate_ofc_division",
-        "nature_of_business",
-        "alternative_ofc_address",
-        "alternative_address_1",
-        "alternative_address_2",
-        "alternative_postal_code",
-        "alternative_post_office",
-        "alternative_thana",
-        "alternative_district",
-        "alternative_division",
-        "official_phone",
-        "official_email",
-        "name_of_authorized_representative",
-        "autho_rep_full_name",
-        "autho_rep_nid",
-        "autho_rep_designation",
-        "autho_rep_phone",
-        "autho_rep_email",
-        "name_of_scheme"
+        "cr_manufacturer_unuploaded_data.manufacturer_name",
+        "cr_manufacturer_type_entity.name AS type_of_entity",
+        "cr_manufacturer_unuploaded_data.registration_no",
+        "cr_manufacturer_unuploaded_data.manufacturer_tin",
+        "cr_manufacturer_unuploaded_data.manufacturer_bin",
+        "cr_manufacturer_unuploaded_data.website_link",
+        "cr_manufacturer_unuploaded_data.corporate_ofc_address",
+        "cr_manufacturer_unuploaded_data.corporate_ofc_address_1",
+        "cr_manufacturer_unuploaded_data.corporate_ofc_address_2",
+        "cr_manufacturer_unuploaded_data.corporate_ofc_postal_code",
+        "cr_manufacturer_unuploaded_data.corporate_ofc_post_office",
+        "cr_manufacturer_unuploaded_data.corporate_ofc_thana",
+        "cr_manufacturer_unuploaded_data.corporate_ofc_district",
+        "cr_manufacturer_unuploaded_data.corporate_ofc_division",
+        "cr_manufacturer_nature_business.name AS nature_of_business",
+        "cr_manufacturer_unuploaded_data.alternative_ofc_address",
+        "cr_manufacturer_unuploaded_data.alternative_address_1",
+        "cr_manufacturer_unuploaded_data.alternative_address_2",
+        "cr_manufacturer_unuploaded_data.alternative_postal_code",
+        "cr_manufacturer_unuploaded_data.alternative_post_office",
+        "cr_manufacturer_unuploaded_data.alternative_thana",
+        "cr_manufacturer_unuploaded_data.alternative_district",
+        "cr_manufacturer_unuploaded_data.alternative_division",
+        "cr_manufacturer_unuploaded_data.official_phone",
+        "cr_manufacturer_unuploaded_data.official_email",
+        "cr_manufacturer_unuploaded_data.name_of_authorized_representative",
+        "cr_manufacturer_unuploaded_data.autho_rep_full_name",
+        "cr_manufacturer_unuploaded_data.autho_rep_nid",
+        "cr_manufacturer_unuploaded_data.autho_rep_designation",
+        "cr_manufacturer_unuploaded_data.autho_rep_phone",
+        "cr_manufacturer_unuploaded_data.autho_rep_email",
+        "cr_manufacturer_unuploaded_data.name_of_scheme",
+        "cr_manufacturer_unuploaded_data.remarks_duplications"
       );
     const headers = [
       "Sr.",
@@ -265,7 +272,8 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
       "Authorized_Representative_NID",
       "Authorized_Representative_Designation",
       "Authorized_Representative_Mobile_No",
-      "Authorized_Representative_Official_Email_ID"
+      "Authorized_Representative_Official_Email_ID",
+      "Duplications Remarked"
     ];
     const workbook = new excel.Workbook();
     const worksheet = workbook.addWorksheet("Sheet 1");
@@ -279,6 +287,27 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
       font: {
         color: "#000000",
         size: "10",
+        bold: true,
+      },
+    });
+
+    const errorStyle = workbook.createStyle({
+      fill: {
+        type: "pattern",
+        patternType: "solid",
+        fgColor: "#42a3ed",
+      },
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
+
+    const remarksStyle = workbook.createStyle({
+      font: {
+        color: "#000000",
+        size: "8",
         bold: true,
       },
     });
@@ -298,10 +327,15 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
       let e = limit_data[i];
       worksheet.cell(row, col + col_add).number(i + 1);
       col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.manufacturer_name ? e.manufacturer_name : "");
-      col_add++;
+      if (e.remarks_duplications.includes("Manufacturer_Name")) {
+        worksheet.cell(row, col + col_add).string(e.manufacturer_name ? e.manufacturer_name : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.manufacturer_name ? e.manufacturer_name : "");
+        col_add++;
+      }
       worksheet
         .cell(row, col + col_add)
         .string(e.type_of_entity ? e.type_of_entity : "");
@@ -310,10 +344,15 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
         .cell(row, col + col_add)
         .string(e.name_of_scheme ? e.name_of_scheme : "");
       col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.registration_no ? e.registration_no : "");
-      col_add++;
+      if (e.remarks_duplications.includes("Manufacturer_Registration_No")) {
+        worksheet.cell(row, col + col_add).string(e.registration_no ? e.registration_no : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.registration_no ? e.registration_no : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.manufacturer_tin ? e.manufacturer_tin : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.manufacturer_bin ? e.manufacturer_bin : "");
@@ -336,7 +375,7 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
       col_add++;
       worksheet.cell(row, col + col_add).string(e.corporate_ofc_division ? e.corporate_ofc_division : "");
       col_add++;
-      worksheet.cell(row, col + col_add).number(e.nature_of_business ? e.nature_of_business : "");
+      worksheet.cell(row, col + col_add).string(e.nature_of_business ? e.nature_of_business : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.alternative_ofc_address ? e.alternative_ofc_address : "");
       col_add++;
@@ -354,10 +393,20 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
       col_add++;
       worksheet.cell(row, col + col_add).string(e.alternative_division ? e.alternative_division : "");
       col_add++;
-      worksheet.cell(row, col + col_add).string(e.official_phone ? e.official_phone : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "");
-      col_add++;
+      if (e.remarks_duplications.includes("Official_Phone_Number")) {
+        worksheet.cell(row, col + col_add).string(e.official_phone ? e.official_phone : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.official_phone ? e.official_phone : "");
+        col_add++;
+      }
+      if (e.remarks_duplications.includes("Official_Email_ID")) {
+        worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.name_of_authorized_representative ? e.name_of_authorized_representative : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : "");
@@ -370,14 +419,16 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
       col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_email ? e.autho_rep_email : "");
       col_add++;
+      worksheet.cell(row, col + col_add).string(e.remarks_duplications ? e.remarks_duplications : "").style(remarksStyle);
+      col_add++;
       // worksheet.cell(row, col + col_add).number(0);
       // col_add++;
       row++;
     }
 
     await knex("APSISIPDC.cr_manufacturer_unuploaded_data").del();
-    await workbook.write("public/unupload_report/manufacturer_unuploaded_data_report.xlsx");
-    const fileName = "./unupload_report/manufacturer_unuploaded_data_report.xlsx";
+    await workbook.write("public/unupload_report/manufacturer_duplicated_data_report.xlsx");
+    const fileName = "./unupload_report/manufacturer_duplicated_data_report.xlsx";
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);
@@ -389,40 +440,48 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
 exports.generateManufacturerInvalidatedReport = async (req, res) => {
   try {
     const limit_data = await knex("APSISIPDC.cr_manufacturer_invalidated_data")
-      .where("status", "Active")
+      .leftJoin("APSISIPDC.cr_manufacturer_type_entity",
+        "cr_manufacturer_type_entity.id",
+        "cr_manufacturer_invalidated_data.type_of_entity")
+      .leftJoin("APSISIPDC.cr_manufacturer_nature_business",
+        "cr_manufacturer_nature_business.id",
+        "cr_manufacturer_invalidated_data.nature_of_business")
+      .where("cr_manufacturer_invalidated_data.status", "Active")
       .select(
-        "manufacturer_name",
-        "type_of_entity",
-        "registration_no",
-        "manufacturer_tin",
-        "manufacturer_bin",
-        "website_link",
-        "corporate_ofc_address",
-        "corporate_ofc_address_1",
-        "corporate_ofc_address_2",
-        "corporate_ofc_postal_code",
-        "corporate_ofc_post_office",
-        "corporate_ofc_thana",
-        "corporate_ofc_district",
-        "corporate_ofc_division",
-        "nature_of_business",
-        "alternative_ofc_address",
-        "alternative_address_1",
-        "alternative_address_2",
-        "alternative_postal_code",
-        "alternative_post_office",
-        "alternative_thana",
-        "alternative_district",
-        "alternative_division",
-        "official_phone",
-        "official_email",
-        "name_of_authorized_representative",
-        "autho_rep_full_name",
-        "autho_rep_nid",
-        "autho_rep_designation",
-        "autho_rep_phone",
-        "autho_rep_email",
-        "name_of_scheme"
+        "cr_manufacturer_invalidated_data.manufacturer_name",
+        "cr_manufacturer_type_entity.name AS type_of_entity",
+        "cr_manufacturer_invalidated_data.registration_no",
+        "cr_manufacturer_invalidated_data.manufacturer_tin",
+        "cr_manufacturer_invalidated_data.manufacturer_bin",
+        "cr_manufacturer_invalidated_data.website_link",
+        "cr_manufacturer_invalidated_data.corporate_ofc_address",
+        "cr_manufacturer_invalidated_data.corporate_ofc_address_1",
+        "cr_manufacturer_invalidated_data.corporate_ofc_address_2",
+        "cr_manufacturer_invalidated_data.corporate_ofc_postal_code",
+        "cr_manufacturer_invalidated_data.corporate_ofc_post_office",
+        "cr_manufacturer_invalidated_data.corporate_ofc_thana",
+        "cr_manufacturer_invalidated_data.corporate_ofc_district",
+        "cr_manufacturer_invalidated_data.corporate_ofc_division",
+        "cr_manufacturer_nature_business.name AS nature_of_business",
+        "cr_manufacturer_invalidated_data.alternative_ofc_address",
+        "cr_manufacturer_invalidated_data.alternative_address_1",
+        "cr_manufacturer_invalidated_data.alternative_address_2",
+        "cr_manufacturer_invalidated_data.alternative_postal_code",
+        "cr_manufacturer_invalidated_data.alternative_post_office",
+        "cr_manufacturer_invalidated_data.alternative_thana",
+        "cr_manufacturer_invalidated_data.alternative_district",
+        "cr_manufacturer_invalidated_data.alternative_division",
+        "cr_manufacturer_invalidated_data.official_phone",
+        "cr_manufacturer_invalidated_data.official_email",
+        "cr_manufacturer_invalidated_data.name_of_authorized_representative",
+        "cr_manufacturer_invalidated_data.autho_rep_full_name",
+        "cr_manufacturer_invalidated_data.autho_rep_nid",
+        "cr_manufacturer_invalidated_data.autho_rep_designation",
+        "cr_manufacturer_invalidated_data.autho_rep_phone",
+        "cr_manufacturer_invalidated_data.autho_rep_email",
+        "cr_manufacturer_invalidated_data.name_of_scheme",
+        "cr_manufacturer_invalidated_data.remarks_invalidated"
+
       );
     const headers = [
       "Sr.",
@@ -457,7 +516,8 @@ exports.generateManufacturerInvalidatedReport = async (req, res) => {
       "Authorized_Representative_NID",
       "Authorized_Representative_Designation",
       "Authorized_Representative_Mobile_No",
-      "Authorized_Representative_Official_Email_ID"
+      "Authorized_Representative_Official_Email_ID",
+      "Invalidated Remarked"
     ];
     const workbook = new excel.Workbook();
     const worksheet = workbook.addWorksheet("Sheet 1");
@@ -471,6 +531,26 @@ exports.generateManufacturerInvalidatedReport = async (req, res) => {
       font: {
         color: "#000000",
         size: "10",
+        bold: true,
+      },
+    });
+    const errorStyle = workbook.createStyle({
+      fill: {
+        type: "pattern",
+        patternType: "solid",
+        fgColor: "#FF0000",
+      },
+      font: {
+        color: "#000000",
+        size: "8",
+        bold: true,
+      },
+    });
+
+    const remarksStyle = workbook.createStyle({
+      font: {
+        color: "#000000",
+        size: "8",
         bold: true,
       },
     });
@@ -528,7 +608,7 @@ exports.generateManufacturerInvalidatedReport = async (req, res) => {
       col_add++;
       worksheet.cell(row, col + col_add).string(e.corporate_ofc_division ? e.corporate_ofc_division : "");
       col_add++;
-      worksheet.cell(row, col + col_add).number(e.nature_of_business ? e.nature_of_business : "");
+      worksheet.cell(row, col + col_add).string(e.nature_of_business ? e.nature_of_business : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.alternative_ofc_address ? e.alternative_ofc_address : "");
       col_add++;
@@ -546,21 +626,48 @@ exports.generateManufacturerInvalidatedReport = async (req, res) => {
       col_add++;
       worksheet.cell(row, col + col_add).string(e.alternative_division ? e.alternative_division : "");
       col_add++;
-      worksheet.cell(row, col + col_add).string(e.official_phone ? e.official_phone : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "");
-      col_add++;
+      if (e.remarks_invalidated.includes("Official_Phone_Number")) {
+        worksheet.cell(row, col + col_add).string(e.official_phone ? e.official_phone : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.official_phone ? e.official_phone : "");
+        col_add++;
+      }
+      if (e.remarks_invalidated.includes("Official_Email_ID")) {
+        worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.name_of_authorized_representative ? e.name_of_authorized_representative : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : "");
       col_add++;
-      worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "");
-      col_add++;
+      if (e.remarks_invalidated.includes("NID")) {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.autho_rep_designation ? e.autho_rep_designation : "");
       col_add++;
-      worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.autho_rep_email ? e.autho_rep_email : "");
+      if (e.remarks_invalidated.includes("Authorized_Representative_Mobile_No")) {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
+        col_add++;
+      }
+      if (e.remarks_invalidated.includes("Authorized_Representative_Official_Email_ID")) {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_email ? e.autho_rep_email : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.autho_rep_email ? e.autho_rep_email : "");
+        col_add++;
+      }
+      worksheet.cell(row, col + col_add).string(e.remarks_invalidated ? e.remarks_invalidated : "").style(remarksStyle);
       col_add++;
       // worksheet.cell(row, col + col_add).number(0);
       // col_add++;
