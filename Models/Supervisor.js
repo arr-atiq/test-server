@@ -26,18 +26,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .whereIn("user_type", folder_name);
           const user_role_id = user_roles[0].id;
 
-          const all_NID_array = [];
-          const all_Phone_array = [];
-          const all_Emp_code_array = [];
+          // const all_NID_array = [];
+          // const all_Phone_array = [];
+          // const all_Emp_code_array = [];
           const data_array = [];
           const unuploaded_data_array = [];
           const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
-            for (let index = 0; index < rows.length; index++) {
-              all_NID_array[index] = rows[index].Supervisor_NID;
-              all_Phone_array[index] = rows[index].Phone;
-              all_Emp_code_array[index] = rows[index].Supervisor_Employee_Code;
-            }
+            // for (let index = 0; index < rows.length; index++) {
+            //   all_NID_array[index] = rows[index].Supervisor_NID;
+            //   all_Phone_array[index] = rows[index].Phone;
+            //   all_Emp_code_array[index] = rows[index].Supervisor_Employee_Code;
+            // }
             for (let index = 0; index < rows.length; index++) {
               const nid = rows[index].Supervisor_NID;
               const phoneNumber = rows[index].Phone;
@@ -45,6 +45,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const validPhoneNumber = ValidatePhoneNumber(phoneNumber.toString());
 
               if (!validNID || !validPhoneNumber) {
+                let invalidStr = "invalid columns - ";
+                if (!validNID) {
+                  invalidStr = invalidStr + "Supervisor_NID " + ", ";
+                }
+                if (!validPhoneNumber) {
+                  invalidStr = invalidStr + "Phone " + ", ";
+                }
                 const temp_data = {
                   Supervisor_Name: rows[index].Supervisor_Name,
                   Supervisor_NID: rows[index].Supervisor_NID,
@@ -53,7 +60,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Supervisor_Employee_Code:
                     rows[index].Supervisor_Employee_Code,
                   Region_of_Operation: rows[index].Region_of_Operation,
-                  Distributor: rows[index].Distributor
+                  Distributor: rows[index].Distributor,
+                  Remarks_Invalidated: invalidStr,
                 };
 
                 invalidate_data_array.push(temp_data);
@@ -100,20 +108,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   duplication_check_emp_code[0].count
                 );
 
-                const nidSubArray = all_NID_array.slice(0, index);
-                const phoneSubArray = all_Phone_array.slice(0, index);
-                const emp_code_SubArray = all_Emp_code_array.slice(0, index);
-
-                const nidDuplicateExcel = nidSubArray.includes(supervisor_nid);
-                const phoneDuplicateExcel = phoneSubArray.includes(supervisor_phone);
-                const empCodeDuplicateExcel = emp_code_SubArray.includes(supervisor_emp_code);
-
                 if (duplication_check_val_nid == 0
                   && duplication_check_val_phone == 0
-                  && duplication_check_val_emp_code == 0
-                  && !nidDuplicateExcel
-                  && !phoneDuplicateExcel
-                  && !empCodeDuplicateExcel) {
+                  && duplication_check_val_emp_code == 0) {
                   const temp_data = {
                     Supervisor_Name: rows[index].Supervisor_Name,
                     Supervisor_NID: rows[index].Supervisor_NID,
@@ -126,6 +123,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   };
                   data_array.push(temp_data);
                 } else {
+
+                  let duplicateStr = "duplicate columns - ";
+                  if (duplication_check_val_nid != 0) {
+                    duplicateStr = duplicateStr + "Supervisor_NID " + ", ";
+                  }
+                  if (duplication_check_val_phone != 0) {
+                    duplicateStr = duplicateStr + "Phone " + ", ";
+                  }
+                  if (duplication_check_val_emp_code != 0) {
+                    duplicateStr = duplicateStr + "Supervisor_Employee_Code " + ", ";
+                  }
+
                   const temp_data = {
                     Supervisor_Name: rows[index].Supervisor_Name,
                     Supervisor_NID: rows[index].Supervisor_NID,
@@ -135,6 +144,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       rows[index].Supervisor_Employee_Code,
                     Region_of_Operation: rows[index].Region_of_Operation,
                     Distributor: rows[index].Distributor,
+                    Remarks_Duplicated: duplicateStr
                   };
                   unuploaded_data_array.push(temp_data);
                 }
@@ -174,6 +184,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 supervisor_employee_code:
                   invalidate_data_array[index].Supervisor_Employee_Code,
                 region_of_operation: invalidate_data_array[index].Region_of_Operation,
+                remarks_invalidated: invalidate_data_array[index].Remarks_Invalidated,
                 created_by: req.user_id,
               };
 
@@ -193,7 +204,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 supervisor_employee_code:
                   unuploaded_data_array[index].Supervisor_Employee_Code,
                 region_of_operation: unuploaded_data_array[index].Region_of_Operation,
-                created_by: req.user_id,
+                remarks_duplications: unuploaded_data_array[index].Remarks_Duplicated,
+                created_by: req.user_id
               };
 
               await knex("APSISIPDC.cr_supervisor_unuploaded_data")
@@ -206,6 +218,73 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             const user_insert_ids = [];
             const distributor_ids = [];
             for (let index = 0; index < data_array.length; index++) {
+              const supervisor_nid_insert_data = data_array[index].Supervisor_NID;
+              const supervisor_phone_insert_data = data_array[index].Phone;
+              const supervisor_emp_code_insert_data = data_array[index].Supervisor_Employee_Code;
+
+              const duplication_checkNID_insert_data = await knex
+                .count("cr_supervisor.supervisor_nid as count")
+                .from("APSISIPDC.cr_supervisor")
+                .where(
+                  "APSISIPDC.cr_supervisor.supervisor_nid",
+                  supervisor_nid_insert_data
+                );
+              const duplication_check_val_nid_insert_data = parseInt(
+                duplication_checkNID_insert_data[0].count
+              );
+              const duplication_check_phone_insert_data = await knex
+                .count("cr_supervisor.phone as count")
+                .from("APSISIPDC.cr_supervisor")
+                .where(
+                  "APSISIPDC.cr_supervisor.phone",
+                  supervisor_phone_insert_data
+                );
+              const duplication_check_val_phone_insert_data = parseInt(
+                duplication_check_phone_insert_data[0].count
+              );
+              const duplication_check_emp_code_insert_data = await knex
+                .count("cr_supervisor.supervisor_employee_code as count")
+                .from("APSISIPDC.cr_supervisor")
+                .where(
+                  "APSISIPDC.cr_supervisor.supervisor_employee_code",
+                  supervisor_emp_code_insert_data
+                );
+              const duplication_check_val_emp_code_insert_data = parseInt(
+                duplication_check_emp_code_insert_data[0].count
+              );
+
+              if (duplication_check_val_nid_insert_data != 0
+                || duplication_check_val_phone_insert_data != 0
+                || duplication_check_val_emp_code_insert_data != 0) {
+
+                let duplicateStr = "duplicate columns - ";
+                if (duplication_check_val_nid_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Supervisor_NID " + ", ";
+                }
+                if (duplication_check_val_phone_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Phone " + ", ";
+                }
+                if (duplication_check_val_emp_code_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Supervisor_Employee_Code " + ", ";
+                }
+
+                const duplicate_data_array = {
+                  supervisor_name: data_array[index].Supervisor_Name,
+                  supervisor_nid: data_array[index].Supervisor_NID,
+                  phone: data_array[index].Phone,
+                  manufacturer_id: data_array[index].Manufacturer,
+                  distributor_id: data_array[index].Distributor,
+                  supervisor_employee_code:
+                    data_array[index].Supervisor_Employee_Code,
+                  region_of_operation: data_array[index].Region_of_Operation,
+                  remarks_duplications: duplicateStr,
+                  created_by: req.user_id,
+                };
+                await knex("APSISIPDC.cr_supervisor_unuploaded_data")
+                  .insert(duplicate_data_array);
+                continue;
+              }
+
               const team_supervisor = {
                 supervisor_name: data_array[index].Supervisor_Name,
                 supervisor_nid: data_array[index].Supervisor_NID,
@@ -226,18 +305,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
               if (insert_supervisor) {
                 supervisor_insert_ids.push(insert_supervisor[0]);
-                var supervisorIDUpdate = {
-                  supervisor_employee_code: `${data_array[index].Supervisor_Employee_Code}-${insert_supervisor[0]}`
-                };
+                // var supervisorIDUpdate = {
+                //   supervisor_employee_code: `${data_array[index].Supervisor_Employee_Code}-${insert_supervisor[0]}`
+                // };
 
-                await knex.transaction(async (trx) => {
-                  let updateData = await trx(
-                    "APSISIPDC.cr_supervisor"
-                  )
-                    .where({ id: insert_supervisor[0] })
-                    .update(supervisorIDUpdate);
-                  console.log('updateData', updateData)
-                });
+                // await knex.transaction(async (trx) => {
+                //   let updateData = await trx(
+                //     "APSISIPDC.cr_supervisor"
+                //   )
+                //     .where({ id: insert_supervisor[0] })
+                //     .update(supervisorIDUpdate);
+                //   console.log('updateData', updateData)
+                // });
               }
 
               const temp_user = {

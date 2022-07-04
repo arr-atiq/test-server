@@ -13,11 +13,17 @@ router.put("/schema", retailer.updateSchemaByRetailers);
 router.get("/rn_rmn_mapping/:retailer_id", retailer.getRnRmnMappingById);
 router.get("/retailer/:retailer_id", retailer.getRetailerDetailsById);
 router.put("/updateLimit/:rmnID", retailer.updateLimit);
+
+//retailer-report-1
 router.get("/retailer-monthly-report", retailer.generateRetailersMonthlyReport);
 router.get("/retailer-monthly-report-filter-view", retailer.RetailersMonthlyReport);
-router.get("/retailer-individual-report", retailer.generateRetailersIndividualReport);
 router.get("/retailer-district", retailer.getRetailerDistrict);
+//retailer-report-1
 
+//retailer-report-2-comprehensive
+router.get("/retailer-individual-report", retailer.generateRetailersIndividualReport);
+router.get("/retailer-outstanding-report", retailer.generateRetailerOutstandingReport)
+//retailer-report-2-comprehensive
 router.post("/retailer-upload-list", retailer.retailerUploadList);
 
 router.post(

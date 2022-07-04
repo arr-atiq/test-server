@@ -26,26 +26,47 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .whereIn("user_type", folder_name);
           const user_role_id = user_roles[0].id;
 
-          const all_TIN_array = [];
+          //const all_TIN_array = [];
           const data_array = [];
           const unuploaded_data_array = [];
           const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
-            for (let index = 0; index < rows.length; index++) {
-              all_TIN_array[index] = rows[index].Distributor_TIN;
-            }
+            // for (let index = 0; index < rows.length; index++) {
+            //   all_TIN_array[index] = rows[index].Distributor_TIN;
+            // }
 
             for (let index = 0; index < rows.length; index++) {
 
               const nid = rows[index].NID;
               const phoneNumber = rows[index].Official_Contact_Number;
               const email = rows[index].Official_Email;
+              const autho_person_phoneNumber = rows[index].Mobile_No;
+              const autho_person_email = rows[index].Official_Email_Id_of_Authorized_Representative;
 
               const validNID = ValidateNID(nid);
               const validPhoneNumber = ValidatePhoneNumber(phoneNumber.toString());
+              const autho_person_Valid_PhoneNumber = ValidatePhoneNumber(autho_person_phoneNumber.toString());
               const validEmail = ValidateEmail(email);
+              const autho_person_validEmail = ValidateEmail(autho_person_email);
 
-              if (!validNID || !validPhoneNumber || !validEmail) {
+              if (!validNID || !validPhoneNumber || !validEmail || !autho_person_Valid_PhoneNumber || !autho_person_validEmail) {
+                let invalidStr = "invalid columns - ";
+                if (!validNID) {
+                  invalidStr = invalidStr + "NID " + ", ";
+                }
+                if (!validPhoneNumber) {
+                  invalidStr = invalidStr + "Official_Phone_Number " + ", ";
+                }
+                if (!validEmail) {
+                  invalidStr = invalidStr + "Official_Email_ID " + ", ";
+                }
+                if (!autho_person_Valid_PhoneNumber) {
+                  invalidStr = invalidStr + "Mobile_No " + ", ";
+                }
+                if (!autho_person_validEmail) {
+                  invalidStr = invalidStr + "Official_Email_Id_of_Authorized_Representative " + ", ";
+                }
+
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,
@@ -56,27 +77,27 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Is_Distributor_or_Third_Party_Agency:
                     rows[index].Is_Distributor_or_Third_Party_Agency,
                   Distributor_Corporate_Registration_No:
-                    rows[index].Distributor_Corporate_Registration_No,
-                  Trade_License_No: rows[index].Trade_License_No,
+                    rows[index]?.Distributor_Corporate_Registration_No ?? " ",
+                  Trade_License_No: rows[index]?.Trade_License_No ?? " ",
                   Distributor_Registered_Office_in_Bangladesh:
-                    rows[index].Distributor_Registered_Office_in_Bangladesh,
-                  Address_Line_1: rows[index].Address_Line_1,
-                  Address_Line_2: rows[index].Address_Line_2,
-                  Postal_Code: rows[index].Postal_Code,
-                  Post_Office: rows[index].Post_Office,
-                  Thana: rows[index].Thana,
-                  District: rows[index].District,
-                  Division: rows[index].Division,
+                    rows[index]?.Distributor_Registered_Office_in_Bangladesh ?? " ",
+                  Address_Line_1: rows[index]?.Address_Line_1 ?? " ",
+                  Address_Line_2: rows[index]?.Address_Line_2 ?? " ",
+                  Postal_Code: rows[index]?.Postal_Code ?? " ",
+                  Post_Office: rows[index]?.Post_Office ?? " ",
+                  Thana: rows[index]?.Thana ?? " ",
+                  District: rows[index]?.District ?? " ",
+                  Division: rows[index]?.Division ?? " ",
                   Name_of_Authorized_Representative:
-                    rows[index].Name_of_Authorized_Representative,
-                  Full_Name: rows[index].Full_Name,
+                    rows[index]?.Name_of_Authorized_Representative ?? " ",
+                  Full_Name: rows[index]?.Full_Name ?? " ",
                   NID: rows[index].NID,
                   Designation_of_Authorized_Representative:
-                    rows[index].Designation_of_Authorized_Representative,
+                    rows[index]?.Designation_of_Authorized_Representative ?? " ",
                   Mobile_No: rows[index].Mobile_No,
                   Official_Email_Id_of_Authorized_Representative:
                     rows[index].Official_Email_Id_of_Authorized_Representative,
-                  Region_of_Operation: rows[index].Region_of_Operation,
+                  Region_of_Operation: rows[index]?.Region_of_Operation ?? " ",
                   Distributor_Bank_Account_Number:
                     rows[index].Distributor_Bank_Account_Number,
                   Distributor_Bank_Account_Title:
@@ -84,7 +105,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Distributor_Bank_Account_Type:
                     rows[index].Distributor_Bank_Account_Type,
                   Distributor_Bank_Name: rows[index].Distributor_Bank_Name,
-                  Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch
+                  Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
+                  Remarks_Invalidated: invalidStr,
                 };
 
                 invalidate_data_array.push(temp_data);
@@ -105,12 +127,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check[0].count
               );
 
-              const tinSubArray = all_TIN_array.slice(0, index);
-
-              const tinDuplicateExcel = tinSubArray.includes(distributor_tin);
-
-
-              if (duplication_check_val == 0 && !tinDuplicateExcel) {
+              if (duplication_check_val == 0) {
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,
@@ -121,27 +138,27 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Is_Distributor_or_Third_Party_Agency:
                     rows[index].Is_Distributor_or_Third_Party_Agency,
                   Distributor_Corporate_Registration_No:
-                    rows[index].Distributor_Corporate_Registration_No,
-                  Trade_License_No: rows[index].Trade_License_No,
+                    rows[index]?.Distributor_Corporate_Registration_No ?? " ",
+                  Trade_License_No: rows[index]?.Trade_License_No ?? " ",
                   Distributor_Registered_Office_in_Bangladesh:
-                    rows[index].Distributor_Registered_Office_in_Bangladesh,
-                  Address_Line_1: rows[index].Address_Line_1,
-                  Address_Line_2: rows[index].Address_Line_2,
-                  Postal_Code: rows[index].Postal_Code,
-                  Post_Office: rows[index].Post_Office,
-                  Thana: rows[index].Thana,
-                  District: rows[index].District,
-                  Division: rows[index].Division,
+                    rows[index]?.Distributor_Registered_Office_in_Bangladesh ?? " ",
+                  Address_Line_1: rows[index]?.Address_Line_1 ?? " ",
+                  Address_Line_2: rows[index]?.Address_Line_2 ?? " ",
+                  Postal_Code: rows[index]?.Postal_Code ?? " ",
+                  Post_Office: rows[index]?.Post_Office ?? " ",
+                  Thana: rows[index]?.Thana ?? " ",
+                  District: rows[index]?.District ?? " ",
+                  Division: rows[index]?.Division ?? " ",
                   Name_of_Authorized_Representative:
-                    rows[index].Name_of_Authorized_Representative,
-                  Full_Name: rows[index].Full_Name,
+                    rows[index]?.Name_of_Authorized_Representative ?? " ",
+                  Full_Name: rows[index]?.Full_Name ?? " ",
                   NID: rows[index].NID,
                   Designation_of_Authorized_Representative:
-                    rows[index].Designation_of_Authorized_Representative,
+                    rows[index]?.Designation_of_Authorized_Representative ?? " ",
                   Mobile_No: rows[index].Mobile_No,
                   Official_Email_Id_of_Authorized_Representative:
                     rows[index].Official_Email_Id_of_Authorized_Representative,
-                  Region_of_Operation: rows[index].Region_of_Operation,
+                  Region_of_Operation: rows[index]?.Region_of_Operation ?? " ",
                   Distributor_Bank_Account_Number:
                     rows[index].Distributor_Bank_Account_Number,
                   Distributor_Bank_Account_Title:
@@ -153,6 +170,63 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 };
                 data_array.push(temp_data);
               } else {
+                //multiple manufacturer mapping with distributor
+
+                const distributor_info = await knex("APSISIPDC.cr_distributor")
+                  .where("status", "Active")
+                  .where("distributor_tin", distributor_tin)
+                  .select(
+                    "id",
+                    "distributor_name",
+                    "distributor_code"
+                  );
+
+                const distributor_name_check = rows[index].Distributor_Name;
+                const distributor_code_check = rows[index].Distributor_Code;
+                const manufacturer_id_check = rows[index].Manufacturer_id;
+
+                if (distributor_info[0].distributor_name == distributor_name_check
+                  && distributor_info[0].distributor_code == distributor_code_check) {
+                  const duplication_check_manu_id = await knex
+                    .count("cr_manufacturer_vs_distributor.id as count")
+                    .from("APSISIPDC.cr_manufacturer_vs_distributor")
+                    .where(
+                      "APSISIPDC.cr_manufacturer_vs_distributor.distributor_id",
+                      distributor_info[0].id
+                    )
+                    .where(
+                      "APSISIPDC.cr_manufacturer_vs_distributor.manufacturer_id",
+                      manufacturer_id_check
+                    );
+
+                    const duplication_check_val_manu_id = parseInt(
+                      duplication_check_manu_id[0].count
+                    );
+
+                    if(duplication_check_val_manu_id == 0){
+                      const maltiple_manu_mapping_dis = {
+                        manufacturer_id: rows[index].Manufacturer_id,
+                        distributor_id: distributor_info[0].id,
+                        created_by: req.user_id,
+                      }
+                      await knex(
+                        "APSISIPDC.cr_manufacturer_vs_distributor"
+                      ).insert(maltiple_manu_mapping_dis);
+                      continue;
+                    }
+                }
+
+
+
+                //multiple manufacturer mapping with distributor
+
+
+
+
+                let duplicateStr = "duplicate columns - ";
+                if (duplication_check_val != 0) {
+                  duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
+                }
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,
@@ -163,27 +237,27 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Is_Distributor_or_Third_Party_Agency:
                     rows[index].Is_Distributor_or_Third_Party_Agency,
                   Distributor_Corporate_Registration_No:
-                    rows[index].Distributor_Corporate_Registration_No,
-                  Trade_License_No: rows[index].Trade_License_No,
+                    rows[index]?.Distributor_Corporate_Registration_No ?? " ",
+                  Trade_License_No: rows[index]?.Trade_License_No ?? " ",
                   Distributor_Registered_Office_in_Bangladesh:
-                    rows[index].Distributor_Registered_Office_in_Bangladesh,
-                  Address_Line_1: rows[index].Address_Line_1,
-                  Address_Line_2: rows[index].Address_Line_2,
-                  Postal_Code: rows[index].Postal_Code,
-                  Post_Office: rows[index].Post_Office,
-                  Thana: rows[index].Thana,
-                  District: rows[index].District,
-                  Division: rows[index].Division,
+                    rows[index]?.Distributor_Registered_Office_in_Bangladesh ?? " ",
+                  Address_Line_1: rows[index]?.Address_Line_1 ?? " ",
+                  Address_Line_2: rows[index]?.Address_Line_2 ?? " ",
+                  Postal_Code: rows[index]?.Postal_Code ?? " ",
+                  Post_Office: rows[index]?.Post_Office ?? " ",
+                  Thana: rows[index]?.Thana ?? " ",
+                  District: rows[index]?.District ?? " ",
+                  Division: rows[index]?.Division ?? " ",
                   Name_of_Authorized_Representative:
-                    rows[index].Name_of_Authorized_Representative,
-                  Full_Name: rows[index].Full_Name,
+                    rows[index]?.Name_of_Authorized_Representative ?? " ",
+                  Full_Name: rows[index]?.Full_Name ?? " ",
                   NID: rows[index].NID,
                   Designation_of_Authorized_Representative:
-                    rows[index].Designation_of_Authorized_Representative,
+                    rows[index]?.Designation_of_Authorized_Representative ?? " ",
                   Mobile_No: rows[index].Mobile_No,
                   Official_Email_Id_of_Authorized_Representative:
                     rows[index].Official_Email_Id_of_Authorized_Representative,
-                  Region_of_Operation: rows[index].Region_of_Operation,
+                  Region_of_Operation: rows[index]?.Region_of_Operation ?? " ",
                   Distributor_Bank_Account_Number:
                     rows[index].Distributor_Bank_Account_Number,
                   Distributor_Bank_Account_Title:
@@ -192,6 +266,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     rows[index].Distributor_Bank_Account_Type,
                   Distributor_Bank_Name: rows[index].Distributor_Bank_Name,
                   Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
+                  Remarks_Duplicated: duplicateStr
                 };
                 unuploaded_data_array.push(temp_data);
               }
@@ -253,6 +328,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   invalidate_data_array[index]
                     .Official_Email_Id_of_Authorized_Representative,
                 region_of_operation: invalidate_data_array[index].Region_of_Operation,
+                remarks_invalidated: invalidate_data_array[index].Remarks_Invalidated,
                 created_by: req.user_id
               };
 
@@ -297,6 +373,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   unuploaded_data_array[index]
                     .Official_Email_Id_of_Authorized_Representative,
                 region_of_operation: unuploaded_data_array[index].Region_of_Operation,
+                remarks_duplications: unuploaded_data_array[index].Remarks_Duplicated,
                 created_by: req.user_id,
               };
               await knex("APSISIPDC.cr_distributor_unuploaded_data")
@@ -308,6 +385,62 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             const distributor_insert_ids = [];
             const user_insert_ids = [];
             for (let index = 0; index < data_array.length; index++) {
+              const tin_insert_data = data_array[index].Distributor_TIN;
+              const duplication_checkTIN_insert_data = await knex
+                .count("cr_distributor.distributor_tin as count")
+                .from("APSISIPDC.cr_distributor")
+                .where(
+                  "APSISIPDC.cr_distributor.distributor_tin",
+                  tin_insert_data
+                );
+              const duplication_check_val_tin_insert_data = parseInt(
+                duplication_checkTIN_insert_data[0].count
+              );
+              if (duplication_check_val_tin_insert_data != 0) {
+                let duplicateStr = "duplicate columns - ";
+                if (tin_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
+                }
+                const duplicate_data_array = {
+                  distributor_name: data_array[index].Distributor_Name,
+                  manufacturer_id: data_array[index].Manufacturer_id,
+                  distributor_code: data_array[index].Distributor_Code,
+                  distributor_tin: data_array[index].Distributor_TIN,
+                  official_email: data_array[index].Official_Email,
+                  official_contact_number:
+                    data_array[index].Official_Contact_Number,
+                  is_distributor_or_third_party_agency:
+                    data_array[index].Is_Distributor_or_Third_Party_Agency,
+                  corporate_registration_no:
+                    data_array[index].Distributor_Corporate_Registration_No,
+                  trade_license_no: data_array[index].Trade_License_No,
+                  registered_office_bangladesh:
+                    data_array[index].Distributor_Registered_Office_in_Bangladesh,
+                  ofc_address1: data_array[index].Address_Line_1,
+                  ofc_address2: data_array[index].Address_Line_2,
+                  ofc_postal_code: data_array[index].Postal_Code,
+                  ofc_post_office: data_array[index].Post_Office,
+                  ofc_thana: data_array[index].Thana,
+                  ofc_district: data_array[index].District,
+                  ofc_division: data_array[index].Division,
+                  name_of_authorized_representative:
+                    data_array[index].Name_of_Authorized_Representative,
+                  autho_rep_full_name: data_array[index].Full_Name,
+                  autho_rep_nid: data_array[index].NID,
+                  autho_rep_designation:
+                    data_array[index].Designation_of_Authorized_Representative,
+                  autho_rep_phone: data_array[index].Mobile_No,
+                  autho_rep_email:
+                    data_array[index]
+                      .Official_Email_Id_of_Authorized_Representative,
+                  region_of_operation: data_array[index].Region_of_Operation,
+                  remarks_duplications: duplicateStr,
+                  created_by: req.user_id,
+                };
+                await knex("APSISIPDC.cr_distributor_unuploaded_data")
+                  .insert(duplicate_data_array);
+                continue;
+              }
               const team_distributor = {
                 distributor_name: data_array[index].Distributor_Name,
                 manufacturer_id: data_array[index].Manufacturer_id,
@@ -352,21 +485,21 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   distributor_id: insert_distributor[0],
                   created_by: req.user_id,
                 };
-                var distributorIDUpdate = {
-                  distributor_code:`${data_array[index].Distributor_Code}-${insert_distributor[0]}`
-                };
-                console.log('insert_user[0]',insert_distributor[0])
+                // var distributorIDUpdate = {
+                //   distributor_code: `${data_array[index].Distributor_Code}-${insert_distributor[0]}`
+                // };
+                // console.log('insert_user[0]', insert_distributor[0])
 
-                console.log('distributorIDUpdate',distributorIDUpdate)
+                // console.log('distributorIDUpdate', distributorIDUpdate)
 
-                await knex.transaction(async (trx) => {
-                  let updateData =  await trx(
-                    "APSISIPDC.cr_distributor"
-                  )
-                    .where({ id: insert_distributor[0] })
-                    .update(distributorIDUpdate);
-                     console.log('updateData',updateData)
-                });
+                // await knex.transaction(async (trx) => {
+                //   let updateData = await trx(
+                //     "APSISIPDC.cr_distributor"
+                //   )
+                //     .where({ id: insert_distributor[0] })
+                //     .update(distributorIDUpdate);
+                //   console.log('updateData', updateData)
+                // });
 
                 const insert_manufacturer_vs_distributor = await knex(
                   "APSISIPDC.cr_manufacturer_vs_distributor"
