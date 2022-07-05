@@ -325,9 +325,12 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
     for (let i = 0; i < limit_data.length; i++) {
       var col_add = 0;
       let e = limit_data[i];
+
+      let remarks_duplicationsArr = e.remarks_duplications.split(" ");
+      console.log(remarks_duplicationsArr) 
       worksheet.cell(row, col + col_add).number(i + 1);
       col_add++;
-      if (e.remarks_duplications.includes("Manufacturer_Name")) {
+      if (remarks_duplicationsArr.includes("Manufacturer_Name")) {
         worksheet.cell(row, col + col_add).string(e.manufacturer_name ? e.manufacturer_name : "").style(errorStyle);
         col_add++;
       } else {
@@ -344,7 +347,7 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
         .cell(row, col + col_add)
         .string(e.name_of_scheme ? e.name_of_scheme : "");
       col_add++;
-      if (e.remarks_duplications.includes("Manufacturer_Registration_No")) {
+      if (remarks_duplicationsArr.includes("Manufacturer_Registration_No")) {
         worksheet.cell(row, col + col_add).string(e.registration_no ? e.registration_no : "").style(errorStyle);
         col_add++;
       } else {
@@ -393,14 +396,14 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
       col_add++;
       worksheet.cell(row, col + col_add).string(e.alternative_division ? e.alternative_division : "");
       col_add++;
-      if (e.remarks_duplications.includes("Official_Phone_Number")) {
+      if (remarks_duplicationsArr.includes("Official_Phone_Number")) {
         worksheet.cell(row, col + col_add).string(e.official_phone ? e.official_phone : "").style(errorStyle);
         col_add++;
       } else {
         worksheet.cell(row, col + col_add).string(e.official_phone ? e.official_phone : "");
         col_add++;
       }
-      if (e.remarks_duplications.includes("Official_Email_ID")) {
+      if (remarks_duplicationsArr.includes("Official_Email_ID")) {
         worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "").style(errorStyle);
         col_add++;
       } else {
@@ -568,6 +571,8 @@ exports.generateManufacturerInvalidatedReport = async (req, res) => {
     for (let i = 0; i < limit_data.length; i++) {
       var col_add = 0;
       let e = limit_data[i];
+      let remarks_invalidatedArr = e.remarks_invalidated.split(" ");
+      console.log(remarks_invalidatedArr);
       worksheet.cell(row, col + col_add).number(i + 1);
       col_add++;
       worksheet
@@ -626,14 +631,14 @@ exports.generateManufacturerInvalidatedReport = async (req, res) => {
       col_add++;
       worksheet.cell(row, col + col_add).string(e.alternative_division ? e.alternative_division : "");
       col_add++;
-      if (e.remarks_invalidated.includes("Official_Phone_Number")) {
+      if (remarks_invalidatedArr.includes("Official_Phone_Number")) {
         worksheet.cell(row, col + col_add).string(e.official_phone ? e.official_phone : "").style(errorStyle);
         col_add++;
       } else {
         worksheet.cell(row, col + col_add).string(e.official_phone ? e.official_phone : "");
         col_add++;
       }
-      if (e.remarks_invalidated.includes("Official_Email_ID")) {
+      if (remarks_invalidatedArr.includes("Official_Email_ID")) {
         worksheet.cell(row, col + col_add).string(e.official_email ? e.official_email : "").style(errorStyle);
         col_add++;
       } else {
@@ -644,7 +649,7 @@ exports.generateManufacturerInvalidatedReport = async (req, res) => {
       col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : "");
       col_add++;
-      if (e.remarks_invalidated.includes("NID")) {
+      if (remarks_invalidatedArr.includes("NID")) {
         worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "").style(errorStyle);
         col_add++;
       } else {
@@ -660,7 +665,7 @@ exports.generateManufacturerInvalidatedReport = async (req, res) => {
         worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
         col_add++;
       }
-      if (e.remarks_invalidated.includes("Authorized_Representative_Official_Email_ID")) {
+      if (remarks_invalidatedArr.includes("Authorized_Representative_Official_Email_ID")) {
         worksheet.cell(row, col + col_add).string(e.autho_rep_email ? e.autho_rep_email : "").style(errorStyle);
         col_add++;
       } else {
