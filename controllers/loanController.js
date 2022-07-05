@@ -1168,7 +1168,7 @@ exports.updateSequence = async (req, res) => {
       )
         .whereIn("name", seqValue.label)
         .update({
-          'sequence' : seqValue.value,
+          'sequence' : index+1,
         });
     });
     responseValue.push(update_sequence)
