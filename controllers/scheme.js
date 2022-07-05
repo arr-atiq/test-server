@@ -140,7 +140,7 @@ module.exports.updateScheme = async (req, res) => {
         });
       }else{
         return res.send({
-          success: false,
+          success: true,
           message: "Schema updated Successfully",
           response: "Schema updated Successfully",
         });
