@@ -123,7 +123,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_sales_agent")
                 .where(
                   "APSISIPDC.cr_sales_agent.phone",
-                  salesagent_phone
+                  salesagent_phone.toString()
                 );
               const duplication_check_val_phone = parseInt(
                 duplication_check_phone[0].count
@@ -134,7 +134,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_sales_agent")
                 .where(
                   "APSISIPDC.cr_sales_agent.agent_employee_code",
-                  salesagent_emp_code
+                  salesagent_emp_code.toString()
                 );
               const duplication_check_val_emp_code = parseInt(
                 duplication_check_emp_code[0].count
@@ -276,7 +276,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_sales_agent")
                 .where(
                   "APSISIPDC.cr_sales_agent.phone",
-                  agent_phone_insert_data
+                  agent_phone_insert_data.toString()
                 );
               const duplication_check_val_phone_insert = parseInt(
                 duplication_check_phone_insert[0].count
@@ -287,7 +287,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_sales_agent")
                 .where(
                   "APSISIPDC.cr_sales_agent.agent_employee_code",
-                  agent_emp_code_insert_data
+                  agent_emp_code_insert_data.toString()
                 );
               const duplication_check_val_emp_code_insert = parseInt(
                 duplication_check_emp_code_insert[0].count

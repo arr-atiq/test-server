@@ -171,7 +171,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_manufacturer")
                 .where(
                   "APSISIPDC.cr_manufacturer.registration_no",
-                  reg
+                  reg.toString()
                 );
 
               const duplication_check_val_reg = parseInt(
@@ -183,7 +183,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_manufacturer")
                 .where(
                   "APSISIPDC.cr_manufacturer.official_email",
-                  email
+                  email.toString()
                 );
 
               const duplication_check_val_email = parseInt(
@@ -195,7 +195,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_manufacturer")
                 .where(
                   "APSISIPDC.cr_manufacturer.official_phone",
-                  phone
+                  phone.toString()
                 );
 
               const duplication_check_val_phone = parseInt(
@@ -207,7 +207,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_manufacturer")
                 .where(
                   "APSISIPDC.cr_manufacturer.manufacturer_tin",
-                  tin
+                  tin.toString()
                 );
 
               const duplication_check_val_tin = parseInt(
@@ -219,7 +219,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_manufacturer")
                 .where(
                   "APSISIPDC.cr_manufacturer.manufacturer_name",
-                  name
+                  name.toString()
                 );
 
               const duplication_check_val_name = parseInt(
@@ -231,7 +231,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_manufacturer")
                 .where(
                   "APSISIPDC.cr_manufacturer.autho_rep_nid",
-                  nid
+                  nid.toString()
                 );
 
               const duplication_check_val_nid = parseInt(
@@ -551,7 +551,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_manufacturer")
                 .where(
                   "APSISIPDC.cr_manufacturer.official_email",
-                  email_insert_data
+                  email_insert_data.toString()
                 );
               const duplication_check_val_email_insert_data = parseInt(
                 duplication_checkEmail_insert_data[0].count
@@ -562,7 +562,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_manufacturer")
                 .where(
                   "APSISIPDC.cr_manufacturer.official_phone",
-                  mobile_insert_data
+                  mobile_insert_data.toString()
                 );
               const duplication_check_val_phone_insert_data = parseInt(
                 duplication_checkPhone_insert_data[0].count
@@ -573,7 +573,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_manufacturer")
                 .where(
                   "APSISIPDC.cr_manufacturer.manufacturer_name",
-                  name_insert_data
+                  name_insert_data.toString()
                 );
               const duplication_check_val_name_insert_data = parseInt(
                 duplication_checkName_insert_data[0].count
@@ -820,6 +820,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           // logger.info(error);
         });
     } catch (error) {
+      
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {

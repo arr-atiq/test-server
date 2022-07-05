@@ -120,7 +120,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_distributor")
                 .where(
                   "APSISIPDC.cr_distributor.distributor_tin",
-                  distributor_tin
+                  distributor_tin.toString()
                 );
 
               const duplication_check_val = parseInt(
@@ -174,7 +174,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
                 const distributor_info = await knex("APSISIPDC.cr_distributor")
                   .where("status", "Active")
-                  .where("distributor_tin", distributor_tin)
+                  .where("distributor_tin", distributor_tin.toString())
                   .select(
                     "id",
                     "distributor_name",
@@ -199,29 +199,23 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       manufacturer_id_check
                     );
 
-                    const duplication_check_val_manu_id = parseInt(
-                      duplication_check_manu_id[0].count
-                    );
+                  const duplication_check_val_manu_id = parseInt(
+                    duplication_check_manu_id[0].count
+                  );
 
-                    if(duplication_check_val_manu_id == 0){
-                      const maltiple_manu_mapping_dis = {
-                        manufacturer_id: rows[index].Manufacturer_id,
-                        distributor_id: distributor_info[0].id,
-                        created_by: req.user_id,
-                      }
-                      await knex(
-                        "APSISIPDC.cr_manufacturer_vs_distributor"
-                      ).insert(maltiple_manu_mapping_dis);
-                      continue;
+                  if (duplication_check_val_manu_id == 0) {
+                    const maltiple_manu_mapping_dis = {
+                      manufacturer_id: rows[index].Manufacturer_id,
+                      distributor_id: distributor_info[0].id,
+                      created_by: req.user_id,
                     }
+                    await knex(
+                      "APSISIPDC.cr_manufacturer_vs_distributor"
+                    ).insert(maltiple_manu_mapping_dis);
+                    continue;
+                  }
                 }
-
-
-
                 //multiple manufacturer mapping with distributor
-
-
-
 
                 let duplicateStr = "duplicate columns - ";
                 if (duplication_check_val != 0) {
@@ -391,12 +385,60 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_distributor")
                 .where(
                   "APSISIPDC.cr_distributor.distributor_tin",
-                  tin_insert_data
+                  tin_insert_data.toString()
                 );
               const duplication_check_val_tin_insert_data = parseInt(
                 duplication_checkTIN_insert_data[0].count
               );
               if (duplication_check_val_tin_insert_data != 0) {
+                //multiple manu-distri mapping-check-code-in-same-excel
+
+                const distributor_info_insert_data = await knex("APSISIPDC.cr_distributor")
+                  .where("status", "Active")
+                  .where("distributor_tin", tin_insert_data.toString())
+                  .select(
+                    "id",
+                    "distributor_name",
+                    "distributor_code"
+                  );
+
+                const distributor_name_check_insert_data = data_array[index].Distributor_Name;
+                const distributor_code_check_insert_data = data_array[index].Distributor_Code;
+                const manufacturer_id_check_insert_data = data_array[index].Manufacturer_id;
+
+                if (distributor_info_insert_data[0].distributor_name == distributor_name_check_insert_data
+                  && distributor_info_insert_data[0].distributor_code == distributor_code_check_insert_data) {
+                  const duplication_check_manu_id_insert_data = await knex
+                    .count("cr_manufacturer_vs_distributor.id as count")
+                    .from("APSISIPDC.cr_manufacturer_vs_distributor")
+                    .where(
+                      "APSISIPDC.cr_manufacturer_vs_distributor.distributor_id",
+                      distributor_info_insert_data[0].id
+                    )
+                    .where(
+                      "APSISIPDC.cr_manufacturer_vs_distributor.manufacturer_id",
+                      manufacturer_id_check_insert_data
+                    );
+
+                  const duplication_check_val_manu_id_insert_data = parseInt(
+                    duplication_check_manu_id_insert_data[0].count
+                  );
+
+                  if (duplication_check_val_manu_id_insert_data == 0) {
+                    const maltiple_manu_mapping_dis_insert_data = {
+                      manufacturer_id: data_array[index].Manufacturer_id,
+                      distributor_id: distributor_info_insert_data[0].id,
+                      created_by: req.user_id,
+                    }
+                    await knex(
+                      "APSISIPDC.cr_manufacturer_vs_distributor"
+                    ).insert(maltiple_manu_mapping_dis_insert_data);
+                    continue;
+                  }
+                }
+
+                //multiple manu-distri mapping-check-code-in-same-excel
+
                 let duplicateStr = "duplicate columns - ";
                 if (tin_insert_data != 0) {
                   duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
