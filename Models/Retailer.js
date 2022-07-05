@@ -1515,7 +1515,7 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
   });
 };
 
-exports.generateRetailerOutstandingReport = async (req, res) => {
+Retailer.generateRetailerOutstandingReport = async (req, res) => {
   const previousMonthStartDate = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD');
   const previousMonthEndDate = moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD');
   try {
@@ -1768,6 +1768,150 @@ exports.generateRetailerOutstandingReport = async (req, res) => {
     }
     await workbook.write("public/reports_retailer/retailer_comprehensive_reports.xlsx");
     const fileName = "./reports_retailer/retailer_comprehensive_reports.xlsx";
+    setTimeout(() => {
+      res.send(sendApiResult(true, "File Generated", fileName));
+    }, 1500);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+}
+
+Retailer.generateRetailersMonthlyReport = async (req, res) => {
+
+  const { month, distributor_id, manufacturer_id, district } = req.query;
+  try {
+    const limit_data = await knex("APSISIPDC.cr_retailer")
+      .leftJoin(
+        "APSISIPDC.cr_retailer_manu_scheme_mapping",
+        "cr_retailer_manu_scheme_mapping.retailer_id",
+        "cr_retailer.id"
+      )
+      .leftJoin(
+        "APSISIPDC.cr_manufacturer",
+        "cr_manufacturer.id",
+        "cr_retailer_manu_scheme_mapping.manufacturer_id"
+      )
+      .leftJoin(
+        "APSISIPDC.cr_distributor",
+        "cr_distributor.id",
+        "cr_retailer_manu_scheme_mapping.distributor_id"
+      )
+      .leftJoin(
+        "APSISIPDC.cr_retailer_loan_calculation",
+        "cr_retailer.id",
+        "cr_retailer_loan_calculation.retailer_id"
+      )
+      .where(function () {
+        if (district) {
+          this.where("cr_retailer.district", district)
+        }
+        if (manufacturer_id) {
+          this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+        }
+        if (distributor_id) {
+          this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+        }
+        if (month) {
+          const monthNum = parseInt(month);
+          const monthStartDate = moment('2021-12-31').add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+          const monthEndDate = moment('2021-12-31').add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+          this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+          this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+        }
+      })
+      .select(
+        "cr_retailer.retailer_name",
+        "cr_retailer.retailer_code",
+        "cr_retailer.district",
+        "cr_manufacturer.manufacturer_name",
+        "cr_distributor.distributor_name",
+        "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+        "cr_retailer_loan_calculation.transaction_cost",
+        "cr_retailer_loan_calculation.total_outstanding",
+        "cr_retailer_loan_calculation.repayment"
+      );
+
+    console.log(limit_data);
+    const headers = [
+      "Sr.",
+      "Retailer_name",
+      "Retailer code",
+      "District",
+      "Manufacturer_name",
+      "Distributor_name",
+      "Total_credit_limit",
+      "No_of_orders_placed",
+      "Total_amount_of_transaction_done",
+      "Total_amount_of_loan_requested",
+      "Total_amount_of_repayment",
+      "Total_outstanding_amount"
+    ];
+    const workbook = new excel.Workbook();
+    const worksheet = workbook.addWorksheet("Sheet 1");
+    const headerStyle = workbook.createStyle({
+      fill: {
+        type: "pattern",
+        patternType: "solid",
+        bgColor: "#E1F0FF",
+        fgColor: "#E1F0FF",
+      },
+      font: {
+        color: "#000000",
+        size: "10",
+        bold: true,
+      },
+    });
+    const col = 1;
+    let row = 1;
+    let col_addH = 0;
+    headers.forEach((e) => {
+      worksheet
+        .cell(row, col + col_addH)
+        .string(e)
+        .style(headerStyle);
+      col_addH++;
+    });
+    row++;
+    for (let i = 0; i < limit_data.length; i++) {
+      var col_add = 0;
+      let e = limit_data[i];
+      worksheet.cell(row, col + col_add).number(i + 1);
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.retailer_name ? e.retailer_name : "");
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.retailer_code ? e.retailer_code : "");
+      col_add++;
+      worksheet
+        .cell(row, col + col_add)
+        .string(e.district ? e.district : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.manufacturer_name ? e.manufacturer_name : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.distributor_name ? e.distributor_name : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.crm_approve_limit ? e.crm_approve_limit : 0);
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.no_of_orders_placed ? e.no_of_orders_placed : 0);
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.transaction_cost ? e.transaction_cost : 0);
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.total_amount_of_loan_requested ? e.total_amount_of_loan_requested : 0);
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.total_outstanding ? e.total_outstanding : 0);
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.repayment ? e.repayment : 0);
+      col_add++;
+
+      // worksheet.cell(row, col + col_add).number(0);
+      // col_add++;
+      row++;
+    }
+    await workbook.write("public/reports_retailer/retailer_monthly_reports.xlsx");
+    const fileName = "./reports_retailer/retailer_monthly_reports.xlsx";
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
     }, 1500);
