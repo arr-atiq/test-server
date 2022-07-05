@@ -1,6 +1,7 @@
 const logger = require("pino")();
 const knex = require("../config/database");
 const Joi = require("joi");
+const { sendApiResult } = require("./helperController");
 
 module.exports.createScheme = async (req, res) => {
   const { data } = req;
@@ -118,6 +119,79 @@ module.exports.getSchemeDetailsById = async function (scheme_id) {
   const schemaDeatils = await getParameterDetailsbyID(scheme_id);
   return schemaDeatils;
 };
+
+
+module.exports.updateScheme = async (req, res) => {
+  const { value } = req.body;
+   delete value.id;
+   delete value.created_at;
+   delete value.updated_at;
+  try {
+    await knex.transaction(async (trx) => {
+      const schema_update = await trx("APSISIPDC.cr_schema")
+        .where({ id: req.params.id })
+        .update(value);
+      console.log('schema_update',schema_update)
+      if (schema_update <= 0){
+        return res.send({
+          success: false,
+          message: "Could not Found schema",
+          response: "Could not Found schema",
+        });
+      }else{
+        return res.send({
+          success: false,
+          message: "Schema updated Successfully",
+          response: "Schema updated Successfully",
+        });
+      }
+    });
+  } catch (error) {
+    reject(sendApiResult(false, error.message));
+  }
+};
+
+
+module.exports.updateSchemeParameter = async (req, res) => {
+  const { value } = req.body;
+  // console.log('req.body',req.body.value)
+  // console.log('Datatatattata',req.body.value)
+   delete value.id;
+   delete value.created_at;
+   delete value.updated_at;
+
+   console.log('valuevalue',value)
+
+  try {
+    await knex.transaction(async (trx) => {
+      const schema_update_parameter = await trx("APSISIPDC.cr_scheme_parameter")
+        .where({ id: req.params.id })
+        .update(value);
+        console.log('schema_update_parameter',schema_update_parameter)
+      
+      if (schema_update_parameter <= 0)
+      {
+        // sendApiResult(false, "Could not Found schema parameter");
+        return res.send({
+          success: false,
+          message: "Could not Found schema parameter",
+          response: "Please selecta different Scheme",
+        });
+      }
+      else{
+        return res.send({
+          success: true,
+          message: "Schema parameter updated Successfully",
+          response: schema_update_parameter,
+        });
+      }       
+    });
+  } catch (error) {
+    console.log('error', error)
+    sendApiResult(false, error.message);
+  }
+};
+
 
 const getParameterDetailsbyID = async function (scheme_id) {
   const schemaParameterDeatils = await knex
