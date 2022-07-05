@@ -898,7 +898,7 @@ FileUpload.getSupervisorList = function (req) {
           "cr_supervisor.supervisor_employee_code",
           "cr_supervisor.region_of_operation"
         )
-        .orderBy("cr_supervisor.id", "asc")
+        .orderBy("cr_supervisor.id", "desc")
         .paginate({
           perPage: per_page,
           currentPage: page,

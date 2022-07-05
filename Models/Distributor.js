@@ -672,7 +672,7 @@ FileUpload.getDistributorList = function (req) {
           "cr_distributor.autho_rep_email",
           "cr_distributor.region_of_operation"
         )
-        .orderBy("cr_distributor.id", "asc")
+        .orderBy("cr_distributor.id", "desc")
         .paginate({
           perPage: per_page,
           currentPage: page,
