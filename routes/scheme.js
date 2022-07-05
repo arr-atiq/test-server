@@ -15,7 +15,7 @@ router.get("/:id", scheme.getSchemeDetails);
 router.post("/parameter", schemaParameterValidation, scheme.createParameter);
 router.get("/:scheme_id/parameter", scheme.getParameterDetails);
 
-router.put("/:id", schemaValidation, scheme.updateScheme);
+router.put("/:id", scheme.updateScheme);
 router.put("/updateSchemeParameter/:id", scheme.updateSchemeParameter);
 
 
