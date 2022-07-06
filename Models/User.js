@@ -140,7 +140,7 @@ User.getDashboard = function (req, res) {
           "cr_schema.id",
           "cr_retailer_manu_scheme_mapping.scheme_id"
         )
-        .whereRaw(`"cr_schema"."expiry_date" < TO_DATE('${todaydate}', 'YYYY-MM-DD')`)
+        // .whereRaw(`"cr_schema"."expiry_date" < TO_DATE('${todaydate}', 'YYYY-MM-DD')`)
         .count("cr_retailer_manu_scheme_mapping.ac_number_1rmn as count");
 
       const npl_acc_val = parseInt(

@@ -6,6 +6,7 @@ const model = require("../Models/Retailer");
 const { default: axios } = require("axios");
 const knex = require("../config/database");
 const { pushNotification } = require("./notification_helper")
+
 // var moment = require('moment');
 
 /**
@@ -285,8 +286,10 @@ exports.disbursement = async (req, res) => {
   if (findSalesAgent[0]?.id) {
     if (totalLimit > disbursement_amount) {
       const getSchemeId = await getSchemeID(onermn_acc);
+      let distributor_Email;
       let SchemeValue;
       if (getSchemeId) {
+        distributor_Email = await getDistributorEmail(getSchemeId[0]?.distributor_id)
         SchemeValue = await getSchemeValue(getSchemeId[0].scheme_id);
       } else {
         /**
@@ -369,8 +372,33 @@ exports.disbursement = async (req, res) => {
         // }
 
         await knex("APSISIPDC.cr_retailer_loan_calculation")
-          .insert(loan)
-          .then(async () => {
+          .insert(loan).returning("id")
+          .then(async (response) => {
+
+            try{
+              const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
+                "email": distributor_Email[0].official_email,
+                "mail_subject": `IPDC DANA | Collection Confirmation| <${parseInt(response[0])}.>`,
+                "mail_body": `
+                <p>Dear IPDC DANA Partner,</p>
+  
+                <p>Please find the disbursement details:</p>
+  
+                <p>Disbursement Date: ${moment().format('YYYY-MM-DD')}</p>
+                <p>Disbursed Amount: ${disbursement_amount}</p>
+                <p>Request ID: ${response[0]}</p>
+                <p>Bank Account:  ${onermn_acc}</p>
+  
+                <p>Please let us know if you have any queries. </p>
+                <p>Regards, </p>
+                <p>IPDC Finance</p>
+                `
+              })
+              console.log('sendMailsendMailsendMail',sendMail)
+            }
+            catch(err){
+              console.log('errorerrorerrorerrorerror',err)
+            }
             // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(processingFee).then(async ()=>{
             await knex.transaction(async (trx) => {
               // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(transsactionFee).then(async ()=>{
@@ -436,9 +464,10 @@ exports.repayment = async (req, res) => {
   const getSlabDateValue = await getSlabDate(onermn_acc);
   const dateSlab = getSlabDateValue?.created_at;
   var getSchemeId = await getSchemeID(onermn_acc);
-
+  var distributor_Email;
   var SchemeValue;
   if (getSchemeId) {
+    distributor_Email = await getDistributorEmail(getSchemeId[0]?.distributor_id)
     SchemeValue = await getSchemeValue(getSchemeId[0]?.scheme_id);
   } else {
     /**
@@ -529,8 +558,34 @@ exports.repayment = async (req, res) => {
         .returning("id")
         .then(async (response) => {
           // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(transactionCost).then(async ()=>{
-          console.log("firstRepaymentID", firstRepaymentID);
-          console.log("response", response);
+          // console.log("firstRepaymentID", firstRepaymentID);
+          // console.log("response", response);
+          
+          try{
+            const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
+              "email": distributor_Email[0].official_email,
+              "mail_subject": `IPDC DANA | Collection Confirmation| <${parseInt(response[0])}.>`,
+              "mail_body": `
+              <p>Dear IPDC DANA Partner,</p>
+
+              <p>Please find the collection details:</p>
+
+              <p>Collection Date: ${moment().format('YYYY-MM-DD')}</p>
+              <p>Collected Amount: ${repayment}</p>
+              <p>Request ID: ${response[0]}</p>
+              <p>Due Amount: ${repaymentValueAll?.total_outstanding}</p>
+
+              <p>Please let us know if you have any queries. </p>
+              <p>Regards, </p>
+              <p>IPDC Finance</p>
+              `
+            })
+            console.log('sendMailsendMailsendMail',sendMail)
+          }
+          catch(err){
+            console.log('errorerrorerrorerrorerror',err)
+          }
+        
           var interest;
           if (firstRepaymentID) {
             interest = await findRepaymentInterest(
@@ -908,7 +963,10 @@ exports.totalLoan = async (req, res) => {
     loanTenorDays = await findLoanTenorIndays(onermn_acc, SchemeValue[0]);
   }
   let totalValue = await getPrincipalAmount(onermn_acc);
-
+  let retailerPhone;
+  if(totalValue){
+     retailerPhone = await getRetailerPhone(totalValue?.retailer_id) ?? '';
+  }
   var resPonseVaslue = {
     ...loanTenorDays,
     total_outstanding: totalValue?.total_outstanding.toFixed(2) ?? 0,
@@ -920,6 +978,7 @@ exports.totalLoan = async (req, res) => {
       ).toFixed(2) ?? 0,
     retailer_id: totalValue?.retailer_id,
     onermn_acc: totalValue?.onermn_acc,
+    retailer_phone: retailerPhone[0]?.phone ?? ''
   };
   if (totalValue) {
     return res.send(sendApiResult(true, "Find Total Cost", resPonseVaslue));
@@ -1405,9 +1464,24 @@ var getSlapValueDate = async (oneRMn, schemeValue) => {
   return tenorValue?.created_at ?? [];
 
 };
+
  var getSequenceData =async () =>{
   return await knex
     .from("APSISIPDC.cr_repayment_sequence")
     .select()
     .orderBy("sequence", "asc");
  }
+
+ var getDistributorEmail =async (id)=>{
+  return await knex
+  .from("APSISIPDC.cr_distributor")
+  .select('official_email')
+  .where("id", id)
+ }
+ var getRetailerPhone =async (id)=>{
+  return await knex
+  .from("APSISIPDC.cr_retailer")
+  .select('phone')
+  .where("id", id)
+ }
+ 
