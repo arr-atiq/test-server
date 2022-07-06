@@ -29,7 +29,7 @@ services:
     ports:
       - 83:5000
     command: bash -c /usr/src/app/start.sh
-    env_file: .env                 
+    env_file: .env                                
   nginx:
     build: ./nginx
     ports:
@@ -37,4 +37,4 @@ services:
     depends_on:
       - app1
       - app2
-      - app3
+      - app3 
