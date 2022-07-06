@@ -102,7 +102,30 @@ paths:
           description: Invalid Fields
         '500':
           description: Internal Server Error  
-
+  /user/sendotp:
+    post:
+      tags:
+        - OTP
+      summary: OTP
+      description: API for OTP Verification on transaction
+      parameters:
+        - in: body
+          name: body
+          description: OTP Genaration 
+          required: true
+          schema:
+            $ref: "#/definitions/otpGeneration"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Otp Sent successfull
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "400":
+          description: Invalid Fields
+        '500':
+          description: Internal Server Error  
   /manufacturer/manufacturers:
     get:
       tags:
@@ -1836,3 +1859,20 @@ definitions:
       device_token:
         type: string
         description: your device token   
+  otpGeneration:
+    properties:      
+      sales_agent_id:
+        type: integer
+        description: sales_agent_id that you have received from login api
+      retailer_onermn_account:
+        type: string
+        description: Provide retailer 1RMN account
+      disbursement_amount:
+        type: number
+        description: Disbursement amount
+      repayment_amount:
+        type: number
+        description: Please provide repayment amount
+      retailer_phone_number:
+        type: string
+        description: Please provide retailer phone number from 1rmn account details api       
