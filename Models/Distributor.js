@@ -2,6 +2,7 @@ const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
+const logger = require("pino")();
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
@@ -39,6 +40,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < rows.length; index++) {
 
               const nid = rows[index].NID;
+              const manu_id = rows[index].Manufacturer_id;
               const phoneNumber = rows[index].Official_Contact_Number;
               const email = rows[index].Official_Email;
               const autho_person_phoneNumber = rows[index].Mobile_No;
@@ -50,8 +52,25 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const validEmail = ValidateEmail(email);
               const autho_person_validEmail = ValidateEmail(autho_person_email);
 
-              if (!validNID || !validPhoneNumber || !validEmail || !autho_person_Valid_PhoneNumber || !autho_person_validEmail) {
+              const manufacturer_exist_check = await knex
+                .count("cr_manufacturer.id as count")
+                .from("APSISIPDC.cr_manufacturer")
+                .where(
+                  "APSISIPDC.cr_manufacturer.id",
+                  manu_id
+                );
+
+              const manufacturer_exist_check_val = parseInt(
+                manufacturer_exist_check[0].count
+              );
+
+              if (!validNID || !validPhoneNumber || !validEmail || !autho_person_Valid_PhoneNumber || !autho_person_validEmail || manufacturer_exist_check_val == 0) {
                 let invalidStr = "invalid columns - ";
+
+                if (manufacturer_exist_check_val == 0) {
+                  invalidStr = invalidStr + "Manufacturer_id " + ", ";
+                }
+
                 if (!validNID) {
                   invalidStr = invalidStr + "NID " + ", ";
                 }
@@ -529,11 +548,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   created_by: req.user_id,
                 };
 
-                   try{
-                    const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
-                      "email": data_array[index].Official_Email,
-                      "mail_subject": "IPDC DANA | Registration Completed",
-                      "mail_body": `
+                try {
+                  const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
+                    "email": data_array[index].Official_Email,
+                    "mail_subject": "IPDC DANA | Registration Completed",
+                    "mail_body": `
                       <p>Greetings from IPDC DANA!</p>
                       <p>Congratulations! Your registration
                       with IPDC DANA has been
@@ -545,13 +564,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       <p>Regards, </p>
                       <p>IPDC Finance</p>
                       `
-                    })
-                    console.log('sendMailsendMailsendMail',sendMail)
-                  }
-                  catch(err){
-                    console.log('errorerrorerrorerrorerror',err)
-                  }
-                
+                  })
+                  console.log('sendMailsendMailsendMail', sendMail)
+                }
+                catch (err) {
+                  console.log('errorerrorerrorerrorerror', err)
+                }
+
                 // var distributorIDUpdate = {
                 //   distributor_code: `${data_array[index].Distributor_Code}-${insert_distributor[0]}`
                 // };
@@ -573,15 +592,15 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 ).insert(temp_manufacturer_vs_distributor_map);
 
                 const acc_num =
-                  data_array[index].Distributor_Bank_Account_Number.split(";");
+                  data_array[index].Distributor_Bank_Account_Number.toString().split(";");
                 const acc_title =
-                  data_array[index].Distributor_Bank_Account_Title.split(";");
+                  data_array[index].Distributor_Bank_Account_Title.toString().split(";");
                 const acc_type =
-                  data_array[index].Distributor_Bank_Account_Type.split(";");
+                  data_array[index].Distributor_Bank_Account_Type.toString().split(";");
                 const bank_name =
-                  data_array[index].Distributor_Bank_Name.split(";");
+                  data_array[index].Distributor_Bank_Name.toString().split(";");
                 const branch =
-                  data_array[index].Distributor_Bank_Branch.split(";");
+                  data_array[index].Distributor_Bank_Branch.toString().split(";");
                 for (let k = 0; k < acc_num.length; k++) {
                   const team_bank_acc = {
                     distributor_id: insert_distributor[0],
@@ -886,6 +905,38 @@ FileUpload.getDistributorByManufacturer = function (req) {
           currentPage: page,
           isLengthAware: true,
         });
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getManufacturerByDistributor = function (req) {
+  const { distributor_id } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_manufacturer")
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer_vs_distributor",
+          "cr_manufacturer_vs_distributor.manufacturer_id",
+          "cr_manufacturer.id"
+        )
+        .where(
+          "cr_manufacturer_vs_distributor.distributor_id",
+          distributor_id
+        )
+        .select(
+          "cr_manufacturer.id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_manufacturer.registration_no",
+          "cr_manufacturer.website_link",
+          "cr_manufacturer.corporate_ofc_address",
+          "cr_manufacturer.autho_rep_full_name",
+          "cr_manufacturer.autho_rep_designation"
+        );
       if (data == 0) reject(sendApiResult(false, "Not found."));
       resolve(sendApiResult(true, "Data fetched successfully", data));
     } catch (error) {
