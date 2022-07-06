@@ -719,18 +719,28 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
-                /* try{
-                  const sendMail =await axios.post(`http://202.53.174.1:4002/mail/tempSendmail`,{
+                 try{
+                  const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
                     "email": data_array[index].Official_Email_ID,
-                    "mail_subject": "Manufacture Onbaording",
-                    "mail_body": `Your userName is ${data_array[index].Official_Email_ID} and your password is 123456`
-                  }  )
+                    "mail_subject": "IPDC DANA | Registration Completed",
+                    "mail_body": `
+                    <p>Greetings from IPDC DANA!</p>
+                    <p>Congratulations! Your registration
+                    with IPDC DANA has been
+                    completed. Please enter the below
+                    mentioned user ID and password
+                    at www.ipdcDANA.com and login.</p>
+                    <p>User ID : ${data_array[index].Official_Email_ID}</p>
+                    <p>Password : 123456</p>
+                    <p>Regards, </p>
+                    <p>IPDC Finance</p>
+                    `
+                  })
                   console.log('sendMailsendMailsendMail',sendMail)
                 }
                 catch(err){
                   console.log('errorerrorerrorerrorerror',err)
-                }*/
-
+                }
               }
 
               const temp_user = {

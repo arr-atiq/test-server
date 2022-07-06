@@ -1566,7 +1566,6 @@ Retailer.generateRetailerOutstandingReport = async (req, res) => {
         "cr_retailer_kyc_information.telephone_number",
         "cr_retailer_kyc_information.sector_code",
         "cr_distributor.distributor_name"
-
       );
     const headers = [
       "Sr.",
@@ -1827,8 +1826,12 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
         "cr_distributor.distributor_name",
         "cr_retailer_manu_scheme_mapping.crm_approve_limit",
         "cr_retailer_loan_calculation.transaction_cost",
+        // knex.raw(`SUM("cr_retailer_loan_calculation.disburshment") AS total_disbursement`),
+        // knex.raw(`SUM("cr_retailer_loan_calculation.repayment") AS total_repayment`),
+        // knex.raw(`select total_outstanding from cr_retailer_loan_calculation `),
         "cr_retailer_loan_calculation.total_outstanding",
-        "cr_retailer_loan_calculation.repayment"
+        "cr_retailer_loan_calculation.repayment",
+        "cr_retailer_loan_calculation.disburshment"
       );
 
     console.log(limit_data);

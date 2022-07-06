@@ -347,10 +347,10 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
         .string(e.supervisor_name ? e.supervisor_name : "");
       col_add++;
       if (e.remarks_duplications.includes("Supervisor_NID")) {
-        worksheet.cell(row, col + col_add).number(e.supervisor_nid ? e.supervisor_nid : "").style(errorStyle);
+        worksheet.cell(row, col + col_add).string(e.supervisor_nid ? e.supervisor_nid : "").style(errorStyle);
         col_add++;
       } else {
-        worksheet.cell(row, col + col_add).number(e.supervisor_nid ? e.supervisor_nid : "");
+        worksheet.cell(row, col + col_add).string(e.supervisor_nid ? e.supervisor_nid : "");
         col_add++;
       }
       if (e.remarks_duplications.includes("Phone")) {
@@ -472,10 +472,10 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
         .string(e.supervisor_name ? e.supervisor_name : "");
       col_add++;
       if (e.remarks_invalidated.includes("Supervisor_NID")) {
-        worksheet.cell(row, col + col_add).number(e.supervisor_nid ? e.supervisor_nid : "").style(errorStyle);
+        worksheet.cell(row, col + col_add).string(e.supervisor_nid ? e.supervisor_nid : "").style(errorStyle);
         col_add++;
       } else {
-        worksheet.cell(row, col + col_add).number(e.supervisor_nid ? e.supervisor_nid : "");
+        worksheet.cell(row, col + col_add).string(e.supervisor_nid ? e.supervisor_nid : "");
         col_add++;
       }
       if (e.remarks_invalidated.includes("Phone")) {

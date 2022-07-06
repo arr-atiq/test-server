@@ -3,6 +3,7 @@ const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
 const knex = require("../config/database");
+const { default: axios } = require("axios");
 
 const FileUpload = function () { };
 
@@ -305,6 +306,32 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
               if (insert_supervisor) {
                 supervisor_insert_ids.push(insert_supervisor[0]);
+
+
+                // try{
+                //   const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
+                //     "email": data_array[index].Official_Email,
+                //     "mail_subject": "IPDC DANA | Registration Completed",
+                //     "mail_body": `
+                //     <p>Greetings from IPDC DANA!</p>
+                //     <p>Congratulations! Your registration
+                //     with IPDC DANA has been
+                //     completed. Please enter the below
+                //     mentioned user ID and password
+                //     at www.ipdcDANA.com and login.</p>
+                //     <p>User ID : ${data_array[index].Supervisor_Employee_Code}</p>
+                //     <p>Password : 123456</p>
+                //     <p>Regards, </p>
+                //     <p>IPDC Finance</p>
+                //     `
+                //   })
+                //   console.log('sendMailsendMailsendMail',sendMail)
+                // }
+                // catch(err){
+                //   console.log('errorerrorerrorerrorerror',err)
+                // }
+
+
                 // var supervisorIDUpdate = {
                 //   supervisor_employee_code: `${data_array[index].Supervisor_Employee_Code}-${insert_supervisor[0]}`
                 // };
