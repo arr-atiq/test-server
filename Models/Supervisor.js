@@ -3,6 +3,7 @@ const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
 const knex = require("../config/database");
+const { default: axios } = require("axios");
 
 const FileUpload = function () { };
 
@@ -26,18 +27,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .whereIn("user_type", folder_name);
           const user_role_id = user_roles[0].id;
 
-          const all_NID_array = [];
-          const all_Phone_array = [];
-          const all_Emp_code_array = [];
+          // const all_NID_array = [];
+          // const all_Phone_array = [];
+          // const all_Emp_code_array = [];
           const data_array = [];
           const unuploaded_data_array = [];
           const invalidate_data_array = [];
           if (Object.keys(rows).length != 0) {
-            for (let index = 0; index < rows.length; index++) {
-              all_NID_array[index] = rows[index].Supervisor_NID;
-              all_Phone_array[index] = rows[index].Phone;
-              all_Emp_code_array[index] = rows[index].Supervisor_Employee_Code;
-            }
+            // for (let index = 0; index < rows.length; index++) {
+            //   all_NID_array[index] = rows[index].Supervisor_NID;
+            //   all_Phone_array[index] = rows[index].Phone;
+            //   all_Emp_code_array[index] = rows[index].Supervisor_Employee_Code;
+            // }
             for (let index = 0; index < rows.length; index++) {
               const nid = rows[index].Supervisor_NID;
               const phoneNumber = rows[index].Phone;
@@ -45,6 +46,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const validPhoneNumber = ValidatePhoneNumber(phoneNumber.toString());
 
               if (!validNID || !validPhoneNumber) {
+                let invalidStr = "invalid columns - ";
+                if (!validNID) {
+                  invalidStr = invalidStr + "Supervisor_NID " + ", ";
+                }
+                if (!validPhoneNumber) {
+                  invalidStr = invalidStr + "Phone " + ", ";
+                }
                 const temp_data = {
                   Supervisor_Name: rows[index].Supervisor_Name,
                   Supervisor_NID: rows[index].Supervisor_NID,
@@ -53,7 +61,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Supervisor_Employee_Code:
                     rows[index].Supervisor_Employee_Code,
                   Region_of_Operation: rows[index].Region_of_Operation,
-                  Distributor: rows[index].Distributor
+                  Distributor: rows[index].Distributor,
+                  Remarks_Invalidated: invalidStr,
                 };
 
                 invalidate_data_array.push(temp_data);
@@ -84,7 +93,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   .from("APSISIPDC.cr_supervisor")
                   .where(
                     "APSISIPDC.cr_supervisor.phone",
-                    supervisor_phone
+                    supervisor_phone.toString()
                   );
                 const duplication_check_val_phone = parseInt(
                   duplication_check_phone[0].count
@@ -94,26 +103,15 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   .from("APSISIPDC.cr_supervisor")
                   .where(
                     "APSISIPDC.cr_supervisor.supervisor_employee_code",
-                    supervisor_emp_code
+                    supervisor_emp_code.toString()
                   );
                 const duplication_check_val_emp_code = parseInt(
                   duplication_check_emp_code[0].count
                 );
 
-                const nidSubArray = all_NID_array.slice(0, index);
-                const phoneSubArray = all_Phone_array.slice(0, index);
-                const emp_code_SubArray = all_Emp_code_array.slice(0, index);
-
-                const nidDuplicateExcel = nidSubArray.includes(supervisor_nid);
-                const phoneDuplicateExcel = phoneSubArray.includes(supervisor_phone);
-                const empCodeDuplicateExcel = emp_code_SubArray.includes(supervisor_emp_code);
-
                 if (duplication_check_val_nid == 0
                   && duplication_check_val_phone == 0
-                  && duplication_check_val_emp_code == 0
-                  && !nidDuplicateExcel
-                  && !phoneDuplicateExcel
-                  && !empCodeDuplicateExcel) {
+                  && duplication_check_val_emp_code == 0) {
                   const temp_data = {
                     Supervisor_Name: rows[index].Supervisor_Name,
                     Supervisor_NID: rows[index].Supervisor_NID,
@@ -126,6 +124,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   };
                   data_array.push(temp_data);
                 } else {
+
+                  let duplicateStr = "duplicate columns - ";
+                  if (duplication_check_val_nid != 0) {
+                    duplicateStr = duplicateStr + "Supervisor_NID " + ", ";
+                  }
+                  if (duplication_check_val_phone != 0) {
+                    duplicateStr = duplicateStr + "Phone " + ", ";
+                  }
+                  if (duplication_check_val_emp_code != 0) {
+                    duplicateStr = duplicateStr + "Supervisor_Employee_Code " + ", ";
+                  }
+
                   const temp_data = {
                     Supervisor_Name: rows[index].Supervisor_Name,
                     Supervisor_NID: rows[index].Supervisor_NID,
@@ -135,6 +145,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       rows[index].Supervisor_Employee_Code,
                     Region_of_Operation: rows[index].Region_of_Operation,
                     Distributor: rows[index].Distributor,
+                    Remarks_Duplicated: duplicateStr
                   };
                   unuploaded_data_array.push(temp_data);
                 }
@@ -174,6 +185,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 supervisor_employee_code:
                   invalidate_data_array[index].Supervisor_Employee_Code,
                 region_of_operation: invalidate_data_array[index].Region_of_Operation,
+                remarks_invalidated: invalidate_data_array[index].Remarks_Invalidated,
                 created_by: req.user_id,
               };
 
@@ -193,7 +205,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 supervisor_employee_code:
                   unuploaded_data_array[index].Supervisor_Employee_Code,
                 region_of_operation: unuploaded_data_array[index].Region_of_Operation,
-                created_by: req.user_id,
+                remarks_duplications: unuploaded_data_array[index].Remarks_Duplicated,
+                created_by: req.user_id
               };
 
               await knex("APSISIPDC.cr_supervisor_unuploaded_data")
@@ -206,6 +219,73 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             const user_insert_ids = [];
             const distributor_ids = [];
             for (let index = 0; index < data_array.length; index++) {
+              const supervisor_nid_insert_data = data_array[index].Supervisor_NID;
+              const supervisor_phone_insert_data = data_array[index].Phone;
+              const supervisor_emp_code_insert_data = data_array[index].Supervisor_Employee_Code;
+
+              const duplication_checkNID_insert_data = await knex
+                .count("cr_supervisor.supervisor_nid as count")
+                .from("APSISIPDC.cr_supervisor")
+                .where(
+                  "APSISIPDC.cr_supervisor.supervisor_nid",
+                  supervisor_nid_insert_data
+                );
+              const duplication_check_val_nid_insert_data = parseInt(
+                duplication_checkNID_insert_data[0].count
+              );
+              const duplication_check_phone_insert_data = await knex
+                .count("cr_supervisor.phone as count")
+                .from("APSISIPDC.cr_supervisor")
+                .where(
+                  "APSISIPDC.cr_supervisor.phone",
+                  supervisor_phone_insert_data.toString()
+                );
+              const duplication_check_val_phone_insert_data = parseInt(
+                duplication_check_phone_insert_data[0].count
+              );
+              const duplication_check_emp_code_insert_data = await knex
+                .count("cr_supervisor.supervisor_employee_code as count")
+                .from("APSISIPDC.cr_supervisor")
+                .where(
+                  "APSISIPDC.cr_supervisor.supervisor_employee_code",
+                  supervisor_emp_code_insert_data.toString()
+                );
+              const duplication_check_val_emp_code_insert_data = parseInt(
+                duplication_check_emp_code_insert_data[0].count
+              );
+
+              if (duplication_check_val_nid_insert_data != 0
+                || duplication_check_val_phone_insert_data != 0
+                || duplication_check_val_emp_code_insert_data != 0) {
+
+                let duplicateStr = "duplicate columns - ";
+                if (duplication_check_val_nid_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Supervisor_NID " + ", ";
+                }
+                if (duplication_check_val_phone_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Phone " + ", ";
+                }
+                if (duplication_check_val_emp_code_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Supervisor_Employee_Code " + ", ";
+                }
+
+                const duplicate_data_array = {
+                  supervisor_name: data_array[index].Supervisor_Name,
+                  supervisor_nid: data_array[index].Supervisor_NID,
+                  phone: data_array[index].Phone,
+                  manufacturer_id: data_array[index].Manufacturer,
+                  distributor_id: data_array[index].Distributor,
+                  supervisor_employee_code:
+                    data_array[index].Supervisor_Employee_Code,
+                  region_of_operation: data_array[index].Region_of_Operation,
+                  remarks_duplications: duplicateStr,
+                  created_by: req.user_id,
+                };
+                await knex("APSISIPDC.cr_supervisor_unuploaded_data")
+                  .insert(duplicate_data_array);
+                continue;
+              }
+
               const team_supervisor = {
                 supervisor_name: data_array[index].Supervisor_Name,
                 supervisor_nid: data_array[index].Supervisor_NID,
@@ -222,22 +302,48 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const insert_supervisor = await knex("APSISIPDC.cr_supervisor")
                 .insert(team_supervisor)
                 .returning("id");
-             
-             
+
+
               if (insert_supervisor) {
                 supervisor_insert_ids.push(insert_supervisor[0]);
-                var supervisorIDUpdate = {
-                  supervisor_employee_code:`${data_array[index].Supervisor_Employee_Code}-${insert_supervisor[0]}`
-                };
 
-                await knex.transaction(async (trx) => {
-                  let updateData =  await trx(
-                    "APSISIPDC.cr_supervisor"
-                  )
-                    .where({ id: insert_supervisor[0] })
-                    .update(supervisorIDUpdate);
-                     console.log('updateData',updateData)
-                });
+
+                // try{
+                //   const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
+                //     "email": data_array[index].Official_Email,
+                //     "mail_subject": "IPDC DANA | Registration Completed",
+                //     "mail_body": `
+                //     <p>Greetings from IPDC DANA!</p>
+                //     <p>Congratulations! Your registration
+                //     with IPDC DANA has been
+                //     completed. Please enter the below
+                //     mentioned user ID and password
+                //     at www.ipdcDANA.com and login.</p>
+                //     <p>User ID : ${data_array[index].Supervisor_Employee_Code}</p>
+                //     <p>Password : 123456</p>
+                //     <p>Regards, </p>
+                //     <p>IPDC Finance</p>
+                //     `
+                //   })
+                //   console.log('sendMailsendMailsendMail',sendMail)
+                // }
+                // catch(err){
+                //   console.log('errorerrorerrorerrorerror',err)
+                // }
+
+
+                // var supervisorIDUpdate = {
+                //   supervisor_employee_code: `${data_array[index].Supervisor_Employee_Code}-${insert_supervisor[0]}`
+                // };
+
+                // await knex.transaction(async (trx) => {
+                //   let updateData = await trx(
+                //     "APSISIPDC.cr_supervisor"
+                //   )
+                //     .where({ id: insert_supervisor[0] })
+                //     .update(supervisorIDUpdate);
+                //   console.log('updateData', updateData)
+                // });
               }
 
               const temp_user = {
@@ -377,6 +483,7 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
 FileUpload.saveRemarksFeedback = function (req) {
 
   const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+
   const userID = req.body.user_id;
 
   const { remarks_id, remarks_one, supervisor_status, admin_status, transaction_type } = req.body;
@@ -448,6 +555,283 @@ FileUpload.saveRemarksFeedback = function (req) {
       }
 
       resolve(sendApiResult(true, "Data Saved successfully", cr_remarks_feedback_id));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.insertRemarksFeedback = function (req) {
+  const { supervisor_code,
+    manufacturer_id,
+    amount,
+    transaction_type,
+    cr_retailer_loan_calculation_ids
+
+  } = req.body;
+
+  const cr_retailer_loan_calculation_idsArr = cr_retailer_loan_calculation_ids.split(",");
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const insert_obj = {
+        manufacturer_id: manufacturer_id,
+        supervisor_emp_code: supervisor_code,
+        amount: amount,
+        supervisor_status: 1,
+        transaction_type: transaction_type
+      }
+
+      const insert_obj_Id = await knex("APSISIPDC.cr_remarks_feedback").insert(
+        insert_obj
+      ).returning("id");
+
+      if (insert_obj_Id == 0) reject(sendApiResult(false, "Not Insert"));
+
+      const manufacturer = await knex("APSISIPDC.cr_manufacturer")
+        .where("id", manufacturer_id)
+        .select(
+          "manufacturer_name"
+        );
+
+      if (manufacturer == 0) reject(sendApiResult(false, "Not found"));
+
+      // const supervisor = await knex("APSISIPDC.cr_supervisor")
+      //   .where("cr_supervisor.supervisor_employee_code", supervisor_code)
+      //   .select(
+      //     "supervisor_name"
+      //   );
+
+      // if (supervisor == 0) reject(sendApiResult(false, "Not found"));
+
+      const genereateSystemId = manufacturer[0].manufacturer_name + "-" + insert_obj_Id[0] + "-" + supervisor_code;
+
+      const system_Id = await knex("APSISIPDC.cr_remarks_feedback").update(
+        { system_id: genereateSystemId }
+      ).where("id", insert_obj_Id[0]);
+
+      for (let i = 0; i < cr_retailer_loan_calculation_idsArr.length; i++) {
+        await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .update({ feedback_reference_id: insert_obj_Id[0] })
+          .where("id", cr_retailer_loan_calculation_idsArr[i])
+          .where("transaction_type", transaction_type);
+
+        if (transaction_type == "DISBURSEMENT") {
+          await knex("APSISIPDC.cr_retailer_loan_calculation")
+            .update({ supervisor_status_disbursement: 1 })
+            .where("id", cr_retailer_loan_calculation_idsArr[i])
+            .where("transaction_type", transaction_type);
+
+        }
+
+        if (transaction_type == "REPAYMENT") {
+          await knex("APSISIPDC.cr_retailer_loan_calculation")
+            .update({ supervisor_status_repayment: 1 })
+            .where("id", cr_retailer_loan_calculation_idsArr[i])
+            .where("transaction_type", transaction_type);
+
+        }
+      }
+
+      resolve(sendApiResult(true, "Data Saved and Updated successfully", insert_obj_Id));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+//getAdminFeedbackList
+
+FileUpload.getAdminFeedbackList = function (req) {
+  const { manufacturer_id, page, per_page, transaction_type, start_date, end_date } = req.query;
+  const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
+  const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const adminFeedBack = await knex("APSISIPDC.cr_remarks_feedback")
+        .leftJoin("APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_remarks_feedback.manufacturer_id")
+        .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+        .where("cr_remarks_feedback.manufacturer_id", manufacturer_id)
+        .where("cr_remarks_feedback.transaction_type", transaction_type)
+        .where("cr_remarks_feedback.admin_status", null)
+        .select(
+          "cr_remarks_feedback.id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_remarks_feedback.amount",
+          knex.raw('TO_CHAR("cr_remarks_feedback"."created_at", \'DD-MON-YYYY\') AS feedback_date'),
+          "cr_remarks_feedback.system_id",
+          "cr_remarks_feedback.approve_status",
+          "cr_remarks_feedback.transaction_type",
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (adminFeedBack == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", adminFeedBack));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getAdminFeedbackListHistory = function (req) {
+  const { manufacturer_id, page, per_page, transaction_type, start_date, end_date } = req.query;
+  const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
+  const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const adminFeedBack = await knex("APSISIPDC.cr_remarks_feedback")
+        .leftJoin("APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_remarks_feedback.manufacturer_id")
+        .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+        .where("cr_remarks_feedback.manufacturer_id", manufacturer_id)
+        .where("cr_remarks_feedback.transaction_type", transaction_type)
+        .where("cr_remarks_feedback.admin_status", 1)
+        .select(
+          "cr_remarks_feedback.id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_remarks_feedback.amount",
+          knex.raw('TO_CHAR("cr_remarks_feedback"."created_at", \'DD-MON-YYYY\') AS feedback_date'),
+          "cr_remarks_feedback.system_id",
+          "cr_remarks_feedback.approve_status",
+          "cr_remarks_feedback.transaction_type",
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (adminFeedBack == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", adminFeedBack));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getSupervisorFeedbackListHistory = function (req) {
+  const { supervisor_code } = req.params;
+  const { manufacturer_id, page, per_page, transaction_type, start_date, end_date } = req.query;
+  const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
+  const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const adminFeedBack = await knex("APSISIPDC.cr_remarks_feedback")
+        .leftJoin("APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_remarks_feedback.manufacturer_id")
+        .whereRaw(`"cr_remarks_feedback"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_remarks_feedback"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+        .where("cr_remarks_feedback.manufacturer_id", manufacturer_id)
+        .where("cr_remarks_feedback.supervisor_emp_code", supervisor_code)
+        .where("cr_remarks_feedback.transaction_type", transaction_type)
+        .where("cr_remarks_feedback.supervisor_status", 1)
+        .select(
+          "cr_remarks_feedback.id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_remarks_feedback.amount",
+          knex.raw('TO_CHAR("cr_remarks_feedback"."created_at", \'DD-MON-YYYY\') AS feedback_date'),
+          "cr_remarks_feedback.system_id",
+          "cr_remarks_feedback.approve_status",
+          "cr_remarks_feedback.transaction_type",
+        )
+        .paginate({
+          perPage: per_page,
+          currentPage: page,
+          isLengthAware: true,
+        });
+      if (adminFeedBack == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", adminFeedBack));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getDetailsFeedbackListDisbursementRepayment = function (req) {
+  const { feedback_id, transaction_type } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_retailer_loan_calculation")
+        .leftJoin("APSISIPDC.cr_retailer",
+          "cr_retailer.id",
+          "cr_retailer_loan_calculation.retailer_id")
+        .leftJoin("APSISIPDC.cr_sales_agent",
+          "cr_sales_agent.id",
+          "cr_retailer_loan_calculation.sales_agent_id")
+        .where("cr_retailer_loan_calculation.feedback_reference_id", feedback_id)
+        .where("cr_retailer_loan_calculation.transaction_type", transaction_type)
+        .select(
+          "cr_retailer_loan_calculation.id",
+          knex.raw('TO_CHAR("cr_retailer_loan_calculation"."created_at", \'DD-MON-YYYY\') AS create_date'),
+          "cr_retailer_loan_calculation.retailer_id",
+          "cr_retailer.retailer_name",
+          "cr_retailer_loan_calculation.sales_agent_id",
+          "cr_sales_agent.agent_name",
+          "cr_retailer_loan_calculation.disburshment",
+          "cr_retailer_loan_calculation.repayment",
+          "cr_retailer.phone",
+          "cr_retailer.email"
+        );
+
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+
+FileUpload.updateAdminFeedback = function (req) {
+
+  const { admin_id } = req.params;
+  const {
+    feedback_id,
+    transaction_type
+  } = req.body;
+
+  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const update_obj = {
+        admin_status: 1,
+        admin_id: admin_id,
+        approve_status: "Done",
+        updated_at: new Date(date)
+      }
+
+      var admin_status_update = [];
+      await knex.transaction(async (trx) => {
+        admin_status_update = await trx("APSISIPDC.cr_remarks_feedback")
+          .where("id", feedback_id)
+          .where("transaction_type", transaction_type)
+          .update(update_obj);
+      });
+
+      if (admin_status_update.length <= 0)
+        reject(sendApiResult(false, "Admin Status is not updated"));
+      resolve(
+        sendApiResult(
+          true,
+          "Admin Status Updated Successfully",
+          admin_status_update
+        )
+      );
+
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -541,7 +925,7 @@ FileUpload.getSupervisorList = function (req) {
           "cr_supervisor.supervisor_employee_code",
           "cr_supervisor.region_of_operation"
         )
-        .orderBy("cr_supervisor.id", "asc")
+        .orderBy("cr_supervisor.id", "desc")
         .paginate({
           perPage: per_page,
           currentPage: page,
@@ -724,22 +1108,14 @@ FileUpload.getDisbursementRemarksFeedbackHistoryAdmin = function (req) {
 };
 
 FileUpload.getRepaymentRemarksFeedbackHistorySupervisor = function (req) {
-  const { page, per_page } = req.query;
-  // const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
-  // const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
+  const { supervisor_code } = req.params;
+  const { start_date, end_date, page, per_page } = req.query;
+  const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
+  const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
 
   return new Promise(async (resolve, reject) => {
     try {
       const remarks_result = await knex("APSISIPDC.cr_remarks_feedback")
-        .leftJoin("APSISIPDC.cr_feedback_file_upload",
-          "cr_feedback_file_upload.id",
-          "cr_remarks_feedback.file_upload_id")
-        .leftJoin("APSISIPDC.cr_remarks_loan_calculation_ids",
-          "cr_remarks_loan_calculation_ids.cr_remarks_feedback_id",
-          "cr_remarks_feedback.id")
-        .leftJoin("APSISIPDC.cr_retailer_loan_calculation",
-          "cr_retailer_loan_calculation.id",
-          "cr_remarks_loan_calculation_ids.cr_remarks_loan_calculation_id")
         .where("cr_remarks_loan_calculation_ids.supervisor_status", 1)
         .select(
           "cr_remarks_loan_calculation_ids.id",

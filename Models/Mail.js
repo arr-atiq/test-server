@@ -70,9 +70,9 @@ console.log('mailOptions',mailOptions)
 
   transporter.sendMail(mailOptions, function (error, info) {
     if (error) {
-      informationLog.error(error);
+      console.error(error);
     } else {
-      informationLog.info({
+      console.info({
         message: "Email sent" + info.response,
         time: Date.now(),
       });
