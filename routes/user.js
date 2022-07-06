@@ -8,5 +8,6 @@ router.get("/dashboard/", user.getDashboard);
 router.get("/notifications-count", user.getCountNotifications);
 router.get("/notifications", user.getNotificationsList);
 router.post("/sendotp", user.sendOtp);
+router.put("/compareotp", user.compareOtp);
 
 module.exports = router;

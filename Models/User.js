@@ -279,4 +279,57 @@ User.getNotificationsList = function (req) {
   });
 };
 
+User.compareOtp = function (req) {
+
+  const {
+    retailer_onermn_account,
+    otp
+  } = req.body;
+
+  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const update_obj = {
+        status: 1
+      }
+
+      const otpExpInfo = await knex("APSISIPDC.cr_otp")
+        .where("otp", otp)
+        .where("retailer_onermn_account", retailer_onermn_account)
+        .select(
+          "expiry_time",
+          "created_at"
+        );
+
+      const miliSecondsCreateAt = moment(otpExpInfo[0].created_at).format("x");
+      const miliSecondstoday = moment().format("x");
+
+      const diffTime = miliSecondstoday - miliSecondsCreateAt;
+
+      await knex.transaction(async (trx) => {
+        status_update = await trx("APSISIPDC.cr_otp")
+          .where("otp", otp)
+          .where("retailer_onermn_account", retailer_onermn_account)
+          .whereRaw(`"expiry_time" >= ${diffTime} `)
+          .update(update_obj);
+      });
+
+      if (status_update <= 0)
+        reject(sendApiResult(false, "OTP Status is not updated"));
+      resolve(
+        sendApiResult(
+          true,
+          "OTP Status Updated Successfully",
+          status_update
+        )
+      );
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 module.exports = User;
