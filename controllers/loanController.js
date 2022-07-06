@@ -963,7 +963,10 @@ exports.totalLoan = async (req, res) => {
     loanTenorDays = await findLoanTenorIndays(onermn_acc, SchemeValue[0]);
   }
   let totalValue = await getPrincipalAmount(onermn_acc);
-
+  let retailerPhone;
+  if(totalValue){
+     retailerPhone = await getRetailerPhone(totalValue?.retailer_id);
+  }
   var resPonseVaslue = {
     ...loanTenorDays,
     total_outstanding: totalValue?.total_outstanding.toFixed(2) ?? 0,
@@ -975,6 +978,7 @@ exports.totalLoan = async (req, res) => {
       ).toFixed(2) ?? 0,
     retailer_id: totalValue?.retailer_id,
     onermn_acc: totalValue?.onermn_acc,
+    retailer_phone: retailerPhone[0].phone
   };
   if (totalValue) {
     return res.send(sendApiResult(true, "Find Total Cost", resPonseVaslue));
@@ -1474,3 +1478,10 @@ var getSlapValueDate = async (oneRMn, schemeValue) => {
   .select('official_email')
   .where("id", id)
  }
+ var getRetailerPhone =async (id)=>{
+  return await knex
+  .from("APSISIPDC.cr_retailer")
+  .select('phone')
+  .where("id", id)
+ }
+ 
