@@ -194,10 +194,10 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
         .string(e.agent_name ? e.agent_name : "");
       col_add++;
       if (e.remarks_invalidated.includes("Sales_Agent_NID")) {
-        worksheet.cell(row, col + col_add).number(e.agent_nid ? e.agent_nid : "").style(errorStyle);
+        worksheet.cell(row, col + col_add).string(e.agent_nid ? e.agent_nid : "").style(errorStyle);
         col_add++;
       } else {
-        worksheet.cell(row, col + col_add).number(e.agent_nid ? e.agent_nid : "");
+        worksheet.cell(row, col + col_add).string(e.agent_nid ? e.agent_nid : "");
         col_add++;
       }
       if (e.remarks_invalidated.includes("Phone")) {
@@ -323,10 +323,10 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
         .string(e.agent_name ? e.agent_name : "");
       col_add++;
       if (e.remarks_invalidated.includes("Sales_Agent_NID")) {
-        worksheet.cell(row, col + col_add).number(e.agent_nid ? e.agent_nid : "").style(errorStyle);
+        worksheet.cell(row, col + col_add).string(e.agent_nid ? e.agent_nid : "").style(errorStyle);
         col_add++;
       } else {
-        worksheet.cell(row, col + col_add).number(e.agent_nid ? e.agent_nid : "");
+        worksheet.cell(row, col + col_add).string(e.agent_nid ? e.agent_nid : "");
         col_add++;
       }
       if (e.remarks_invalidated.includes("Phone")) {
