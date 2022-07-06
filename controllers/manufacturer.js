@@ -327,7 +327,6 @@ exports.generateManufacturerUnuploadedReport = async (req, res) => {
       let e = limit_data[i];
 
       let remarks_duplicationsArr = e.remarks_duplications.split(" ");
-      console.log(remarks_duplicationsArr) 
       worksheet.cell(row, col + col_add).number(i + 1);
       col_add++;
       if (remarks_duplicationsArr.includes("Manufacturer_Name")) {
