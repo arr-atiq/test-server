@@ -965,7 +965,7 @@ exports.totalLoan = async (req, res) => {
   let totalValue = await getPrincipalAmount(onermn_acc);
   let retailerPhone;
   if(totalValue){
-     retailerPhone = await getRetailerPhone(totalValue?.retailer_id);
+     retailerPhone = await getRetailerPhone(totalValue?.retailer_id) ?? '';
   }
   var resPonseVaslue = {
     ...loanTenorDays,
@@ -978,7 +978,7 @@ exports.totalLoan = async (req, res) => {
       ).toFixed(2) ?? 0,
     retailer_id: totalValue?.retailer_id,
     onermn_acc: totalValue?.onermn_acc,
-    retailer_phone: retailerPhone[0].phone
+    retailer_phone: retailerPhone[0]?.phone ?? ''
   };
   if (totalValue) {
     return res.send(sendApiResult(true, "Find Total Cost", resPonseVaslue));
