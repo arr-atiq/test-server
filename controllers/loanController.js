@@ -374,7 +374,7 @@ exports.disbursement = async (req, res) => {
         await knex("APSISIPDC.cr_retailer_loan_calculation")
           .insert(loan).returning("id")
           .then(async (response) => {
-
+          console.log('distributor_Email[0].official_email',distributor_Email[0].official_email)
             try{
               const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
                 "email": distributor_Email[0].official_email,
@@ -475,22 +475,22 @@ exports.repayment = async (req, res) => {
      */
   }
   if (principalAmount?.total_outstanding >= repayment) {
-    let repaymentType = {
-      retailer_id: retailer_id,
-      sales_agent_id: sales_agent_id,
-      disbursement_amount: 0,
-      transaction_fee: 0,
-      sales_agent_id: sales_agent_id,
-      repayment: repayment,
-    };
+    // let repaymentType = {
+    //   retailer_id: retailer_id,
+    //   sales_agent_id: sales_agent_id,
+    //   disbursement_amount: 0,
+    //   transaction_fee: 0,
+    //   sales_agent_id: sales_agent_id,
+    //   repayment: repayment,
+    // };
     let calculateRepaymentInterest =
       parseFloat(principalAmount.total_outstanding) -
       parseFloat(principalAmount.principal_outstanding) ?? 0;
 
-    const createRepayment = await knex("APSISIPDC.cr_disbursement")
-      .insert(repaymentType)
-      .returning("id");
-    if (createRepayment) {
+    // const createRepayment = await knex("APSISIPDC.cr_disbursement")
+    //   .insert(repaymentType)
+    //   .returning("id");
+    // if (createRepayment) {
       // if(getSchemeId[0]?.transaction_type == 'SLAB'){
       //   const now = moment.utc();
       //   var end = moment(dateSlab);
@@ -896,7 +896,7 @@ exports.repayment = async (req, res) => {
             sendApiResult(true, "Sucessly Repayment", repaymentValueAll)
           );
         });
-    }
+    // }
 
     //let totalLimit = parseInt(getLimitAmountValue[0]?.crm_approve_limit) - parseInt(getLimitAmountValue[0]?.current_limit)
   } else {
@@ -1478,6 +1478,7 @@ var getSlapValueDate = async (oneRMn, schemeValue) => {
   .select('official_email')
   .where("id", id)
  }
+ 
  var getRetailerPhone =async (id)=>{
   return await knex
   .from("APSISIPDC.cr_retailer")
