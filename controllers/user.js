@@ -52,8 +52,7 @@ exports.sendOtp = async (req, res) => {
     var four_digit_otp = (Math.floor(100000 + Math.random() * 900000)).toString();
     console.log("........",four_digit_otp)
     four_digit_otp = four_digit_otp.substring(-2);
-    console.log("----------",four_digit_otp)
-    let sms_body = `You have requested loan of BDT ${disbursement_amount} and repaid BDT ${repayment_amount}. Please share OTP with the agent ID <${sales_agent_id}> if agreed: FOUR DIGIT OTP - ${four_digit_otp}`;
+    let sms_body = `You have requested loan of BDT ${disbursement_amount} and repaid BDT ${repayment_amount}. Please share OTP with the agent ID <${sales_agent_id}> if agreed: - ${four_digit_otp}`;
     const { SMS_URL, MASKING, SMS_USERNAME, SMS_PASSWORD, MSGTYPE } = process.env;
     const response = await axios.get(`${SMS_URL}?masking=${MASKING}&userName=${SMS_USERNAME}&password=${SMS_PASSWORD}&MsgType=${MSGTYPE}&receiver=${retailer_phone_number}&message=${sms_body}`)
     if (response) {
