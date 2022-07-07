@@ -144,7 +144,7 @@ Retailer.getRetailerList = function (req) {
           "kyc_status",
           "cib_status"
         )
-         .orderBy("id", "desc")
+        .orderBy("id", "desc")
         .paginate({
           perPage: per_page,
           currentPage: page,
@@ -917,11 +917,11 @@ Retailer.updateLimitMapping = async (req, res) => {
           const updateData = await trx('APSISIPDC.cr_retailer_manu_scheme_mapping')
             .where({ ac_number_1rmn: req.params.rmnID })
             .update({
-              crm_approve_limit: limitValue, 
+              crm_approve_limit: limitValue,
               crm_approve_date: knex.fn.now(),
               crm_approve_by: user_id
             });
-          console.log('updateData',updateData)
+          console.log('updateData', updateData)
           if (updateData <= 0) res.send(sendApiResult(false, 'Could not Found ac_number_1rmn'));
           resolve(sendApiResult(
             true,
@@ -1489,27 +1489,37 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
           }
         })
         .select(
-          "cr_retailer.retailer_name",
-          "cr_retailer.retailer_code",
-          "cr_retailer.district",
-          "cr_manufacturer.manufacturer_name",
-          "cr_distributor.distributor_name",
-          "cr_retailer_manu_scheme_mapping.crm_approve_limit",
-          "cr_retailer_loan_calculation.transaction_cost",
-          "cr_retailer_loan_calculation.total_outstanding",
-          "cr_retailer_loan_calculation.repayment"
-        )
-        .paginate({
-          perPage: per_page,
-          currentPage: page,
-          isLengthAware: true,
-        });
+          //"cr_retailer.retailer_name",
+          // "cr_retailer.retailer_code",
+          // "cr_retailer.district",
+          // "cr_manufacturer.manufacturer_name",
+          //"cr_distributor.distributor_name",
+          //"cr_retailer_manu_scheme_mapping.crm_approve_limit",
+          "cr_retailer_loan_calculation.onermn_acc",
+          // "cr_retailer_loan_calculation.total_outstanding",
+          //"cr_retailer_loan_calculation.repayment"
+        ).distinct();
+
+      console.log(filter_report_data);
+      console.log(filter_report_data.length);
+
+      for (let i = 0; i < filter_report_data.length; i++) {
+        console.log(filter_report_data[i].onermn_acc);
+        const transaction_done = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .select(
+            knex.raw(`SUM("disburshment") AS total_amount_transaction_done`))
+            ;
+          //.where(filter_report_data[i].onermn_acc);
+
+        console.log(transaction_done);
+
+      }
 
       if (filter_report_data == 0) reject(sendApiResult(false, "Not found."));
 
       resolve(sendApiResult(true, "Data filter successfully", filter_report_data));
     } catch (error) {
-      res.send(sendApiResult(false, error.message));
+      reject(sendApiResult(false, error.message));
     }
 
   });

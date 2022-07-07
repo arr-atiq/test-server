@@ -300,21 +300,27 @@ User.compareOtp = function (req) {
         .where("retailer_onermn_account", retailer_onermn_account)
         .select(
           "expiry_time",
+          "status",
           "created_at"
         );
+      let status_update = 0;
+      if (otpExpInfo.length != 0) {
+        const miliSecondsCreateAt = moment(otpExpInfo[0].created_at).format("x");
+        const miliSecondstoday = moment().format("x");
+        const diffTime = miliSecondstoday - miliSecondsCreateAt;
 
-      const miliSecondsCreateAt = moment(otpExpInfo[0].created_at).format("x");
-      const miliSecondstoday = moment().format("x");
+        if (otpExpInfo[0].status == 1) {
+          reject(sendApiResult(false, "OTP is used previoiusly"));
+        }
 
-      const diffTime = miliSecondstoday - miliSecondsCreateAt;
-
-      await knex.transaction(async (trx) => {
-        status_update = await trx("APSISIPDC.cr_otp")
-          .where("otp", otp)
-          .where("retailer_onermn_account", retailer_onermn_account)
-          .whereRaw(`"expiry_time" >= ${diffTime} `)
-          .update(update_obj);
-      });
+        await knex.transaction(async (trx) => {
+          status_update = await trx("APSISIPDC.cr_otp")
+            .where("otp", otp)
+            .where("retailer_onermn_account", retailer_onermn_account)
+            .whereRaw(`"expiry_time" >= ${diffTime} `)
+            .update(update_obj);
+        });
+      }
 
       if (status_update <= 0)
         reject(sendApiResult(false, "OTP Status is not updated"));

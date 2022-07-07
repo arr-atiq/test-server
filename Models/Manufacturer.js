@@ -50,6 +50,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .from("APSISIPDC.cr_manufacturer_nature_business")
             .select("id", "name")
             .where("status", "Active");
+            
           if (Object.keys(nature_business).length != 0) {
             for (let i = 0; i < nature_business.length; i++) {
               nature_business_arr[nature_business[i].name] =
