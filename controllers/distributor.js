@@ -242,7 +242,7 @@ exports.generateDistributorUnuploadedReport = async (req, res) => {
       col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : "");
       col_add++;
-      worksheet.cell(row, col + col_add).number(e.autho_rep_nid ? e.autho_rep_nid : "");
+      worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.autho_rep_designation ? e.autho_rep_designation : "");
       col_add++;
@@ -439,10 +439,10 @@ exports.generateDistributorInvalidatedReport = async (req, res) => {
       worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : "");
       col_add++;
       if (remarks_invalidatedArr.includes("NID")) {
-        worksheet.cell(row, col + col_add).number(e.autho_rep_nid ? e.autho_rep_nid : "").style(errorStyle);
+        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "").style(errorStyle);
         col_add++;
       } else {
-        worksheet.cell(row, col + col_add).number(e.autho_rep_nid ? e.autho_rep_nid : "");
+        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "");
         col_add++;
       }
       worksheet.cell(row, col + col_add).string(e.autho_rep_designation ? e.autho_rep_designation : "");

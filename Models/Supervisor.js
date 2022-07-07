@@ -69,6 +69,38 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 continue;
               }
 
+              const distributor_id_check = rows[index].Distributor;
+              const manufacturer_id_check = rows[index].Manufacturer;
+
+              const check_exist_manu_dis = await knex("APSISIPDC.cr_manufacturer_vs_distributor")
+                .where(
+                  "cr_manufacturer_vs_distributor.distributor_id", distributor_id_check
+                )
+                .where(
+                  "cr_manufacturer_vs_distributor.manufacturer_id", manufacturer_id_check
+                )
+                .select("cr_manufacturer_vs_distributor.id");
+
+              if (check_exist_manu_dis.length == 0) {
+
+                let invalidStr = "distributor manufacturer mapping is not correct";
+
+                const temp_data = {
+                  Supervisor_Name: rows[index].Supervisor_Name,
+                  Supervisor_NID: rows[index].Supervisor_NID,
+                  Phone: rows[index].Phone,
+                  Manufacturer: rows[index].Manufacturer,
+                  Supervisor_Employee_Code:
+                    rows[index].Supervisor_Employee_Code,
+                  Region_of_Operation: rows[index].Region_of_Operation,
+                  Distributor: rows[index].Distributor,
+                  Remarks_Invalidated: invalidStr,
+                };
+
+                invalidate_data_array.push(temp_data);
+                continue;
+              }
+
               const checkNidSalesAgent = await knex("APSISIPDC.cr_sales_agent")
                 .where("agent_nid", rows[index].Supervisor_NID)
                 .select(
