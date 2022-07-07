@@ -193,21 +193,21 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
         .cell(row, col + col_add)
         .string(e.agent_name ? e.agent_name : "");
       col_add++;
-      if (e.remarks_invalidated.includes("Sales_Agent_NID")) {
+      if (e.remarks_duplications.includes("Sales_Agent_NID")) {
         worksheet.cell(row, col + col_add).string(e.agent_nid ? e.agent_nid : "").style(errorStyle);
         col_add++;
       } else {
         worksheet.cell(row, col + col_add).string(e.agent_nid ? e.agent_nid : "");
         col_add++;
       }
-      if (e.remarks_invalidated.includes("Phone")) {
+      if (e.remarks_duplications.includes("Phone")) {
         worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "").style(errorStyle);
         col_add++;
       } else {
         worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
         col_add++;
       }
-      if (e.remarks_invalidated.includes("Sales_Agent_Employee_Code")) {
+      if (e.remarks_duplications.includes("Sales_Agent_Employee_Code")) {
         worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "").style(errorStyle);
         col_add++;
       } else {
