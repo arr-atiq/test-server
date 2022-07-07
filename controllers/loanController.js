@@ -1478,6 +1478,7 @@ var getSlapValueDate = async (oneRMn, schemeValue) => {
   .select('official_email')
   .where("id", id)
  }
+ 
  var getRetailerPhone =async (id)=>{
   return await knex
   .from("APSISIPDC.cr_retailer")
