@@ -36,7 +36,7 @@ exports.sendEmail = async (req, res) => {
 
   const transporter = nodemailer.createTransport(transportOptions);
   const mailOptions = {
-    from: FROM,
+    from: EMAIL,
     to: "asad.zaman@apsissolutions.com",
     subject: "Email Functionality Quick Test",
     html: "This is a test message!\n",
@@ -60,7 +60,7 @@ const transporter = nodemailer.createTransport(transportOptions);
 console.log('mailbody',req.body)
 
 const mailOptions = {
-  from: FROM,
+  from: EMAIL,
   to: req.body.email,
   subject: req.body.mail_subject,
   html: req.body.mail_body,
