@@ -91,7 +91,7 @@ exports.sendOtp = async (req, res) => {
         await knex("APSISIPDC.cr_otp").insert(object);
         
       }
-      res.send(sendApiResult(true, "OTP Sent!"));
+      res.send(sendApiResult(true, "OTP Sent!", 300000));
 
     }
     else {
