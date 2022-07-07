@@ -126,6 +126,30 @@ paths:
           description: Invalid Fields
         '500':
           description: Internal Server Error  
+  /user/compareotp:
+    put:
+      tags:
+        - OTP
+      summary: OTP
+      description: API for OTP checking/verification
+      parameters:
+        - in: body
+          name: body
+          description: OTP Genaration 
+          required: true
+          schema:
+            $ref: "#/definitions/otpVerificaton"
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: Otp verification successfull
+          schema:
+            $ref: "#/definitions/ApiResponse"
+        "400":
+          description: Invalid Fields
+        '500':
+          description: Internal Server Error            
   /manufacturer/manufacturers:
     get:
       tags:
@@ -1876,3 +1900,14 @@ definitions:
       retailer_phone_number:
         type: string
         description: Please provide retailer phone number from 1rmn account details api       
+  otpVerificaton:
+    properties:      
+      otp:
+        type: integer
+        description: OTP you will get from Retailer phone
+      retailer_onermn_account:
+        type: string
+        description: Provide retailer 1RMN account
+
+
+        
