@@ -634,6 +634,12 @@ exports.ValidatePhoneNumber = function (phoneNumber) {
 };
 
 exports.ValidateNID = function (nid) {
+
+  const nidStr = nid.toString();
+  if (nidStr.includes(".") || nidStr.includes("-") || nidStr.includes("+")) {
+    return false;
+  }
+
   if (!isNaN(nid)) {
     const nidLength = nid.toString().length;
     const nidValidLengthArr = [10, 13, 17];
@@ -674,21 +680,21 @@ exports.duplication_manufacturer = async function (reg_no) {
       reg
     )
     .select("id");
-    console.log(data);
+  console.log(data);
 
   const duplication_check_val = data.length;
   console.log(duplication_check_val);
   await duplication_check_val;
 };
 
-exports.hasDupsManuNameInsertArray = function(array) {
+exports.hasDupsManuNameInsertArray = function (array) {
 
-  return array.map(function(value) {
+  return array.map(function (value) {
     return value.Manufacturer_Name;
 
-  }).some(function(value, index, array) { 
-       return array.indexOf(value) !== array.lastIndexOf(value);  
-     })
+  }).some(function (value, index, array) {
+    return array.indexOf(value) !== array.lastIndexOf(value);
+  })
 };
 
 exports.timeout = (ms) => {
