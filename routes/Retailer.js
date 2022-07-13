@@ -24,6 +24,12 @@ router.get("/retailer-district", retailer.getRetailerDistrict);
 router.get("/retailer-individual-report", retailer.generateRetailersIndividualReport);
 router.get("/retailer-outstanding-report", retailer.generateRetailerOutstandingReport)
 //retailer-report-2-comprehensive
+
+//retailer-report-3
+router.get("/retailer-loan-status-report", retailer.generateRetailersLoanStatusReport);
+router.get("/retailer-loan-status-report-view", retailer.generateRetailersMonthlyReport);
+
+//retailer-report-3
 router.post("/retailer-upload-list", retailer.retailerUploadList);
 
 router.post(

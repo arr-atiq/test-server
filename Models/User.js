@@ -230,6 +230,7 @@ User.getCountNotifications = function (req) {
     }
   });
 };
+
 User.getNotificationsList = function (req) {
   const { salesagent_id, page, per_page } = req.query;
 
@@ -332,6 +333,133 @@ User.compareOtp = function (req) {
         )
       );
 
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+
+User.getCollectionDisbursementGraphData = function (req) {
+  const { manufacturer_id, distributor_id, region_opearation, start_date, end_date } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const startDate = moment(start_date, 'YYYY-MM-DD');
+      const endDate = moment(end_date, 'YYYY-MM-DD').add(1, 'days');
+      let daysDiff = 0;
+
+      if (start_date && end_date) {
+        daysDiff = moment.duration(endDate.diff(startDate)).asDays();
+      }
+
+      const diffWeeks = (parseInt(daysDiff / 7));
+      const remainingDays = (parseInt(daysDiff % 7));
+
+      console.log(diffWeeks);
+      console.log(remainingDays);
+
+      const graph_info_arr = [];
+
+      let date_start_week_iteration = moment(start_date).startOf('date').format('YYYY-MM-DD');
+      let weeks = 0;
+
+      for (let i = 0; i < diffWeeks; i++) {
+        let startWeekDate = moment(date_start_week_iteration).startOf('date').format('YYYY-MM-DD');
+        let endWeekDate = moment(date_start_week_iteration).add(6, 'days').startOf('date').format('YYYY-MM-DD');
+        let endWeekDateNextDay = moment(endWeekDate).add(1, 'days').startOf('date').format('YYYY-MM-DD');
+        date_start_week_iteration = endWeekDateNextDay;
+        weeks = weeks + 1;
+
+        const data_info_temp = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin("APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id")
+          .leftJoin("APSISIPDC.cr_retailer",
+            "cr_retailer.id",
+            "cr_retailer_loan_calculation.retailer_id")
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (region_opearation) {
+              this.where("cr_retailer.region_opearation", region_opearation)
+            }
+            if (start_date && end_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startWeekDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${endWeekDateNextDay}', 'YYYY-MM-DD')`)
+            }
+          })
+          .select(
+            knex.raw('SUM("cr_retailer_loan_calculation"."disburshment") AS Disbursement'),
+            knex.raw('SUM("cr_retailer_loan_calculation"."repayment") AS Repayment')
+          );
+
+        console.log(data_info_temp);
+
+        const graph_generate_info = {
+          Week: weeks,
+          Disbursement: data_info_temp[0].DISBURSEMENT != null ? data_info_temp[0].DISBURSEMENT : 0,
+          Collection: data_info_temp[0].REPAYMENT != null ? data_info_temp[0].REPAYMENT : 0,
+          Date: moment(startWeekDate).format('DD MMM YY') + " - " + moment(endWeekDate).format('DD MMM YY')
+        }
+
+        graph_info_arr.push(graph_generate_info);
+
+      }
+
+      if (remainingDays > 0) {
+        let startWeekDate = moment(date_start_week_iteration).startOf('date').format('YYYY-MM-DD');
+        let endWeekDate = moment(date_start_week_iteration).add(remainingDays-1, 'days').startOf('date').format('YYYY-MM-DD');
+        let endWeekDateNextDay = moment(endWeekDate).add(1, 'days').startOf('date').format('YYYY-MM-DD');
+        date_start_week_iteration = endWeekDateNextDay;
+        weeks = weeks + 1;
+
+        const data_info_temp = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin("APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id")
+          .leftJoin("APSISIPDC.cr_retailer",
+            "cr_retailer.id",
+            "cr_retailer_loan_calculation.retailer_id")
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (region_opearation) {
+              this.where("cr_retailer.region_opearation", region_opearation)
+            }
+            if (start_date && end_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startWeekDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${endWeekDateNextDay}', 'YYYY-MM-DD')`)
+            }
+          })
+          .select(
+            knex.raw('SUM("cr_retailer_loan_calculation"."disburshment") AS Disbursement'),
+            knex.raw('SUM("cr_retailer_loan_calculation"."repayment") AS Repayment')
+          );
+
+        console.log(data_info_temp);
+
+        const graph_generate_info = {
+          Week: weeks,
+          Disbursement: data_info_temp[0].DISBURSEMENT != null ? data_info_temp[0].DISBURSEMENT : 0,
+          Collection: data_info_temp[0].REPAYMENT != null ? data_info_temp[0].REPAYMENT : 0,
+          Date: moment(startWeekDate).format('DD MMM YY') + " - " + moment(endWeekDate).format('DD MMM YY')
+        }
+
+        graph_info_arr.push(graph_generate_info);
+
+      }
+      if (graph_info_arr == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", graph_info_arr));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
