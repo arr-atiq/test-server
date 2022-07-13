@@ -21,6 +21,17 @@ exports.getDashboard = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+//dashboard disbursement collection time series graph
+exports.getCollectionDisbursementGraphData = async (req, res) => {
+  try {
+    const result = await User.getCollectionDisbursementGraphData(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.getCountNotifications = async (req, res) => {
   try {
     const result = await User.getCountNotifications(req);
