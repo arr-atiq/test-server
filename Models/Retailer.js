@@ -302,7 +302,7 @@ Retailer.checkRetailerEligibility = function (req) {
                   const checkMasterRetailer = await trx("APSISIPDC.cr_retailer")
                     .select("id")
                     // .where("retailer_code", value.retailer_code);
-                    .where("retailer_nid", parseInt(value.retailer_nid));
+                    .where("retailer_nid", value.retailer_nid.toString());
 
                   if (Object.keys(checkMasterRetailer).length == 0) {
                     const temp_r_number_rn = ++max_r_number_rn;
@@ -313,7 +313,7 @@ Retailer.checkRetailerEligibility = function (req) {
                       master_loan_id: '1001DANA' + await addLeadingZeros(++max_master_loan_id, 8),
                       customer_id: parseInt(++max_customer_id),
                       retailer_name: value.retailer_name,
-                      retailer_nid: parseInt(value.retailer_nid),
+                      retailer_nid: value.retailer_nid.toString(),
                       phone: value.phone,
                       email: value.email,
                       retailer_type: parseInt(retailerType[value.retailer_type]),
@@ -334,7 +334,7 @@ Retailer.checkRetailerEligibility = function (req) {
                       district: value.district,
                       division: value.division,
                       autho_rep_full_name: value.autho_rep_full_name,
-                      autho_rep_nid: parseInt(value.autho_rep_nid),
+                      autho_rep_nid: value.autho_rep_nid.toString(),
                       autho_rep_phone: value.autho_rep_phone,
                       autho_rep_email: value.autho_rep_email,
                       region_operation: value.region_operation,
@@ -411,7 +411,7 @@ Retailer.checkRetailerEligibility = function (req) {
                     if (Object.keys(checkRetailerManuMapping).length == 0) {
                       let max_r_number_rmn = 0;
                       let retailerInfo = await trx("APSISIPDC.cr_retailer")
-                        .where("retailer_nid", parseInt(value.retailer_nid))
+                        .where("retailer_nid", value.retailer_nid.toString())
                         .select("id AS retailer_id")
                         .first();
 
@@ -1419,7 +1419,7 @@ Retailer.retailerListExcelDownload = function (req) {
         col_add++;
         worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : "");
         col_add++;
-        worksheet.cell(row, col + col_add).number(e.retailer_nid ? e.retailer_nid : "");
+        worksheet.cell(row, col + col_add).string(e.retailer_nid ? e.retailer_nid : "");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
         col_add++;
@@ -1443,7 +1443,7 @@ Retailer.retailerListExcelDownload = function (req) {
         col_add++;
         worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
         col_add++;
-        worksheet.cell(row, col + col_add).number(e.autho_rep_nid ? e.autho_rep_nid : "");
+        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.duration_sales_data ? e.duration_sales_data : "");
         col_add++;
