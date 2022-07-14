@@ -45,6 +45,15 @@ exports.getDistributorList = async (req, res) => {
   }
 };
 
+exports.getDistributorListDropDown = async (req, res) => {
+  try {
+    const result = await distModel.getDistributorListDropDown(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.deleteDistributor = async (req, res) => {
   try {
     const distributor = await distModel.deleteDistributor(req.params);
