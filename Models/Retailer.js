@@ -1561,7 +1561,7 @@ Retailer.retailerIneligibleExcelDownload = function (req) {
         col_add++;
         worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : "");
         col_add++;
-        worksheet.cell(row, col + col_add).string(e.retailer_nid ? retailer_nid : "");
+        worksheet.cell(row, col + col_add).string(e.retailer_nid ? e.retailer_nid : "");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
         col_add++;
@@ -1601,7 +1601,7 @@ Retailer.retailerIneligibleExcelDownload = function (req) {
         col_add++;
         worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : "");
         col_add++;
-        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? autho_rep_nid : "");
+        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? e.autho_rep_nid : "");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
         col_add++;
