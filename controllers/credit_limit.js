@@ -1,5 +1,3 @@
-const logger = require("pino")();
-
 module.exports.creditLimit = async (
   uninterrupt,
   min_avg_sale,

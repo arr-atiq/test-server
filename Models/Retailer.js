@@ -189,10 +189,11 @@ Retailer.checkRetailerEligibility = function (req) {
           const distributorSql = await trx("APSISIPDC.cr_distributor")
             .select("id", "distributor_code")
             .where("status", "Active");
-
+          console.log(distributorSql)
           const distributorList = [];
           for (const [key, value] of Object.entries(distributorSql)) {
             distributorList[value.distributor_code] = value.id;
+            console.log(distributorList[value.distributor_code], value.id)
           }
 
           const retailerTypeSql = await trx("APSISIPDC.cr_retailer_type")
@@ -247,6 +248,28 @@ Retailer.checkRetailerEligibility = function (req) {
               let max_master_loan_id = (max_master_loan_info[0].max_master_loan_id != null) ? max_master_loan_info[0].max_master_loan_id : 0;
               // let master_loan_id = '1001DANA' + await addLeadingZeros(++max_master_loan_id, 8);
               for (const [key, value] of Object.entries(bulkRetailerInfoList)) {
+                console.log(key, value, bulkRetailerInfoList)
+                if(!value.manufacturer || !distributorList[value.distributor_code])
+                {
+
+
+
+                 await trx("APSISIPDC.cr_retailer_temp")
+                    .where({ id: value.id })
+                    .update({
+                      eligibility_status: "Failed",
+                      reason: "manufacture | Distributor mapping is not correct",
+                      updated_at: new Date(),
+                    });
+                  ++disqualifiedOutletCount;
+
+
+
+
+
+                }
+                else
+                {
                 let disqualifiedReason = "";
                 validNID = ValidateNID(value.retailer_nid);
                 if (validNID == false) {
@@ -340,7 +363,7 @@ Retailer.checkRetailerEligibility = function (req) {
                     let temp_r_number_rmn = ++max_r_number_rmn;
                     // console.log("masterRetailerInsertLog " + r_number_rmn + " => " + temp_r_number_rmn);
 
-
+                    console.log("--------------",value.manufacturer,  distributorList[value.distributor_code])
                     let loan_id_counter = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
                       .where("manufacturer_id", value.manufacturer)
                       .where("distributor_id", distributorList[value.distributor_code])
@@ -458,6 +481,7 @@ Retailer.checkRetailerEligibility = function (req) {
                     }
                   }
                 }
+              }
               }
               await trx("APSISIPDC.cr_retailer_upload_log")
                 .where({ retailer_upload_id: log.retailer_upload_id })
