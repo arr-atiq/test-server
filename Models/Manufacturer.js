@@ -828,7 +828,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
         .then((result) => { })
         .catch((error) => {
           reject(sendApiResult(false, "Data not inserted."));
-          // logger.info(error);
         });
     } catch (error) {
 

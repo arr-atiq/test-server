@@ -1,4 +1,3 @@
-const logger = require("pino")();
 const knex = require("../config/database");
 const Joi = require("joi");
 const { sendApiResult } = require("./helperController");
