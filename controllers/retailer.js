@@ -514,6 +514,16 @@ exports.retailerListExcelDownload = async (req, res) => {
 };
 
 
+//retailer-ineligible-list
+exports.retailerIneligibleExcelDownload = async (req, res) => {
+  try {
+    const result = await model.retailerIneligibleExcelDownload(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 //reporting 
 
 exports.generateRetailersIndividualTotalReport = async (req, res) => {

@@ -1467,6 +1467,196 @@ Retailer.retailerListExcelDownload = function (req) {
   })
 }
 
+Retailer.retailerIneligibleExcelDownload = function (req) {
+
+  const { retailer_upload_id } = req.query;
+  return new Promise(async (resolve, reject) => {
+    const result = await knex("APSISIPDC.cr_retailer_temp")
+      .select()
+      .where("retailer_upload_id", retailer_upload_id)
+      .where("eligibility_status", "Failed");
+
+    if (result.length == 0) {
+      reject(sendApiResult(false, "No Ineligible Retailer list Found."));
+    } else {
+      const today = moment(new Date()).format('YYYY-MM-DD');
+      var workbook = new excel.Workbook();
+      var worksheet = workbook.addWorksheet(("Retailer Ineligible List"));
+      var headerStyle = workbook.createStyle({
+        fill: {
+          type: "pattern",
+          patternType: "solid",
+          bgColor: "#E1F0FF",
+          fgColor: "#E1F0FF"
+        },
+        font: {
+          color: "#000000",
+          size: "10",
+          bold: true
+        }
+      });
+
+      var headers = [
+        "Sr.",
+        "Retailer Name",
+        "Retailer NID",
+        "Retailer Phone",
+        "Retailer Email",
+        "Retailer Type",
+        "Retailer Entity Type",
+        "Retailer Code",
+        "Manufacturer",
+        "Distributor Code",
+        "Retailer TIN",
+        "Corporate Registration No",
+        "Trade License No",
+        "Outlet Address",
+        "Outlet Address 1",
+        "Outlet Address 2",
+        "Postal Code",
+        "Post Office",
+        "Thana",
+        "District",
+        "Division",
+        "Name of Authorized Representative",
+        "NID No of Authorized Representative",
+        "Phone No of Authorized Representative",
+        "Duration Sales Data",
+        "Scheme ID",
+        "Month 1",
+        "Month 2",
+        "Month 3",
+        "Month 4",
+        "Month 5",
+        "Month 6",
+        "Month 7",
+        "Month 8",
+        "Month 9",
+        "Month 10",
+        "Month 11",
+        "Month 12",
+        "Eligibility Status",
+        "Reason",
+        "Created At",
+        "Sales Agent ID"
+      ];
+
+      var col = 1;
+      var row = 1;
+      var col_add = 0;
+
+      headers.forEach((e) => {
+        worksheet
+          .cell(row, col + col_add)
+          .string(e)
+          .style(headerStyle);
+        col_add++;
+      });
+
+      row = 2;
+      for (let i = 0; i < result.length; i++) {
+        var col_add = 0;
+        let e = result[i];
+        worksheet.cell(row, col + col_add).number((i + 1));
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_nid ? retailer_nid : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.email ? e.email : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_type ? e.retailer_type : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.type_of_entity ? e.type_of_entity : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_code ? e.retailer_code : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.manufacturer ? e.manufacturer : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.distributor_code ? e.distributor_code : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_tin ? e.retailer_tin : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.corporate_registration_no ? e.corporate_registration_no : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.trade_license_no ? e.trade_license_no : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.outlet_address ? e.outlet_address : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.outlet_address_1 ? e.outlet_address_1 : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.outlet_address_2 ? e.outlet_address_2 : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.postal_code ? e.postal_code : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.post_office ? e.post_office : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.thana ? e.thana : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.district ? e.district : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.division ? e.division : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? autho_rep_nid : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.duration_sales_data ? e.duration_sales_data : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.scheme_id ? e.scheme_id : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_1 ? e.month_1 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_2 ? e.month_2 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_3 ? e.month_3 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_4 ? e.month_4 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_5 ? e.month_5 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_6 ? e.month_6 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_7 ? e.month_7 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_8 ? e.month_8 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_9 ? e.month_9 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_10 ? e.month_10 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_11 ? e.month_11 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.month_12 ? e.month_12 : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.eligibility_status ? e.eligibility_status : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.reason ? e.reason : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.created_by ? e.created_by : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.sales_agent_id ? e.sales_agent_id : 0);
+        col_add++;
+        row++;
+      }
+      const file_path = 'public/retailer/';
+      if (!fs.existsSync(file_path)) {
+        fs.mkdirSync(file_path, { recursive: true });
+      }
+      await knex("APSISIPDC.cr_retailer_temp").del()
+        .where("retailer_upload_id", retailer_upload_id)
+        .where("eligibility_status", "Failed");
+      workbook.write(file_path + "Retailer_Ineligible_List(" + today + ").xlsx");
+      const fileName = "./retailer/" + "Retailer_Ineligible_List(" + today + ").xlsx";
+      await timeout(1500);
+      resolve(sendApiResult(true, " Retailer Ineligible List Download", fileName));
+    }
+  })
+}
 
 Retailer.getRetailerDistrict = function (req) {
 
@@ -1536,7 +1726,7 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
       const retailer_performance_info_Arr = [];
 
       for (let i = 0; i < filter_report_data.length; i++) {
-        const transaction_done = await knex("APSISIPDC.cr_retailer")
+        const disbursement_amount = await knex("APSISIPDC.cr_retailer")
           .leftJoin(
             "APSISIPDC.cr_retailer_manu_scheme_mapping",
             "cr_retailer_manu_scheme_mapping.retailer_id",
@@ -1557,7 +1747,7 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
-          .sum("cr_retailer_loan_calculation.disburshment as total_amount_transaction_done")
+          .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
@@ -1757,10 +1947,13 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             }
           });
 
+        const total_amount_transaction_done = disbursement_amount[0].total_disbursement_amount + repayment_amount[0].total_repayment_amount;
+
         const retailer_performance_info = {
-          total_amount_transaction_done: transaction_done[0].total_amount_transaction_done,
+          total_disbursement_amount: disbursement_amount[0].total_disbursement_amount,
           total_repayment_amount: repayment_amount[0].total_repayment_amount,
           total_outstanding: total_outstanding_amount.total_outstanding,
+          total_amount_transaction_done: total_amount_transaction_done,
           total_transaction_cost: transaction_cost[0].total_transaction_cost,
           retailer_name: retailer_info[0].retailer_name,
           retailer_code: retailer_info[0].retailer_code,
@@ -2095,7 +2288,7 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
       const retailer_performance_info_Arr = [];
 
       for (let i = 0; i < filter_report_data.length; i++) {
-        const transaction_done = await knex("APSISIPDC.cr_retailer")
+        const disbursement_amount = await knex("APSISIPDC.cr_retailer")
           .leftJoin(
             "APSISIPDC.cr_retailer_manu_scheme_mapping",
             "cr_retailer_manu_scheme_mapping.retailer_id",
@@ -2116,7 +2309,7 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
-          .sum("cr_retailer_loan_calculation.disburshment as total_amount_transaction_done")
+          .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
@@ -2315,11 +2508,13 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
             }
           });
+        const total_amount_transaction_done = disbursement_amount[0].total_disbursement_amount + repayment_amount[0].total_repayment_amount;
 
         const retailer_performance_info = {
-          total_amount_transaction_done: transaction_done[0].total_amount_transaction_done,
+          total_disbursement_amount: disbursement_amount[0].total_disbursement_amount,
           total_repayment_amount: repayment_amount[0].total_repayment_amount,
           total_outstanding: total_outstanding_amount.total_outstanding,
+          total_amount_transaction_done: total_amount_transaction_done,
           total_transaction_cost: transaction_cost[0].total_transaction_cost,
           retailer_name: retailer_info[0].retailer_name,
           retailer_code: retailer_info[0].retailer_code,
@@ -2348,6 +2543,7 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
         "Total_outstanding_amount",
         "Total_amount_of_transaction_done",
         "Total_amount_of_repayment",
+        "Total_amount_of_disbursement",
         "One RMN Account"
       ];
       const workbook = new excel.Workbook();
@@ -2411,6 +2607,8 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
         col_add++;
         worksheet.cell(row, col + col_add).number(e.total_repayment_amount ? e.total_repayment_amount : 0);
         col_add++;
+        worksheet.cell(row, col + col_add).number(e.total_disbursement_amount ? e.total_disbursement_amount : 0);
+        col_add++;
         worksheet.cell(row, col + col_add).string(e.onermn_acc ? e.onermn_acc : "");
         col_add++;
 
@@ -2449,7 +2647,7 @@ Retailer.generateRetailersLoanStatusReport = async (req, res) => {
           "cr_retailer_loan_calculation.onermn_acc"
         ).distinct();
 
-      if(onermn_acc_data == 0){
+      if (onermn_acc_data == 0) {
         reject(sendApiResult(false, "Account Number Not found between the date range"))
       }
 
