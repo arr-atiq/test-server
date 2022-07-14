@@ -718,7 +718,23 @@ FileUpload.insertExcelData = function (rows, filename, req) {
     logger.info(error, "Promise error");
   });
 };
+FileUpload.getDistributorListDropDown = function (req) {
 
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_distributor")
+        .select(
+          "cr_distributor.id",
+          "cr_distributor.distributor_name"
+        )
+        .orderBy("cr_distributor.id", "desc");
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 FileUpload.getDistributorList = function (req) {
   const { page, per_page } = req.query;
 

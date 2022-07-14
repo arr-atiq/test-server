@@ -165,6 +165,16 @@ exports.getManufacturerList = async (req, res) => {
   }
 };
 
+exports.getManufacturerListDropDown = async (req, res) => {
+  try {
+    const result = await manuFacModel.getManufacturerListDropDown(req);
+    result.total_amount = result.data.total_amount;
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.deleteManufacturer = async (req, res) => {
   try {
     const manufacturer = await manuFacModel.deleteManufacturer(req.params);

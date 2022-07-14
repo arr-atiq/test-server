@@ -50,7 +50,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             .from("APSISIPDC.cr_manufacturer_nature_business")
             .select("id", "name")
             .where("status", "Active");
-            
+
           if (Object.keys(nature_business).length != 0) {
             for (let i = 0; i < nature_business.length; i++) {
               nature_business_arr[nature_business[i].name] =
@@ -720,8 +720,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
-                 try{
-                  const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
+                try {
+                  const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
                     "email": data_array[index].Official_Email_ID,
                     "mail_subject": "IPDC DANA | Registration Completed",
                     "mail_body": `
@@ -737,10 +737,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     <p>IPDC Finance</p>
                     `
                   })
-                  console.log('sendMailsendMailsendMail',sendMail)
+                  console.log('sendMailsendMailsendMail', sendMail)
                 }
-                catch(err){
-                  console.log('errorerrorerrorerrorerror',err)
+                catch (err) {
+                  console.log('errorerrorerrorerrorerror', err)
                 }
               }
 
@@ -831,7 +831,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           // logger.info(error);
         });
     } catch (error) {
-      
+
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
@@ -839,6 +839,23 @@ FileUpload.insertExcelData = function (rows, filename, req) {
   });
 };
 
+FileUpload.getManufacturerListDropDown = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_manufacturer")
+        .select(
+          "id",
+          "manufacturer_name"
+        )
+        .orderBy("cr_manufacturer.id", "desc");
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 FileUpload.getManufacturerList = function (req) {
   const { page, per_page } = req.query;
   return new Promise(async (resolve, reject) => {
