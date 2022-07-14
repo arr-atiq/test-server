@@ -2,7 +2,6 @@ const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
-const logger = require("pino")();
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
@@ -708,14 +707,14 @@ FileUpload.insertExcelData = function (rows, filename, req) {
         })
         .then((result) => { })
         .catch((error) => {
+          console.log("Catch error...Data not inserted..",error)
           reject(sendApiResult(false, "Data not inserted."));
-          logger.info(error);
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    logger.info(error, "Promise error");
+    console.log("Catch error...",error)
   });
 };
 
