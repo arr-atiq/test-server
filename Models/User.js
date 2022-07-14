@@ -357,9 +357,6 @@ User.getCollectionDisbursementGraphData = function (req) {
       const diffWeeks = (parseInt(daysDiff / 7));
       const remainingDays = (parseInt(daysDiff % 7));
 
-      console.log(diffWeeks);
-      console.log(remainingDays);
-
       const graph_info_arr = [];
 
       let date_start_week_iteration = moment(start_date).startOf('date').format('YYYY-MM-DD');

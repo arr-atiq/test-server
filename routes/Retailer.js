@@ -46,5 +46,6 @@ router.post(
 );
 
 router.post("/retailer-list-excel-download", retailer.retailerListExcelDownload);
+router.get("/retailer-ineligible-excel-download", retailer.retailerIneligibleExcelDownload);
 
 module.exports = router;
