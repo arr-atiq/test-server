@@ -1537,7 +1537,7 @@ Retailer.retailerIneligibleExcelDownload = function (req) {
         col_add++;
         worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : "");
         col_add++;
-        worksheet.cell(row, col + col_add).number(e.retailer_nid ? e.retailer_nid : 0);
+        worksheet.cell(row, col + col_add).string(e.retailer_nid ? retailer_nid : "");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
         col_add++;
@@ -1577,7 +1577,7 @@ Retailer.retailerIneligibleExcelDownload = function (req) {
         col_add++;
         worksheet.cell(row, col + col_add).string(e.autho_rep_full_name ? e.autho_rep_full_name : "");
         col_add++;
-        worksheet.cell(row, col + col_add).number(e.autho_rep_nid ? e.autho_rep_nid : "");
+        worksheet.cell(row, col + col_add).string(e.autho_rep_nid ? autho_rep_nid : "");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.autho_rep_phone ? e.autho_rep_phone : "");
         col_add++;
@@ -1623,6 +1623,9 @@ Retailer.retailerIneligibleExcelDownload = function (req) {
       if (!fs.existsSync(file_path)) {
         fs.mkdirSync(file_path, { recursive: true });
       }
+      await knex("APSISIPDC.cr_retailer_temp").del()
+        .where("retailer_upload_id", retailer_upload_id)
+        .where("eligibility_status", "Failed");
       workbook.write(file_path + "Retailer_Ineligible_List(" + today + ").xlsx");
       const fileName = "./retailer/" + "Retailer_Ineligible_List(" + today + ").xlsx";
       await timeout(1500);
