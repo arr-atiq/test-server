@@ -1647,9 +1647,9 @@ Retailer.retailerIneligibleExcelDownload = function (req) {
       if (!fs.existsSync(file_path)) {
         fs.mkdirSync(file_path, { recursive: true });
       }
-      await knex("APSISIPDC.cr_retailer_temp").del()
-        .where("retailer_upload_id", retailer_upload_id)
-        .where("eligibility_status", "Failed");
+      // await knex("APSISIPDC.cr_retailer_temp").del()
+      //   .where("retailer_upload_id", retailer_upload_id)
+      //   .where("eligibility_status", "Failed");
       workbook.write(file_path + "Retailer_Ineligible_List(" + today + ").xlsx");
       const fileName = "./retailer/" + "Retailer_Ineligible_List(" + today + ").xlsx";
       await timeout(1500);
