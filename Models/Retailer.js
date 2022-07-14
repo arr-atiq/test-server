@@ -159,6 +159,23 @@ Retailer.getRetailerList = function (req) {
   });
 };
 
+Retailer.getRetailerRegionOperation = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_retailer")
+        .where("status", "Active")
+        .select(
+          "region_operation"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Retailer Region fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 Retailer.checkRetailerEligibility = function (req) {
   return new Promise(async (resolve, reject) => {
     try {

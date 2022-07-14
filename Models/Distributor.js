@@ -718,7 +718,23 @@ FileUpload.insertExcelData = function (rows, filename, req) {
     logger.info(error, "Promise error");
   });
 };
+FileUpload.getDistributorListDropDown = function (req) {
 
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_distributor")
+        .select(
+          "cr_distributor.id",
+          "cr_distributor.distributor_name"
+        )
+        .orderBy("cr_distributor.id", "desc");
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 FileUpload.getDistributorList = function (req) {
   const { page, per_page } = req.query;
 
@@ -877,19 +893,18 @@ FileUpload.getDistributorByManufacturer = function (req) {
 
   return new Promise(async (resolve, reject) => {
     try {
-      const data = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+      const data = await knex("APSISIPDC.cr_distributor")
         .leftJoin(
-          "APSISIPDC.cr_distributor",
-          "cr_distributor.id",
-          "cr_retailer_manu_scheme_mapping.distributor_id"
+          "APSISIPDC.cr_manufacturer_vs_distributor",
+          "cr_manufacturer_vs_distributor.distributor_id",
+          "cr_distributor.id"
         )
-        .where("cr_retailer_manu_scheme_mapping.status", "Active")
         .where(
-          "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          "cr_manufacturer_vs_distributor.manufacturer_id",
           manufacturer_id
         )
         .select(
-          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_manufacturer_vs_distributor.distributor_id",
           "cr_distributor.distributor_name",
           "cr_distributor.official_email",
           "cr_distributor.official_contact_number",
@@ -897,7 +912,6 @@ FileUpload.getDistributorByManufacturer = function (req) {
           "cr_distributor.ofc_district",
           "cr_distributor.ofc_division",
           "cr_distributor.distributor_code"
-
         )
         .distinct()
         .paginate({

@@ -6,7 +6,7 @@ const distributor = require("../controllers/distributor");
 router.get("/distributors", distributor.getDistributorList);
 router.put("/distributor/:id", distributor.editDistributor);
 router.delete("/distributor/:id", distributor.deleteDistributor);
-
+router.get("/distributors-list-for-drop-down", distributor.getDistributorListDropDown);
 router.get(
   "/distributors/:manufacturer_id",
   distributor.getDistributorByManufacturer
