@@ -13,4 +13,9 @@ const uploadDynBulkFile = multer({ storage: uploadDynamicBulkConfig("file") });
     custom.uploadBlackList
   );
 
+  router.get(
+    "/getBlockList",
+    custom.getBlockList
+  );
+
 module.exports = router;

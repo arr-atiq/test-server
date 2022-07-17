@@ -55,3 +55,50 @@ exports.uploadBlackListModel = async (rows, filename, req) => {
     console.log("--------------------------------2nd error", error);
   });
 };
+
+
+
+exports.getBlockListAll = function (req) {
+    const { page, per_page } = req.query;
+    return new Promise(async (resolve, reject) => {
+      try {
+        const data = await knex("APSISIPDC.cr_retailer")
+        //   .where("retailer_status", "BLOCK")
+          .whereIn('retailer_status', ["BLOCK", "SUSPEND"])
+          .select(
+            "id",
+            "master_r_number",
+            "retailer_name",
+            "retailer_nid",
+            "phone",
+            "retailer_code",
+            "retailer_tin",
+            "corporate_registration_no",
+            "trade_license_no",
+            "outlet_address",
+            "postal_code",
+            "post_office",
+            "thana",
+            "district",
+            "division",
+            "autho_rep_full_name",
+            "autho_rep_phone",
+            "region_operation",
+            "kyc_status",
+            "cib_status",
+            "retailer_status",
+          )
+          .orderBy("id", "desc")
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+  
+        resolve(sendApiResult(true, "Retailer List fetched successfully", data));
+      } catch (error) {
+        reject(sendApiResult(false, error.message));
+      }
+    });
+  };

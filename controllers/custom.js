@@ -39,3 +39,8 @@ const importExcelData2DB = async function (filename, req) {
     }
   };
 
+  exports.getBlockList = async (req, res) => {
+  
+    const upload = await Custom.getBlockListAll(req);
+      res.status(200).send(upload);
+    };
