@@ -380,7 +380,7 @@ Retailer.checkRetailerEligibility = function (req) {
                       ac_number_1rmn: await prepare_1RMN_accountNumber(temp_r_number_rmn, value.manufacturer),
                       loan_id: loan_id,
                       retailer_id: masterRetailerInsertLog[0],
-                      retailer_nid: parseInt(value.retailer_nid),
+                      retailer_nid: value.retailer_nid.toString(),
                       retailer_code: value.retailer_code,
                       manufacturer_id: value.manufacturer,
                       distributor_id: distributorList[value.distributor_code],
@@ -405,7 +405,7 @@ Retailer.checkRetailerEligibility = function (req) {
                     const checkRetailerManuMapping = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
                       .select("id")
                       // .where("retailer_code", value.retailer_code)
-                      .where("retailer_nid", parseInt(value.retailer_nid))
+                      .where("retailer_nid", value.retailer_nid.toString())
                       .where("manufacturer_id", value.manufacturer);
 
                     if (Object.keys(checkRetailerManuMapping).length == 0) {
@@ -439,7 +439,7 @@ Retailer.checkRetailerEligibility = function (req) {
                         ac_number_1rmn: await prepare_1RMN_accountNumber(temp_r_number_rmn, value.manufacturer),
                         loan_id: loan_id,
                         retailer_id: retailerInfo.retailer_id,
-                        retailer_nid: parseInt(value.retailer_nid),
+                        retailer_nid: value.retailer_nid.toString(),
                         retailer_code: value.retailer_code,
                         manufacturer_id: value.manufacturer,
                         distributor_id: distributorList[value.distributor_code],
