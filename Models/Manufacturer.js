@@ -1067,4 +1067,49 @@ FileUpload.updateAllSchemasByManufacturer = function (req) {
   });
 };
 
+
+FileUpload.retailersByManufacturer = function (req) {
+  const {
+    manufacturer_id,
+  } = req.params;
+  return new Promise(async (resolve, reject) => {
+    
+    try {
+      await knex.transaction(async (trx) => {
+        const retailers = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer.id"
+        )
+        .where("cr_retailer.status", "Active")
+        // .where("cr_retailer_vs_sales_agent.status", "Active")
+        // .where("cr_retailer_vs_sales_agent.sales_agent_id", salesagent_id)
+        // .where("cr_retailer_vs_sales_agent.manufacturer_id", manufacturer_id)
+        .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+        .select(
+          "cr_retailer.id",
+          "cr_retailer.retailer_name",
+          "cr_retailer.retailer_code",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer_manu_scheme_mapping.ac_number_1rmn",
+          "cr_retailer_manu_scheme_mapping.processing_fee",
+          "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+        );
+    
+        if(retailers.length == 0) resolve(sendApiResult(true, "No retailer found", retailers))
+        resolve(
+          sendApiResult(
+            true,
+            "List of retailers by sales agent and manaufacturer",
+            retailers,
+          )
+        );
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 module.exports = FileUpload;

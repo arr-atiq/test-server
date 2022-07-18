@@ -12,5 +12,6 @@ router.get("/unuploaded-manufacturer-bulk", manufacturer.generateManufacturerSam
 
 router.get("/unuploaded-manufacturer-data", manufacturer.generateManufacturerUnuploadedReport);
 router.get("/invalidated-manufacturer-data", manufacturer.generateManufacturerInvalidatedReport);
+router.get("/retailer-by-manufacture/:manufacturer_id", manufacturer.retailersByManufacturer);
 
 module.exports = router;
