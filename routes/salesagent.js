@@ -5,6 +5,7 @@ const salesagent = require("../controllers/salesAgent");
 
 router.get("/salesagents", salesagent.getSalesAgentList);
 router.get("/retailer-list/:salesagent_id", salesagent.getRetailerbySalesAgent);
+router.get("/retailers/:salesagent_id/:manufacturer_id", salesagent.retailersBySalesAgentAndManufacturer);
 router.get("/operation-regions/:id", salesagent.getSalesAgentOperationRegion);
 router.get("/retailers/:salesagent_id", salesagent.getRetailersByRegionOperation);
 router.get("/salesagents/:manufacturer_id", salesagent.getSalesAgentListByManufacturerAndSupervisor);
