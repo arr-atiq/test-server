@@ -16,6 +16,13 @@ const upload = await importExcelData2DB(req.file.filename, req.body);
   res.status(200).send(upload);
 };
 
+
+exports.uploadBlackListData = async (req, res) => {
+
+    const upload = await Custom.importDataDB(req.body);
+      res.status(200).send(upload);
+    };
+
 const importExcelData2DB = async function (filename, req) {
     try {
       let resData = [];
