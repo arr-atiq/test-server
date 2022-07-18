@@ -197,7 +197,7 @@ paths:
           description: Manufacturer updated Successfully
         '500':
           description: Failed
-  /manufacturer/manufacturer/{id):
+  /manufacturer/manufacturer/{id}:
     delete:
       tags:
         - Manufacturer
@@ -314,7 +314,7 @@ paths:
           description: Distributor updated Successfully
         '500':
           description: Failed
-  /distributor/distributor/{id):
+  /distributor/distributor/{id}:
     delete:
       tags:
         - Distributor
@@ -383,7 +383,7 @@ paths:
           description: Supervisor updated Successfully
         '500':
           description: Failed
-  /supervisor/supervisor/{id):
+  /supervisor/supervisor/{id}:
     delete:
       tags:
         - Supervisor
@@ -452,7 +452,7 @@ paths:
           description: Salesagent updated Successfully
         '500':
           description: Failed
-  /salesagent/salesagent/{id):
+  /salesagent/salesagent/{id}:
     delete:
       tags:
         - Salesagent
@@ -472,6 +472,30 @@ paths:
       responses:
         '200':
           description: Salesagent deleted Successfully
+        '400':
+          description: Failed to get
+  /salesagent/retailers/{salesagent_id}/{manufacturer_id}:
+    get:
+      tags:
+        - Salesagent
+      summary: Get retailers
+      description: Get Retailer list by sales agent id and manufacturer id
+      parameters:
+        - in: header
+          name: bearer-token
+          description: Bearer token
+        - in: path
+          name: salesagent_id
+          required: true
+        - in: path
+          name: manufacturer_id
+          required: true  
+
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: retailer list retrived Successfully
         '400':
           description: Failed to get
   /retailer/retailers/{distributor_id}:
@@ -850,7 +874,7 @@ paths:
           description: Data fetched successfully 
         '403':
           description: Forbidden
-  /menu/delete-menu/{id):
+  /menu/delete-menu/{id}:
     delete:
       tags:
         - Menu
