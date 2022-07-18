@@ -902,11 +902,6 @@ FileUpload.getManufacturerList = function (req) {
           "autho_rep_email"
         )
         .orderBy("cr_manufacturer.id", "desc")
-        .paginate({
-          perPage: per_page,
-          currentPage: page,
-          isLengthAware: true,
-        });
       if (data == 0) reject(sendApiResult(false, "Not found."));
 
       resolve(sendApiResult(true, "Data fetched successfully", data));
