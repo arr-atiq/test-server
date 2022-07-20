@@ -134,6 +134,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
               const distributor_tin =
                 rows[index].Distributor_TIN;
+
+              const distributor_code =
+                rows[index].Distributor_Code;
+
               const duplication_check = await knex
                 .count("cr_distributor.distributor_tin as count")
                 .from("APSISIPDC.cr_distributor")
@@ -146,7 +150,19 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check[0].count
               );
 
-              if (duplication_check_val == 0) {
+              const duplication_check_dis_code = await knex
+                .count("cr_distributor.distributor_code as count")
+                .from("APSISIPDC.cr_distributor")
+                .where(
+                  "APSISIPDC.cr_distributor.distributor_code",
+                  distributor_code.toString()
+                );
+
+              const duplication_check_val_dis_code = parseInt(
+                duplication_check_dis_code[0].count
+              );
+
+              if (duplication_check_val == 0 && duplication_check_val_dis_code == 0) {
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,
@@ -200,12 +216,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     "distributor_code"
                   );
 
-                const distributor_name_check = rows[index].Distributor_Name;
+                //const distributor_name_check = rows[index].Distributor_Name;
                 const distributor_code_check = rows[index].Distributor_Code;
                 const manufacturer_id_check = rows[index].Manufacturer_id;
 
-                if (distributor_info[0].distributor_name == distributor_name_check
-                  && distributor_info[0].distributor_code == distributor_code_check) {
+                if (distributor_info[0].distributor_code == distributor_code_check) {
                   const duplication_check_manu_id = await knex
                     .count("cr_manufacturer_vs_distributor.id as count")
                     .from("APSISIPDC.cr_manufacturer_vs_distributor")
@@ -239,6 +254,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 let duplicateStr = "duplicate columns - ";
                 if (duplication_check_val != 0) {
                   duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
+                }
+
+                if (duplication_check_val_dis_code != 0) {
+                  duplicateStr = duplicateStr + "Distributor_Code " + ", ";
                 }
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
@@ -399,6 +418,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             const user_insert_ids = [];
             for (let index = 0; index < data_array.length; index++) {
               const tin_insert_data = data_array[index].Distributor_TIN;
+              const distributor_code_insert_data = data_array[index].Distributor_Code;
+
+
               const duplication_checkTIN_insert_data = await knex
                 .count("cr_distributor.distributor_tin as count")
                 .from("APSISIPDC.cr_distributor")
@@ -409,7 +431,20 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const duplication_check_val_tin_insert_data = parseInt(
                 duplication_checkTIN_insert_data[0].count
               );
-              if (duplication_check_val_tin_insert_data != 0) {
+
+              const duplication_checkCode_insert_data = await knex
+                .count("cr_distributor.distributor_code as count")
+                .from("APSISIPDC.cr_distributor")
+                .where(
+                  "APSISIPDC.cr_distributor.distributor_code",
+                  distributor_code_insert_data.toString()
+                );
+              const duplication_check_val_code_insert_data = parseInt(
+                duplication_checkCode_insert_data[0].count
+              );
+
+
+              if (duplication_check_val_tin_insert_data != 0 || duplication_check_val_code_insert_data != 0) {
                 //multiple manu-distri mapping-check-code-in-same-excel
 
                 const distributor_info_insert_data = await knex("APSISIPDC.cr_distributor")
@@ -421,12 +456,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     "distributor_code"
                   );
 
-                const distributor_name_check_insert_data = data_array[index].Distributor_Name;
+                // const distributor_name_check_insert_data = data_array[index].Distributor_Name;
                 const distributor_code_check_insert_data = data_array[index].Distributor_Code;
                 const manufacturer_id_check_insert_data = data_array[index].Manufacturer_id;
 
-                if (distributor_info_insert_data[0].distributor_name == distributor_name_check_insert_data
-                  && distributor_info_insert_data[0].distributor_code == distributor_code_check_insert_data) {
+                if (distributor_info_insert_data[0].distributor_code == distributor_code_check_insert_data) {
                   const duplication_check_manu_id_insert_data = await knex
                     .count("cr_manufacturer_vs_distributor.id as count")
                     .from("APSISIPDC.cr_manufacturer_vs_distributor")
@@ -459,8 +493,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 //multiple manu-distri mapping-check-code-in-same-excel
 
                 let duplicateStr = "duplicate columns - ";
-                if (tin_insert_data != 0) {
+                if (duplication_check_val_tin_insert_data != 0) {
                   duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
+                }
+                if (duplication_check_val_code_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Distributor_Code " + ", ";
                 }
                 const duplicate_data_array = {
                   distributor_name: data_array[index].Distributor_Name,
@@ -707,14 +744,14 @@ FileUpload.insertExcelData = function (rows, filename, req) {
         })
         .then((result) => { })
         .catch((error) => {
-          console.log("Catch error...Data not inserted..",error)
+          console.log("Catch error...Data not inserted..", error)
           reject(sendApiResult(false, "Data not inserted."));
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    console.log("Catch error...",error)
+    console.log("Catch error...", error)
   });
 };
 FileUpload.getDistributorListDropDown = function (req) {

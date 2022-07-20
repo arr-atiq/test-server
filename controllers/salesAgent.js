@@ -129,11 +129,9 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
         "agent_name",
         "agent_nid",
         "phone",
-        "manufacturer_id",
         "agent_employee_code",
         "autho_supervisor_employee_code",
         "region_of_operation",
-        "distributor_id",
         "remarks_duplications"
       );
     const headers = [
@@ -143,8 +141,6 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
       "Phone",
       "Sales_Agent_Employee_Code",
       "Authorized_supervisor_emp_code",
-      "Manufacturer",
-      "Distributor",
       "Region_of_Operation",
       "Duplications Remarked"
     ];
@@ -227,10 +223,6 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
       }
       worksheet.cell(row, col + col_add).string(e.autho_supervisor_employee_code ? e.autho_supervisor_employee_code : "");
       col_add++;
-      worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
-      col_add++;
       worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.remarks_duplications ? e.remarks_duplications : "").style(remarksStyle);
@@ -258,11 +250,9 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
         "agent_name",
         "agent_nid",
         "phone",
-        "manufacturer_id",
         "agent_employee_code",
         "autho_supervisor_employee_code",
         "region_of_operation",
-        "distributor_id",
         "remarks_invalidated"
       );
     const headers = [
@@ -272,8 +262,6 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
       "Phone",
       "Sales_Agent_Employee_Code",
       "Authorized_supervisor_emp_code",
-      "Manufacturer",
-      "Distributor",
       "Region_of_Operation",
       "Invalidated Remarked"
     ];
@@ -349,12 +337,13 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
       }
       worksheet.cell(row, col + col_add).string(e.agent_employee_code ? e.agent_employee_code : "");
       col_add++;
-      worksheet.cell(row, col + col_add).string(e.autho_supervisor_employee_code ? e.autho_supervisor_employee_code : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
-      col_add++;
+      if (e.remarks_invalidated.includes("not existed")) {
+        worksheet.cell(row, col + col_add).string(e.autho_supervisor_employee_code ? e.autho_supervisor_employee_code : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.autho_supervisor_employee_code ? e.autho_supervisor_employee_code : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.remarks_invalidated ? e.remarks_invalidated : "").style(remarksStyle);

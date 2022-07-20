@@ -249,12 +249,9 @@ Retailer.checkRetailerEligibility = function (req) {
               // let master_loan_id = '1001DANA' + await addLeadingZeros(++max_master_loan_id, 8);
               for (const [key, value] of Object.entries(bulkRetailerInfoList)) {
                 console.log(key, value, bulkRetailerInfoList)
-                if(!value.manufacturer || !distributorList[value.distributor_code])
-                {
+                if (!value.manufacturer || !distributorList[value.distributor_code]) {
 
-
-
-                 await trx("APSISIPDC.cr_retailer_temp")
+                  await trx("APSISIPDC.cr_retailer_temp")
                     .where({ id: value.id })
                     .update({
                       eligibility_status: "Failed",
@@ -268,158 +265,101 @@ Retailer.checkRetailerEligibility = function (req) {
 
 
                 }
-                else
-                {
-                let disqualifiedReason = "";
-                validNID = ValidateNID(value.retailer_nid);
-                if (validNID == false) {
-                  disqualifiedReason = disqualifiedReason + "NID Number Invalid. ;; ";
-                }
-                const monthlySalesArray = [];
-                for (let i = 1; i <= 12; i++) {
-                  monthlySalesArray[i] = value["month_" + i];
-                }
-                validMonthlySalesData = await checkMonthlySalesData(monthCount, minimumSalesAmount, monthlySalesArray);
-                if (validMonthlySalesData == false) {
-                  disqualifiedReason = disqualifiedReason + "Monthly Sales Data Invalid. ;; ";
-                }
-
-                if (validNID == false || validMonthlySalesData == false) {
-                  const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
-                    .where({ id: value.id })
-                    .update({
-                      eligibility_status: "Failed",
-                      reason: disqualifiedReason,
-                      updated_at: new Date(),
-                    });
-                  ++disqualifiedOutletCount;
-                }
-                if (validNID == true && validMonthlySalesData == true) {
-                  let salesArray = [];
-                  for (let i = 1; i <= 12; i++) {
-                    salesArray.push(value["month_" + i]);
+                else {
+                  let disqualifiedReason = "";
+                  validNID = ValidateNID(value.retailer_nid);
+                  if (validNID == false) {
+                    disqualifiedReason = disqualifiedReason + "NID Number Invalid. ;; ";
                   }
-                  const checkMasterRetailer = await trx("APSISIPDC.cr_retailer")
-                    .select("id")
-                    // .where("retailer_code", value.retailer_code);
-                    .where("retailer_nid", value.retailer_nid.toString());
+                  const monthlySalesArray = [];
+                  for (let i = 1; i <= 12; i++) {
+                    monthlySalesArray[i] = value["month_" + i];
+                  }
+                  validMonthlySalesData = await checkMonthlySalesData(monthCount, minimumSalesAmount, monthlySalesArray);
+                  if (validMonthlySalesData == false) {
+                    disqualifiedReason = disqualifiedReason + "Monthly Sales Data Invalid. ;; ";
+                  }
 
-                  if (Object.keys(checkMasterRetailer).length == 0) {
-                    const temp_r_number_rn = ++max_r_number_rn;
-                    const masterRetailerData = {
-                      retailer_upload_id: value.retailer_upload_id,
-                      master_r_number: parseInt(temp_r_number_rn),
-                      ac_number_1rn: await prepare_1RN_accountNumber(temp_r_number_rn),
-                      master_loan_id: '1001DANA' + await addLeadingZeros(++max_master_loan_id, 8),
-                      customer_id: parseInt(++max_customer_id),
-                      retailer_name: value.retailer_name,
-                      retailer_nid: value.retailer_nid.toString(),
-                      phone: value.phone,
-                      email: value.email,
-                      retailer_type: parseInt(retailerType[value.retailer_type]),
-                      type_of_entity: parseInt(retailerTypeEntity[value.type_of_entity]),
-                      retailer_code: value.retailer_code,
-                      onboarding: value.onboarding,
-                      order_placement: value.order_placement,
-                      repayment: value.repayment,
-                      retailer_tin: value.retailer_tin,
-                      corporate_registration_no: value.corporate_registration_no,
-                      trade_license_no: value.trade_license_no,
-                      outlet_address: value.outlet_address,
-                      outlet_address_1: value.outlet_address_1,
-                      outlet_address_2: value.outlet_address_2,
-                      postal_code: parseInt(value.postal_code),
-                      post_office: value.post_office,
-                      thana: value.thana,
-                      district: value.district,
-                      division: value.division,
-                      autho_rep_full_name: value.autho_rep_full_name,
-                      autho_rep_nid: value.autho_rep_nid.toString(),
-                      autho_rep_phone: value.autho_rep_phone,
-                      autho_rep_email: value.autho_rep_email,
-                      region_operation: value.region_operation,
-                      duration_sales_data: parseInt(value.duration_sales_data),
-                    };
-
-                    const masterRetailerInsertLog = await trx("APSISIPDC.cr_retailer").insert(masterRetailerData)
-                      .returning("id");
-
-                    const sales_agent_mapping = {
-                      'retailer_id': parseInt(masterRetailerInsertLog[0]),
-                      'retailer_code': value.retailer_code,
-                      'manufacturer_id': value.manufacturer,
-                      'sales_agent_id': value.sales_agent_id,
-                    };
-                    await trx("APSISIPDC.cr_retailer_vs_sales_agent").insert(sales_agent_mapping);
-
-                    let max_r_number_rmn = 0;
-                    let r_number_rmn = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
-                      .whereRaw('"master_r_number" >= 1000000')
-                      .select(trx.raw(`MAX("master_r_number") AS master_r_number`))
-                      .first();
-
-                    max_r_number_rmn = r_number_rmn.MASTER_R_NUMBER === undefined || r_number_rmn.MASTER_R_NUMBER == null ? 1000000 : parseInt(r_number_rmn.MASTER_R_NUMBER);
-
-                    let temp_r_number_rmn = ++max_r_number_rmn;
-                    // console.log("masterRetailerInsertLog " + r_number_rmn + " => " + temp_r_number_rmn);
-
-                    console.log("--------------",value.manufacturer,  distributorList[value.distributor_code])
-                    let loan_id_counter = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
-                      .where("manufacturer_id", value.manufacturer)
-                      .where("distributor_id", distributorList[value.distributor_code])
-                      .select("id");
-
-                    let loan_id = '';
-                    if (Object.keys(loan_id_counter).length == 0)
-                      loan_id = '1001DN' + await addLeadingZeros(value.manufacturer, 2) + await addLeadingZeros(distributorList[value.distributor_code], 3) + await addLeadingZeros(1, 5);
-                    else
-                      loan_id = '1001DN' + await addLeadingZeros(value.manufacturer, 2) + await addLeadingZeros(distributorList[value.distributor_code], 3) + await addLeadingZeros(++(Object.keys(loan_id_counter).length), 5);
-
-                    let retailerManuDistMappingInsert = {
-                      master_r_number: parseInt(temp_r_number_rmn),
-                      ac_number_1rmn: await prepare_1RMN_accountNumber(temp_r_number_rmn, value.manufacturer),
-                      loan_id: loan_id,
-                      retailer_id: masterRetailerInsertLog[0],
-                      retailer_nid: value.retailer_nid.toString(),
-                      retailer_code: value.retailer_code,
-                      manufacturer_id: value.manufacturer,
-                      distributor_id: distributorList[value.distributor_code],
-                      scheme_id: value.scheme_id,
-                      sales_array: JSON.stringify(salesArray),
-                      status: "Active",
-                    };
-
-                    const mappingRetailerInsertLog = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping").insert(retailerManuDistMappingInsert);
-
-                    if (mappingRetailerInsertLog == true) {
-                      const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
-                        .where({ id: value.id })
-                        .update({
-                          eligibility_status: "Success",
-                          reason: null,
-                          updated_at: new Date(),
-                        });
-                      ++eligibileOutletCount;
+                  if (validNID == false || validMonthlySalesData == false) {
+                    const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
+                      .where({ id: value.id })
+                      .update({
+                        eligibility_status: "Failed",
+                        reason: disqualifiedReason,
+                        updated_at: new Date(),
+                      });
+                    ++disqualifiedOutletCount;
+                  }
+                  if (validNID == true && validMonthlySalesData == true) {
+                    let salesArray = [];
+                    for (let i = 1; i <= 12; i++) {
+                      salesArray.push(value["month_" + i]);
                     }
-                  } else {
-                    const checkRetailerManuMapping = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+                    const checkMasterRetailer = await trx("APSISIPDC.cr_retailer")
                       .select("id")
-                      // .where("retailer_code", value.retailer_code)
-                      .where("retailer_nid", value.retailer_nid.toString())
-                      .where("manufacturer_id", value.manufacturer);
+                      // .where("retailer_code", value.retailer_code);
+                      .where("retailer_nid", value.retailer_nid.toString());
 
-                    if (Object.keys(checkRetailerManuMapping).length == 0) {
+                    if (Object.keys(checkMasterRetailer).length == 0) {
+                      const temp_r_number_rn = ++max_r_number_rn;
+                      const masterRetailerData = {
+                        retailer_upload_id: value.retailer_upload_id,
+                        master_r_number: parseInt(temp_r_number_rn),
+                        ac_number_1rn: await prepare_1RN_accountNumber(temp_r_number_rn),
+                        master_loan_id: '1001DANA' + await addLeadingZeros(++max_master_loan_id, 8),
+                        customer_id: parseInt(++max_customer_id),
+                        retailer_name: value.retailer_name,
+                        retailer_nid: value.retailer_nid.toString(),
+                        phone: value.phone,
+                        email: value.email,
+                        retailer_type: parseInt(retailerType[value.retailer_type]),
+                        type_of_entity: parseInt(retailerTypeEntity[value.type_of_entity]),
+                        retailer_code: value.retailer_code,
+                        onboarding: value.onboarding,
+                        order_placement: value.order_placement,
+                        repayment: value.repayment,
+                        retailer_tin: value.retailer_tin,
+                        corporate_registration_no: value.corporate_registration_no,
+                        trade_license_no: value.trade_license_no,
+                        outlet_address: value.outlet_address,
+                        outlet_address_1: value.outlet_address_1,
+                        outlet_address_2: value.outlet_address_2,
+                        postal_code: parseInt(value.postal_code),
+                        post_office: value.post_office,
+                        thana: value.thana,
+                        district: value.district,
+                        division: value.division,
+                        autho_rep_full_name: value.autho_rep_full_name,
+                        autho_rep_nid: value.autho_rep_nid.toString(),
+                        autho_rep_phone: value.autho_rep_phone,
+                        autho_rep_email: value.autho_rep_email,
+                        region_operation: value.region_operation,
+                        duration_sales_data: parseInt(value.duration_sales_data),
+                      };
+
+                      const masterRetailerInsertLog = await trx("APSISIPDC.cr_retailer").insert(masterRetailerData)
+                        .returning("id");
+
+                      const sales_agent_mapping = {
+                        'retailer_id': parseInt(masterRetailerInsertLog[0]),
+                        'retailer_code': value.retailer_code,
+                        'manufacturer_id': value.manufacturer,
+                        'sales_agent_id': value.sales_agent_id,
+                      };
+                      await trx("APSISIPDC.cr_retailer_vs_sales_agent").insert(sales_agent_mapping);
+
                       let max_r_number_rmn = 0;
-                      let retailerInfo = await trx("APSISIPDC.cr_retailer")
-                        .where("retailer_nid", value.retailer_nid.toString())
-                        .select("id AS retailer_id")
-                        .first();
-
                       let r_number_rmn = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
                         .whereRaw('"master_r_number" >= 1000000')
                         .select(trx.raw(`MAX("master_r_number") AS master_r_number`))
                         .first();
 
+                      max_r_number_rmn = r_number_rmn.MASTER_R_NUMBER === undefined || r_number_rmn.MASTER_R_NUMBER == null ? 1000000 : parseInt(r_number_rmn.MASTER_R_NUMBER);
+
+                      let temp_r_number_rmn = ++max_r_number_rmn;
+                      // console.log("masterRetailerInsertLog " + r_number_rmn + " => " + temp_r_number_rmn);
+
+                      console.log("--------------", value.manufacturer, distributorList[value.distributor_code])
                       let loan_id_counter = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
                         .where("manufacturer_id", value.manufacturer)
                         .where("distributor_id", distributorList[value.distributor_code])
@@ -431,14 +371,11 @@ Retailer.checkRetailerEligibility = function (req) {
                       else
                         loan_id = '1001DN' + await addLeadingZeros(value.manufacturer, 2) + await addLeadingZeros(distributorList[value.distributor_code], 3) + await addLeadingZeros(++(Object.keys(loan_id_counter).length), 5);
 
-                      max_r_number_rmn = r_number_rmn.MASTER_R_NUMBER === undefined || r_number_rmn.MASTER_R_NUMBER == null ? 1000000 : r_number_rmn.MASTER_R_NUMBER;
-
-                      let temp_r_number_rmn = ++max_r_number_rmn;
                       let retailerManuDistMappingInsert = {
                         master_r_number: parseInt(temp_r_number_rmn),
                         ac_number_1rmn: await prepare_1RMN_accountNumber(temp_r_number_rmn, value.manufacturer),
                         loan_id: loan_id,
-                        retailer_id: retailerInfo.retailer_id,
+                        retailer_id: masterRetailerInsertLog[0],
                         retailer_nid: value.retailer_nid.toString(),
                         retailer_code: value.retailer_code,
                         manufacturer_id: value.manufacturer,
@@ -461,27 +398,86 @@ Retailer.checkRetailerEligibility = function (req) {
                         ++eligibileOutletCount;
                       }
                     } else {
-                      disqualifiedReason = disqualifiedReason + "Duplicate NID Found. ;; ";
-                      const duplicate_nid_log = {
-                        retailer_upload_id: value.retailer_upload_id,
-                        retailer_temp_id: value.id,
-                        reason: 'Duplicate NID',
-                        status: 'Active'
-                      };
-                      await trx("APSISIPDC.cr_retailer_duplicate_log").insert(duplicate_nid_log);
+                      const checkRetailerManuMapping = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+                        .select("id")
+                        // .where("retailer_code", value.retailer_code)
+                        .where("retailer_nid", value.retailer_nid.toString())
+                        .where("manufacturer_id", value.manufacturer);
 
-                      const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
-                        .where({ id: value.id })
-                        .update({
-                          eligibility_status: "Failed",
-                          reason: disqualifiedReason,
-                          updated_at: new Date()
-                        });
-                      ++disqualifiedOutletCount;
+                      if (Object.keys(checkRetailerManuMapping).length == 0) {
+                        let max_r_number_rmn = 0;
+                        let retailerInfo = await trx("APSISIPDC.cr_retailer")
+                          .where("retailer_nid", value.retailer_nid.toString())
+                          .select("id AS retailer_id")
+                          .first();
+
+                        let r_number_rmn = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+                          .whereRaw('"master_r_number" >= 1000000')
+                          .select(trx.raw(`MAX("master_r_number") AS master_r_number`))
+                          .first();
+
+                        let loan_id_counter = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+                          .where("manufacturer_id", value.manufacturer)
+                          .where("distributor_id", distributorList[value.distributor_code])
+                          .select("id");
+
+                        let loan_id = '';
+                        if (Object.keys(loan_id_counter).length == 0)
+                          loan_id = '1001DN' + await addLeadingZeros(value.manufacturer, 2) + await addLeadingZeros(distributorList[value.distributor_code], 3) + await addLeadingZeros(1, 5);
+                        else
+                          loan_id = '1001DN' + await addLeadingZeros(value.manufacturer, 2) + await addLeadingZeros(distributorList[value.distributor_code], 3) + await addLeadingZeros(++(Object.keys(loan_id_counter).length), 5);
+
+                        max_r_number_rmn = r_number_rmn.MASTER_R_NUMBER === undefined || r_number_rmn.MASTER_R_NUMBER == null ? 1000000 : r_number_rmn.MASTER_R_NUMBER;
+
+                        let temp_r_number_rmn = ++max_r_number_rmn;
+                        let retailerManuDistMappingInsert = {
+                          master_r_number: parseInt(temp_r_number_rmn),
+                          ac_number_1rmn: await prepare_1RMN_accountNumber(temp_r_number_rmn, value.manufacturer),
+                          loan_id: loan_id,
+                          retailer_id: retailerInfo.retailer_id,
+                          retailer_nid: value.retailer_nid.toString(),
+                          retailer_code: value.retailer_code,
+                          manufacturer_id: value.manufacturer,
+                          distributor_id: distributorList[value.distributor_code],
+                          scheme_id: value.scheme_id,
+                          sales_array: JSON.stringify(salesArray),
+                          status: "Active",
+                        };
+
+                        const mappingRetailerInsertLog = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping").insert(retailerManuDistMappingInsert);
+
+                        if (mappingRetailerInsertLog == true) {
+                          const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
+                            .where({ id: value.id })
+                            .update({
+                              eligibility_status: "Success",
+                              reason: null,
+                              updated_at: new Date(),
+                            });
+                          ++eligibileOutletCount;
+                        }
+                      } else {
+                        disqualifiedReason = disqualifiedReason + "Duplicate NID Found. ;; ";
+                        const duplicate_nid_log = {
+                          retailer_upload_id: value.retailer_upload_id,
+                          retailer_temp_id: value.id,
+                          reason: 'Duplicate NID',
+                          status: 'Active'
+                        };
+                        await trx("APSISIPDC.cr_retailer_duplicate_log").insert(duplicate_nid_log);
+
+                        const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
+                          .where({ id: value.id })
+                          .update({
+                            eligibility_status: "Failed",
+                            reason: disqualifiedReason,
+                            updated_at: new Date()
+                          });
+                        ++disqualifiedOutletCount;
+                      }
                     }
                   }
                 }
-              }
               }
               await trx("APSISIPDC.cr_retailer_upload_log")
                 .where({ retailer_upload_id: log.retailer_upload_id })
@@ -716,6 +712,11 @@ Retailer.getRnRmnMappingById = function (req) {
           "cr_sales_agent.id",
           "cr_retailer_vs_sales_agent.sales_agent_id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_supervisor",
+          "cr_supervisor.supervisor_employee_code",
+          "cr_sales_agent.autho_supervisor_employee_code"
+        )
         .where("cr_retailer.status", "Active")
         .where("cr_retailer_manu_scheme_mapping.status", "Active")
         .where("cr_retailer.id", retailer_id)
@@ -725,17 +726,20 @@ Retailer.getRnRmnMappingById = function (req) {
           "cr_retailer.retailer_name",
           "cr_retailer.retailer_code",
           "cr_retailer_manu_scheme_mapping.ac_number_1rmn",
-          "cr_retailer_manu_scheme_mapping.manufacturer_id",
-          "cr_manufacturer.manufacturer_name",
           "cr_manufacturer.website_link",
           "cr_manufacturer.official_email",
-          "cr_retailer_manu_scheme_mapping.distributor_id",
-          "cr_distributor.distributor_name",
           "cr_distributor.registered_office_bangladesh",
           "cr_distributor.region_of_operation",
           "cr_retailer_manu_scheme_mapping.system_limit",
           "cr_retailer_manu_scheme_mapping.propose_limit",
           "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_retailer_manu_scheme_mapping.distributor_id",
+          "cr_distributor.distributor_name",
+          "cr_supervisor.id as supervisor_id",
+          "cr_supervisor.supervisor_name",
+          "cr_supervisor.supervisor_employee_code",
           "cr_sales_agent.id as sales_agent_id",
           "cr_sales_agent.agent_name"
         );
@@ -761,11 +765,14 @@ Retailer.getRnRmnMappingById = function (req) {
           "distributor_name": value.distributor_name,
           "distributor_registered_office_bangladesh": value.registered_office_bangladesh,
           "distributor_region_of_operation": value.region_of_operation,
+          "supervisor_id": value.supervisor_id,
+          "supervisor_name": value.supervisor_name,
+          "supervisor_employee_code": value.supervisor_employee_code,
+          "sales_agent_id": value.sales_agent_id,
+          "sales_agent_name": value.agent_name,
           "system_limit": value.system_limit,
           "propose_limit": value.propose_limit,
-          "crm_approve_limit": value.crm_approve_limit,
-          "sales_agent_id": value.sales_agent_id,
-          "sales_agent_name": value.agent_name
+          "crm_approve_limit": value.crm_approve_limit
         });
       }
       /* getRnRmnMapping[account_exist[0]] = accountInfoArray; */
@@ -2632,6 +2639,7 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
 Retailer.generateRetailersLoanStatusReport = async (req, res) => {
   const { start_date, end_date } = req.query;
   const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
+  const startDateNextDay = moment(start_date).add(1, 'days').format('YYYY-MM-DD');
   const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
 
   return new Promise(async (resolve, reject) => {
@@ -2640,7 +2648,7 @@ Retailer.generateRetailersLoanStatusReport = async (req, res) => {
         .where(function () {
           if (start_date && end_date) {
             this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
           }
         })
         .select(
@@ -2654,260 +2662,79 @@ Retailer.generateRetailersLoanStatusReport = async (req, res) => {
       const retailer_loan_status_Arr = [];
 
       for (let i = 0; i < onermn_acc_data.length; i++) {
-        const transaction_done = await knex("APSISIPDC.cr_retailer_loan_calculation")
-          .leftJoin(
-            "APSISIPDC.cr_retailer_manu_scheme_mapping",
-            "cr_retailer_manu_scheme_mapping.retailer_id",
-            "cr_retailer.id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_manufacturer",
-            "cr_manufacturer.id",
-            "cr_retailer_manu_scheme_mapping.manufacturer_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_distributor",
-            "cr_distributor.id",
-            "cr_retailer_manu_scheme_mapping.distributor_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_retailer_loan_calculation",
-            "cr_retailer.id",
-            "cr_retailer_loan_calculation.retailer_id"
-          )
-          .sum("cr_retailer_loan_calculation.disburshment as total_amount_transaction_done")
-          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+        const onermn_acc_info = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .sum("cr_retailer_loan_calculation.principal_outstanding as principal_outstanding")
+          .sum("cr_retailer_loan_calculation.daily_principal_interest as daily_principal_interest")
+          .sum("cr_retailer_loan_calculation.penal_interest as penal_interest")
+          .sum("cr_retailer_loan_calculation.transaction_cost as transaction_cost")
+          .sum("cr_retailer_loan_calculation.other_charge as other_charges")
+          .where("cr_retailer_loan_calculation.onermn_acc", onermn_acc_data[i].onermn_acc)
           .where(function () {
-            if (district) {
-              this.where("cr_retailer.district", district)
-            }
-            if (manufacturer_id) {
-              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
-            }
-            if (distributor_id) {
-              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
-            }
-            if (month) {
-              const monthNum = parseInt(month);
-              const monthStartDate = moment('2021-12-31').add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-              const monthEndDate = moment('2021-12-31').add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            if (start_date && end_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDateNextDay}', 'YYYY-MM-DD')`)
             }
           });
 
-        const repayment_amount = await knex("APSISIPDC.cr_retailer")
-          .leftJoin(
-            "APSISIPDC.cr_retailer_manu_scheme_mapping",
-            "cr_retailer_manu_scheme_mapping.retailer_id",
-            "cr_retailer.id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_manufacturer",
-            "cr_manufacturer.id",
-            "cr_retailer_manu_scheme_mapping.manufacturer_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_distributor",
-            "cr_distributor.id",
-            "cr_retailer_manu_scheme_mapping.distributor_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_retailer_loan_calculation",
-            "cr_retailer.id",
-            "cr_retailer_loan_calculation.retailer_id"
-          )
-          .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
-          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+        const total_amount = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .sum("cr_retailer_loan_calculation.disburshment as disbursement")
+          .sum("cr_retailer_loan_calculation.repayment as recovery")
+          .where("cr_retailer_loan_calculation.onermn_acc", onermn_acc_data[i].onermn_acc)
           .where(function () {
-            if (district) {
-              this.where("cr_retailer.district", district)
-            }
-            if (manufacturer_id) {
-              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
-            }
-            if (distributor_id) {
-              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
-            }
-            if (month) {
-              const monthNum = parseInt(month);
-              const monthStartDate = moment('2021-12-31').add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-              const monthEndDate = moment('2021-12-31').add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            if (start_date && end_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
             }
           });
 
-        const transaction_cost = await knex("APSISIPDC.cr_retailer")
-          .leftJoin(
-            "APSISIPDC.cr_retailer_manu_scheme_mapping",
-            "cr_retailer_manu_scheme_mapping.retailer_id",
-            "cr_retailer.id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_manufacturer",
-            "cr_manufacturer.id",
-            "cr_retailer_manu_scheme_mapping.manufacturer_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_distributor",
-            "cr_distributor.id",
-            "cr_retailer_manu_scheme_mapping.distributor_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_retailer_loan_calculation",
-            "cr_retailer.id",
-            "cr_retailer_loan_calculation.retailer_id"
-          )
-          .sum("cr_retailer_loan_calculation.transaction_cost as total_transaction_cost")
-          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+        const total_interest_charges = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .sum("cr_retailer_loan_calculation.daily_principal_interest as interest_charged")
+          .sum("cr_retailer_loan_calculation.penal_interest as penal_interest")
+          .sum("cr_retailer_loan_calculation.other_charge as other_charges")
+          .where("cr_retailer_loan_calculation.onermn_acc", onermn_acc_data[i].onermn_acc)
           .where(function () {
-            if (district) {
-              this.where("cr_retailer.district", district)
-            }
-            if (manufacturer_id) {
-              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
-            }
-            if (distributor_id) {
-              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
-            }
-            if (month) {
-              const monthNum = parseInt(month);
-              const monthStartDate = moment('2021-12-31').add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-              const monthEndDate = moment('2021-12-31').add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            if (start_date && end_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDateNextDay}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
             }
           });
 
-        const total_outstanding_amount = await knex("APSISIPDC.cr_retailer")
-          .leftJoin(
-            "APSISIPDC.cr_retailer_manu_scheme_mapping",
-            "cr_retailer_manu_scheme_mapping.retailer_id",
-            "cr_retailer.id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_manufacturer",
-            "cr_manufacturer.id",
-            "cr_retailer_manu_scheme_mapping.manufacturer_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_distributor",
-            "cr_distributor.id",
-            "cr_retailer_manu_scheme_mapping.distributor_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_retailer_loan_calculation",
-            "cr_retailer.id",
-            "cr_retailer_loan_calculation.retailer_id"
-          )
-          .select("cr_retailer_loan_calculation.total_outstanding")
-          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .orderBy("cr_retailer_loan_calculation.id", "desc")
-          .first()
-          .where(function () {
-            if (district) {
-              this.where("cr_retailer.district", district)
-            }
-            if (manufacturer_id) {
-              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
-            }
-            if (distributor_id) {
-              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
-            }
-            if (month) {
-              const monthNum = parseInt(month);
-              const monthStartDate = moment('2021-12-31').add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-              const monthEndDate = moment('2021-12-31').add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
-            }
-          });
+        const beginning_balance = onermn_acc_info[0].principal_outstanding
+          + onermn_acc_info[0].daily_principal_interest
+          + onermn_acc_info[0].penal_interest
+          + onermn_acc_info[0].transaction_cost
+          + onermn_acc_info[0].other_charges;
 
-        const retailer_info = await knex("APSISIPDC.cr_retailer")
-          .leftJoin(
-            "APSISIPDC.cr_retailer_manu_scheme_mapping",
-            "cr_retailer_manu_scheme_mapping.retailer_id",
-            "cr_retailer.id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_manufacturer",
-            "cr_manufacturer.id",
-            "cr_retailer_manu_scheme_mapping.manufacturer_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_distributor",
-            "cr_distributor.id",
-            "cr_retailer_manu_scheme_mapping.distributor_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_retailer_loan_calculation",
-            "cr_retailer.id",
-            "cr_retailer_loan_calculation.retailer_id"
-          )
-          .select(
-            "cr_retailer.retailer_name",
-            "cr_retailer.retailer_code",
-            "cr_retailer.district",
-            "cr_manufacturer.manufacturer_name",
-            "cr_distributor.distributor_name",
-            "cr_retailer_manu_scheme_mapping.crm_approve_limit",
-            "cr_retailer_loan_calculation.onermn_acc",
-          )
-          .distinct()
-          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where(function () {
-            if (district) {
-              this.where("cr_retailer.district", district)
-            }
-            if (manufacturer_id) {
-              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
-            }
-            if (distributor_id) {
-              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
-            }
-            if (month) {
-              const monthNum = parseInt(month);
-              const monthStartDate = moment('2021-12-31').add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-              const monthEndDate = moment('2021-12-31').add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
-            }
-          });
+        const ending_balance = beginning_balance
+          + total_amount[0].disbursement
+          + total_interest_charges[0].interest_charged
+          + total_interest_charges[0].penal_interest
+          + total_interest_charges[0].other_charges
+          - total_amount[0].recovery;
 
-        const retailer_performance_info = {
-          total_amount_transaction_done: transaction_done[0].total_amount_transaction_done,
-          total_repayment_amount: repayment_amount[0].total_repayment_amount,
-          total_outstanding: total_outstanding_amount.total_outstanding,
-          total_transaction_cost: transaction_cost[0].total_transaction_cost,
-          retailer_name: retailer_info[0].retailer_name,
-          retailer_code: retailer_info[0].retailer_code,
-          district: retailer_info[0].district,
-          manufacturer_name: retailer_info[0].manufacturer_name,
-          distributor_name: retailer_info[0].distributor_name,
-          crm_approve_limit: retailer_info[0].crm_approve_limit,
-          onermn_acc: retailer_info[0].onermn_acc
+        const retailer_loan_status_info = {
+          onermn_acc: onermn_acc_data[i].onermn_acc,
+          beginning_balance: beginning_balance,
+          disbursement: total_amount[0].disbursement,
+          recovery: total_amount[0].recovery,
+          interest_charged: total_interest_charges[0].interest_charged,
+          penal_interest: total_interest_charges[0].penal_interest,
+          other_charges: total_interest_charges[0].other_charges,
+          ending_balance: ending_balance
         }
 
-        retailer_performance_info_Arr.push(retailer_performance_info);
+        retailer_loan_status_Arr.push(retailer_loan_status_info);
       }
-
-      console.log(retailer_performance_info_Arr);
       const headers = [
         "Sr.",
-        "Retailer_name",
-        "Retailer code",
-        "District",
-        "Manufacturer_name",
-        "Distributor_name",
-        "Total_credit_limit",
-        "No_of_orders_placed",
-        "Total_transaction_cost",
-        "Total_amount_of_loan_requested",
-        "Total_outstanding_amount",
-        "Total_amount_of_transaction_done",
-        "Total_amount_of_repayment",
-        "One RMN Account"
+        "Account No",
+        "Begining Balance",
+        "Disbursement",
+        "Interest Charged",
+        "Penal Interest",
+        "Other Charges",
+        "Recovery",
+        "Begining Balance"
       ];
       const workbook = new excel.Workbook();
       const worksheet = workbook.addWorksheet("Sheet 1");
@@ -2935,18 +2762,18 @@ Retailer.generateRetailersLoanStatusReport = async (req, res) => {
         col_addH++;
       });
       row++;
-      for (let i = 0; i < retailer_performance_info_Arr.length; i++) {
+      for (let i = 0; i < retailer_loan_status_Arr.length; i++) {
         var col_add = 0;
-        let e = retailer_performance_info_Arr[i];
+        let e = retailer_loan_status_Arr[i];
         worksheet.cell(row, col + col_add).number(i + 1);
         col_add++;
         worksheet
           .cell(row, col + col_add)
-          .string(e.retailer_name ? e.retailer_name : "");
+          .string(e.onermn_acc ? e.onermn_acc : "");
         col_add++;
         worksheet
           .cell(row, col + col_add)
-          .string(e.retailer_code ? e.retailer_code : "");
+          .number(e.beginning_balance ? e.beginning_balance : 0);
         col_add++;
         worksheet
           .cell(row, col + col_add)
