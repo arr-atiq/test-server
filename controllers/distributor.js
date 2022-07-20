@@ -208,10 +208,15 @@ exports.generateDistributorUnuploadedReport = async (req, res) => {
         .cell(row, col + col_add)
         .string(e.distributor_name ? e.distributor_name : "");
       col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.distributor_code ? e.distributor_code : "");
-      col_add++;
+      if (e.remarks_duplications.includes("Distributor_Code")) {
+        worksheet.cell(row, col + col_add).string(e.distributor_code ? e.distributor_code : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.distributor_code ? e.distributor_code : "");
+        col_add++;
+      }
       if (e.remarks_duplications.includes("Distributor_TIN")) {
         worksheet.cell(row, col + col_add).string(e.distributor_tin ? e.distributor_tin : "").style(errorStyle);
         col_add++;
