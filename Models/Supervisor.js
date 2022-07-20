@@ -1422,6 +1422,8 @@ FileUpload.getDisbursementByManufacturerAndSupervisor = function (req) {
   const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
   const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
 
+console.log('req.params',req.params)
+console.log('req.query',req.query)
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -1656,6 +1658,28 @@ FileUpload.editSupervisor = function (req) {
           )
         );
       });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+
+FileUpload.adminDisbursementAdd = function (req) {
+
+  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+
+  const userID = req.body.user_id;
+
+  // const { remarks_id, remarks_one, supervisor_status, admin_status, transaction_type } = req.body;
+
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const adminDisAdd = await knex("APSISIPDC.cr_cbs_init")
+        .insert(req.body).returning("id");
+
+      resolve(sendApiResult(true, "Data Saved successfully", adminDisAdd));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }

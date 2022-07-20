@@ -14,7 +14,7 @@ const uploadDynBulkFile = multer({ storage: uploadDynamicBulkConfig("file") });
   );
 
   router.post(
-    "/blacklist",
+    "/blacklistData",
     custom.uploadBlackListData
   );
 

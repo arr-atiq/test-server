@@ -32,6 +32,14 @@ router.get("/supervisor-remarks-feedback-history/:supervisor_code", supervisor.g
 router.get("/admin-remarks-feedback-history", supervisor.getAdminFeedbackListHistory);
 //router.get("/supervisor-disbursement-remarks-feedback-details-history", supervisor.getDisbursementRemarksFeedbackHistorySupervisor);
 //router.put("/admin-remarks-feedback-updated", supervisor.updateAdminStatus);
+
+router.post("/admin-disbursement-add", supervisor.adminDisbursementAdd);
+
+
+
+
+
+
 router.post(
     "/remarks-feedback",
     uploadFile.single("file"),

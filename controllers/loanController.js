@@ -374,10 +374,9 @@ exports.disbursement = async (req, res) => {
         await knex("APSISIPDC.cr_retailer_loan_calculation")
           .insert(loan).returning("id")
           .then(async (response) => {
-          console.log('distributor_Email[0].official_email',distributor_Email[0].official_email)
             try{
               const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
-                "email": distributor_Email[0].official_email,
+                "email":distributor_Email && distributor_Email[0]?.official_email,
                 "mail_subject": `IPDC DANA | Collection Confirmation| <${parseInt(response[0])}.>`,
                 "mail_body": `
                 <p>Dear IPDC DANA Partner,</p>

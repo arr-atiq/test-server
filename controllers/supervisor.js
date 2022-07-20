@@ -509,3 +509,13 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+
+exports.adminDisbursementAdd = async (req, res) => {
+  try {
+    const result = await superModel.adminDisbursementAdd(req);
+    res.status(200).send(result)
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
