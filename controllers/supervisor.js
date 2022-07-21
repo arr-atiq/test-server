@@ -519,3 +519,12 @@ exports.adminDisbursementAdd = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.GetAdminDisbursement = async (req, res) => {
+  try {
+    const result = await superModel.GetAdminDisbursement(req);
+    res.status(200).send(result)
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};

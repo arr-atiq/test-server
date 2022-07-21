@@ -34,6 +34,7 @@ router.get("/admin-remarks-feedback-history", supervisor.getAdminFeedbackListHis
 //router.put("/admin-remarks-feedback-updated", supervisor.updateAdminStatus);
 
 router.post("/admin-disbursement-add", supervisor.adminDisbursementAdd);
+router.get("/get-admin-disbursement/:id", supervisor.GetAdminDisbursement);
 
 
 
