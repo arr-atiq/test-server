@@ -475,15 +475,15 @@ FileUpload.insertExcelData = function (rows, filename, req) {
         })
         .then((result) => { })
         .catch((error) => {
-          console.log("Catch error...Data not inserted",error)
+          console.log("Catch error...Data not inserted", error)
           reject(sendApiResult(false, "Data not inserted."));
-          
+
         });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   }).catch((error) => {
-    console.log("Catch error",error)
+    console.log("Catch error", error)
   });
 };
 
@@ -1422,8 +1422,8 @@ FileUpload.getDisbursementByManufacturerAndSupervisor = function (req) {
   const startDate = moment(start_date).startOf('date').format('YYYY-MM-DD');
   const endDate = moment(end_date).add(1, 'days').format('YYYY-MM-DD');
 
-console.log('req.params',req.params)
-console.log('req.query',req.query)
+  console.log('req.params', req.params)
+  console.log('req.query', req.query)
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -1691,7 +1691,12 @@ FileUpload.GetAdminDisbursement = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_cbs_init")
+        .select(
+          knex.raw('SUM("cr_cbs_init"."amount") AS total_amount'),
+          "cr_cbs_init.cr_remarks_feedback_id"
+        )
         .where("cr_remarks_feedback_id", req.params.id)
+        .groupBy("cr_cbs_init.cr_remarks_feedback_id");
 
       if (data == 0) reject(sendApiResult(false, "Not found."));
 
@@ -1701,7 +1706,7 @@ FileUpload.GetAdminDisbursement = function (req) {
 
       reject(sendApiResult(false, error.message));
     }
-  });   
+  });
 }
 
 module.exports = FileUpload;
