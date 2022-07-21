@@ -28,7 +28,7 @@ router.get("/retailer-outstanding-report", retailer.generateRetailerOutstandingR
 
 //retailer-report-3
 router.get("/retailer-loan-status-report", retailer.generateRetailersLoanStatusReport);
-router.get("/retailer-loan-status-report-view", retailer.generateRetailersMonthlyReport);
+router.get("/retailer-loan-status-report-view", retailer.retailerLoanStatusView);
 
 //retailer-report-3
 router.post("/retailer-upload-list", retailer.retailerUploadList);

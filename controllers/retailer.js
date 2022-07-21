@@ -205,6 +205,14 @@ exports.generateRetailersLoanStatusReport = async (req, res) => {
   }
 };
 
+exports.retailerLoanStatusView = async (req, res) => {
+  try {
+    const result = await model.retailerLoanStatusView(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
 // retailer-report-3
 
 exports.retailerUploadList = async (req, res) => {
