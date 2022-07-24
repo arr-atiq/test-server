@@ -1089,10 +1089,6 @@ FileUpload.getSupervisorList = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_supervisor")
-        .leftJoin("APSISIPDC.cr_manufacturer",
-          "cr_manufacturer.id",
-          "cr_supervisor.manufacturer_id"
-        )
         .leftJoin("APSISIPDC.cr_distributor",
           "cr_distributor.id",
           "cr_supervisor.distributor_id"
@@ -1103,8 +1099,6 @@ FileUpload.getSupervisorList = function (req) {
           "cr_supervisor.supervisor_name",
           "cr_supervisor.supervisor_nid",
           "cr_supervisor.phone",
-          "cr_supervisor.manufacturer_id",
-          "cr_manufacturer.manufacturer_name",
           "cr_supervisor.distributor_id",
           "cr_distributor.distributor_name",
           "cr_supervisor.supervisor_employee_code",
