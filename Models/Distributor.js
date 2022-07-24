@@ -971,6 +971,7 @@ FileUpload.getManufacturerByDistributor = function (req) {
         .select(
           "cr_manufacturer.id",
           "cr_manufacturer.manufacturer_name",
+          "cr_manufacturer_vs_distributor.distributor_code",
           "cr_manufacturer.registration_no",
           "cr_manufacturer.website_link",
           "cr_manufacturer.corporate_ofc_address",

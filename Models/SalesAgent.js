@@ -47,7 +47,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 )
                 .select("cr_supervisor.id");
 
-              if (!validNID || !validPhoneNumber || check_sup.length == 0) {
+              const checkNidInSupervisor = await knex("APSISIPDC.cr_supervisor")
+                .where("supervisor_nid", agent_nid)
+                .select(
+                  "id",
+                );
+
+              if (!validNID || !validPhoneNumber || check_sup.length == 0 || checkNidInSupervisor.length != 0) {
 
                 let invalidStr = "invalid columns - ";
                 if (!validNID) {
@@ -59,7 +65,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 if (check_sup.length == 0) {
                   invalidStr = invalidStr + "supervisor is not existed " + ", ";
                 }
-                
+                if (checkNidInSupervisor.length != 0) {
+                  invalidStr = invalidStr + "NID exist in supervisor_NID " + ", ";
+                }
+
 
                 const temp_data = {
                   Sales_Agent_Name: rows[index].Sales_Agent_Name,
