@@ -485,14 +485,24 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
         worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
         col_add++;
       }
-      worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
-      col_add++;
+      if (e.remarks_invalidated.includes("mapping")) {
+        worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : 0).style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : 0);
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
       col_add++;
-      worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
-      col_add++;
+      if (e.remarks_invalidated.includes("mapping")) {
+        worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : 0).style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : 0);
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).string(e.remarks_invalidated ? e.remarks_invalidated : "").style(remarksStyle);
       col_add++;
       // worksheet.cell(row, col + col_add).number(0);
