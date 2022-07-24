@@ -260,10 +260,6 @@ Retailer.checkRetailerEligibility = function (req) {
                     });
                   ++disqualifiedOutletCount;
 
-
-
-
-
                 }
                 else {
                   let disqualifiedReason = "";
