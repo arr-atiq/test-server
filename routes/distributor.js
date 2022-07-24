@@ -16,6 +16,10 @@ router.get(
   "/manufacturer",
   distributor.getManufacturerByDistributor
 );
+router.get(
+  "/distributor-code",
+  distributor.getDistributorCodeByDistributor
+);
 
 router.get("/unuploaded-distributor-data", distributor.generateDistributorUnuploadedReport);
 router.get("/invalidated-distributor-data", distributor.generateDistributorInvalidatedReport);

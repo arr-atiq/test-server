@@ -31,13 +31,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
           const data_array = [];
           const unuploaded_data_array = [];
           const invalidate_data_array = [];
+          const total_mapping_dis_manu = [];
           if (Object.keys(rows).length != 0) {
             // for (let index = 0; index < rows.length; index++) {
             //   all_TIN_array[index] = rows[index].Distributor_TIN;
             // }
 
             for (let index = 0; index < rows.length; index++) {
-
               const nid = rows[index].NID;
               const manu_id = rows[index].Manufacturer_id;
               const phoneNumber = rows[index].Official_Contact_Number;
@@ -135,8 +135,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const distributor_tin =
                 rows[index].Distributor_TIN;
 
-              const distributor_code =
-                rows[index].Distributor_Code;
+              // const distributor_code =
+              //   rows[index].Distributor_Code;
 
               const duplication_check = await knex
                 .count("cr_distributor.distributor_tin as count")
@@ -150,19 +150,19 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check[0].count
               );
 
-              const duplication_check_dis_code = await knex
-                .count("cr_distributor.distributor_code as count")
-                .from("APSISIPDC.cr_distributor")
-                .where(
-                  "APSISIPDC.cr_distributor.distributor_code",
-                  distributor_code.toString()
-                );
+              // const duplication_check_dis_code = await knex
+              //   .count("cr_distributor.distributor_code as count")
+              //   .from("APSISIPDC.cr_distributor")
+              //   .where(
+              //     "APSISIPDC.cr_distributor.distributor_code",
+              //     distributor_code.toString()
+              //   );
 
-              const duplication_check_val_dis_code = parseInt(
-                duplication_check_dis_code[0].count
-              );
+              // const duplication_check_val_dis_code = parseInt(
+              //   duplication_check_dis_code[0].count
+              // );
 
-              if (duplication_check_val == 0 && duplication_check_val_dis_code == 0) {
+              if (duplication_check_val == 0) {
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,
@@ -212,42 +212,41 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   .where("distributor_tin", distributor_tin.toString())
                   .select(
                     "id",
-                    "distributor_name",
-                    "distributor_code"
+                    "distributor_name"
                   );
 
                 //const distributor_name_check = rows[index].Distributor_Name;
-                const distributor_code_check = rows[index].Distributor_Code;
+                //const distributor_code_check = rows[index].Distributor_Code;
                 const manufacturer_id_check = rows[index].Manufacturer_id;
 
-                if (distributor_info[0].distributor_code == distributor_code_check) {
-                  const duplication_check_manu_id = await knex
-                    .count("cr_manufacturer_vs_distributor.id as count")
-                    .from("APSISIPDC.cr_manufacturer_vs_distributor")
-                    .where(
-                      "APSISIPDC.cr_manufacturer_vs_distributor.distributor_id",
-                      distributor_info[0].id
-                    )
-                    .where(
-                      "APSISIPDC.cr_manufacturer_vs_distributor.manufacturer_id",
-                      manufacturer_id_check
-                    );
-
-                  const duplication_check_val_manu_id = parseInt(
-                    duplication_check_manu_id[0].count
+                const duplication_check_manu_id = await knex
+                  .count("cr_manufacturer_vs_distributor.id as count")
+                  .from("APSISIPDC.cr_manufacturer_vs_distributor")
+                  .where(
+                    "APSISIPDC.cr_manufacturer_vs_distributor.distributor_id",
+                    distributor_info[0].id
+                  )
+                  .where(
+                    "APSISIPDC.cr_manufacturer_vs_distributor.manufacturer_id",
+                    manufacturer_id_check
                   );
 
-                  if (duplication_check_val_manu_id == 0) {
-                    const maltiple_manu_mapping_dis = {
-                      manufacturer_id: rows[index].Manufacturer_id,
-                      distributor_id: distributor_info[0].id,
-                      created_by: req.user_id,
-                    }
-                    await knex(
-                      "APSISIPDC.cr_manufacturer_vs_distributor"
-                    ).insert(maltiple_manu_mapping_dis);
-                    continue;
+                const duplication_check_val_manu_id = parseInt(
+                  duplication_check_manu_id[0].count
+                );
+
+                if (duplication_check_val_manu_id == 0) {
+                  const multiple_manu_mapping_dis = {
+                    manufacturer_id: rows[index].Manufacturer_id,
+                    distributor_id: distributor_info[0].id,
+                    distributor_code: rows[index].Distributor_Code,
+                    created_by: req.user_id,
                   }
+                  const mapping_dis_manu = await knex(
+                    "APSISIPDC.cr_manufacturer_vs_distributor"
+                  ).insert(multiple_manu_mapping_dis).returning("id");
+                  total_mapping_dis_manu.push(mapping_dis_manu[0])
+                  continue;
                 }
                 //multiple manufacturer mapping with distributor
 
@@ -256,9 +255,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
                 }
 
-                if (duplication_check_val_dis_code != 0) {
-                  duplicateStr = duplicateStr + "Distributor_Code " + ", ";
-                }
+                // if (duplication_check_val_dis_code != 0) {
+                //   duplicateStr = duplicateStr + "Distributor_Code " + ", ";
+                // }
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,
@@ -316,6 +315,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               file_name: filename,
               found_rows: Object.keys(rows).length,
               upload_rows: Object.keys(data_array).length,
+              mapping_distributor_with_manufacturer: Object.keys(total_mapping_dis_manu).length,
               created_by: parseInt(req.user_id),
             };
             await knex("APSISIPDC.cr_bulk_upload_file_log").insert(
@@ -418,9 +418,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             const user_insert_ids = [];
             for (let index = 0; index < data_array.length; index++) {
               const tin_insert_data = data_array[index].Distributor_TIN;
-              const distributor_code_insert_data = data_array[index].Distributor_Code;
-
-
               const duplication_checkTIN_insert_data = await knex
                 .count("cr_distributor.distributor_tin as count")
                 .from("APSISIPDC.cr_distributor")
@@ -432,19 +429,19 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_checkTIN_insert_data[0].count
               );
 
-              const duplication_checkCode_insert_data = await knex
-                .count("cr_distributor.distributor_code as count")
-                .from("APSISIPDC.cr_distributor")
-                .where(
-                  "APSISIPDC.cr_distributor.distributor_code",
-                  distributor_code_insert_data.toString()
-                );
-              const duplication_check_val_code_insert_data = parseInt(
-                duplication_checkCode_insert_data[0].count
-              );
+              // const duplication_checkCode_insert_data = await knex
+              //   .count("cr_distributor.distributor_code as count")
+              //   .from("APSISIPDC.cr_distributor")
+              //   .where(
+              //     "APSISIPDC.cr_distributor.distributor_code",
+              //     distributor_code_insert_data.toString()
+              //   );
+              // const duplication_check_val_code_insert_data = parseInt(
+              //   duplication_checkCode_insert_data[0].count
+              // );
 
 
-              if (duplication_check_val_tin_insert_data != 0 || duplication_check_val_code_insert_data != 0) {
+              if (duplication_check_val_tin_insert_data != 0) {
                 //multiple manu-distri mapping-check-code-in-same-excel
 
                 const distributor_info_insert_data = await knex("APSISIPDC.cr_distributor")
@@ -452,42 +449,40 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   .where("distributor_tin", tin_insert_data.toString())
                   .select(
                     "id",
-                    "distributor_name",
-                    "distributor_code"
+                    "distributor_name"
                   );
 
                 // const distributor_name_check_insert_data = data_array[index].Distributor_Name;
-                const distributor_code_check_insert_data = data_array[index].Distributor_Code;
+                //const distributor_code_check_insert_data = data_array[index].Distributor_Code;
                 const manufacturer_id_check_insert_data = data_array[index].Manufacturer_id;
 
-                if (distributor_info_insert_data[0].distributor_code == distributor_code_check_insert_data) {
-                  const duplication_check_manu_id_insert_data = await knex
-                    .count("cr_manufacturer_vs_distributor.id as count")
-                    .from("APSISIPDC.cr_manufacturer_vs_distributor")
-                    .where(
-                      "APSISIPDC.cr_manufacturer_vs_distributor.distributor_id",
-                      distributor_info_insert_data[0].id
-                    )
-                    .where(
-                      "APSISIPDC.cr_manufacturer_vs_distributor.manufacturer_id",
-                      manufacturer_id_check_insert_data
-                    );
-
-                  const duplication_check_val_manu_id_insert_data = parseInt(
-                    duplication_check_manu_id_insert_data[0].count
+                const duplication_check_manu_id_insert_data = await knex
+                  .count("cr_manufacturer_vs_distributor.id as count")
+                  .from("APSISIPDC.cr_manufacturer_vs_distributor")
+                  .where(
+                    "APSISIPDC.cr_manufacturer_vs_distributor.distributor_id",
+                    distributor_info_insert_data[0].id
+                  )
+                  .where(
+                    "APSISIPDC.cr_manufacturer_vs_distributor.manufacturer_id",
+                    manufacturer_id_check_insert_data
                   );
 
-                  if (duplication_check_val_manu_id_insert_data == 0) {
-                    const maltiple_manu_mapping_dis_insert_data = {
-                      manufacturer_id: data_array[index].Manufacturer_id,
-                      distributor_id: distributor_info_insert_data[0].id,
-                      created_by: req.user_id,
-                    }
-                    await knex(
-                      "APSISIPDC.cr_manufacturer_vs_distributor"
-                    ).insert(maltiple_manu_mapping_dis_insert_data);
-                    continue;
+                const duplication_check_val_manu_id_insert_data = parseInt(
+                  duplication_check_manu_id_insert_data[0].count
+                );
+
+                if (duplication_check_val_manu_id_insert_data == 0) {
+                  const multiple_manu_mapping_dis_insert_data = {
+                    manufacturer_id: data_array[index].Manufacturer_id,
+                    distributor_id: distributor_info_insert_data[0].id,
+                    distributor_code: data_array[index].Distributor_Code,
+                    created_by: req.user_id,
                   }
+                  await knex(
+                    "APSISIPDC.cr_manufacturer_vs_distributor"
+                  ).insert(multiple_manu_mapping_dis_insert_data);
+                  continue;
                 }
 
                 //multiple manu-distri mapping-check-code-in-same-excel
@@ -541,8 +536,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               }
               const team_distributor = {
                 distributor_name: data_array[index].Distributor_Name,
-                manufacturer_id: data_array[index].Manufacturer_id,
-                distributor_code: data_array[index].Distributor_Code,
                 distributor_tin: data_array[index].Distributor_TIN,
                 official_email: data_array[index].Official_Email,
                 official_contact_number:
@@ -581,8 +574,31 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 const temp_manufacturer_vs_distributor_map = {
                   manufacturer_id: data_array[index].Manufacturer_id,
                   distributor_id: insert_distributor[0],
+                  distributor_code: data_array[index].Distributor_Code,
                   created_by: req.user_id,
                 };
+
+                // var distributorIDUpdate = {
+                //   distributor_code: `${data_array[index].Distributor_Code}-${insert_distributor[0]}`
+                // };
+                // console.log('insert_user[0]', insert_distributor[0])
+
+                // console.log('distributorIDUpdate', distributorIDUpdate)
+
+                // await knex.transaction(async (trx) => {
+                //   let updateData = await trx(
+                //     "APSISIPDC.cr_distributor"
+                //   )
+                //     .where({ id: insert_distributor[0] })
+                //     .update(distributorIDUpdate);
+                //   console.log('updateData', updateData)
+                // });
+
+                const insert_manufacturer_vs_distributor = await knex(
+                  "APSISIPDC.cr_manufacturer_vs_distributor"
+                ).insert(temp_manufacturer_vs_distributor_map).returning("id");
+
+                total_mapping_dis_manu.push(insert_manufacturer_vs_distributor[0]);
 
                 try {
                   const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
@@ -606,26 +622,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 catch (err) {
                   console.log('errorerrorerrorerrorerror', err)
                 }
-
-                // var distributorIDUpdate = {
-                //   distributor_code: `${data_array[index].Distributor_Code}-${insert_distributor[0]}`
-                // };
-                // console.log('insert_user[0]', insert_distributor[0])
-
-                // console.log('distributorIDUpdate', distributorIDUpdate)
-
-                // await knex.transaction(async (trx) => {
-                //   let updateData = await trx(
-                //     "APSISIPDC.cr_distributor"
-                //   )
-                //     .where({ id: insert_distributor[0] })
-                //     .update(distributorIDUpdate);
-                //   console.log('updateData', updateData)
-                // });
-
-                const insert_manufacturer_vs_distributor = await knex(
-                  "APSISIPDC.cr_manufacturer_vs_distributor"
-                ).insert(temp_manufacturer_vs_distributor_map);
 
                 const acc_num =
                   data_array[index].Distributor_Bank_Account_Number.toString().split(";");
@@ -729,6 +725,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 file_name: filename,
                 found_rows: Object.keys(rows).length,
                 upload_rows: Object.keys(distributor_insert_ids).length,
+                mapping_distributor_with_manufacturer: Object.keys(total_mapping_dis_manu).length,
                 created_by: parseInt(req.user_id),
               };
               await knex("APSISIPDC.cr_bulk_upload_file_log").insert(
@@ -777,17 +774,10 @@ FileUpload.getDistributorList = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_distributor")
-        .leftJoin("APSISIPDC.cr_manufacturer",
-          "cr_manufacturer.id",
-          "cr_distributor.manufacturer_id"
-        )
         .where("cr_distributor.activation_status", "Active")
         .select(
           "cr_distributor.id",
           "cr_distributor.distributor_name",
-          "cr_distributor.manufacturer_id",
-          "cr_manufacturer.manufacturer_name",
-          "cr_distributor.distributor_code",
           "cr_distributor.distributor_tin",
           "cr_distributor.official_email",
           "cr_distributor.official_contact_number",
@@ -986,6 +976,34 @@ FileUpload.getManufacturerByDistributor = function (req) {
           "cr_manufacturer.corporate_ofc_address",
           "cr_manufacturer.autho_rep_full_name",
           "cr_manufacturer.autho_rep_designation"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.getDistributorCodeByDistributor = function (req) {
+  const { distributor_id } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_manufacturer")
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer_vs_distributor",
+          "cr_manufacturer_vs_distributor.manufacturer_id",
+          "cr_manufacturer.id"
+        )
+        .where(
+          "cr_manufacturer_vs_distributor.distributor_id",
+          distributor_id
+        )
+        .select(
+          "cr_manufacturer.id",
+          "cr_manufacturer.manufacturer_name",
+          "cr_manufacturer_vs_distributor.distributor_code"
         );
       if (data == 0) reject(sendApiResult(false, "Not found."));
       resolve(sendApiResult(true, "Data fetched successfully", data));

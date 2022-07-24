@@ -90,6 +90,15 @@ exports.getManufacturerByDistributor = async (req, res) => {
   }
 };
 
+exports.getDistributorCodeByDistributor = async (req, res) => {
+  try {
+    const result = await distModel.getDistributorCodeByDistributor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.generateDistributorUnuploadedReport = async (req, res) => {
   try {
     const limit_data = await knex("APSISIPDC.cr_distributor_unuploaded_data")
