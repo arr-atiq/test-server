@@ -131,6 +131,8 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
         "phone",
         "agent_employee_code",
         "autho_supervisor_employee_code",
+        "distributor_id",
+        "manufacturer_id",
         "region_of_operation",
         "remarks_duplications"
       );
@@ -141,6 +143,8 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
       "Phone",
       "Sales_Agent_Employee_Code",
       "Authorized_supervisor_emp_code",
+      "Distributor",
+      "Manufacturer",
       "Region_of_Operation",
       "Duplications Remarked"
     ];
@@ -223,6 +227,10 @@ exports.generateSalesagentUnuploadedReport = async (req, res) => {
       }
       worksheet.cell(row, col + col_add).string(e.autho_supervisor_employee_code ? e.autho_supervisor_employee_code : "");
       col_add++;
+      worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : 0);
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : 0);
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.remarks_duplications ? e.remarks_duplications : "").style(remarksStyle);
@@ -252,6 +260,8 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
         "phone",
         "agent_employee_code",
         "autho_supervisor_employee_code",
+        "distributor_id",
+        "manufacturer_id",
         "region_of_operation",
         "remarks_invalidated"
       );
@@ -262,6 +272,8 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
       "Phone",
       "Sales_Agent_Employee_Code",
       "Authorized_supervisor_emp_code",
+      "Distributor",
+      "Manufacturer",
       "Region_of_Operation",
       "Invalidated Remarked"
     ];
@@ -344,6 +356,10 @@ exports.generateSalesagentInvalidatedReport = async (req, res) => {
         worksheet.cell(row, col + col_add).string(e.autho_supervisor_employee_code ? e.autho_supervisor_employee_code : "");
         col_add++;
       }
+      worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : 0);
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : 0);
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.remarks_invalidated ? e.remarks_invalidated : "").style(remarksStyle);
