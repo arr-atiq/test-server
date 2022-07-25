@@ -53,6 +53,10 @@ exports.login = async (req, res) => {
     .select("id", "name", "email", "phone", "password", "device_token")
     .where({ email, status: "Active" })
     .first();
+
+    console.log('userData', userData);
+    console.log('req.body', md5(`++${password}--`))
+
   if (!userData || !(md5(`++${password}--`) === userData.password)) {
     res.send(sendApiResult(false, "Oops! Invalid email or Password."));
   } else {
@@ -163,8 +167,9 @@ exports.deviceToken = async (req, res) => {
 
 exports.updatePassword = async (req, res) => {
   const { link_token, password } = req.body;
+  console.log('password',password)
   const data = await knex("APSISIPDC.cr_users").where("link_token", link_token).update({
-    password: password,
+    password: md5(`++${password}--`),
     link_token: 'False'
   });
   return res.send(true, "You have Successfully Reset Password.", data);
