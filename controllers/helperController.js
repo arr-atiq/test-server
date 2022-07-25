@@ -697,6 +697,8 @@ exports.timeout = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
+// @Ashik Start 
+
 exports.randomPasswordGenerator = function (array) {
   const alpha = "abcdefghijklmnopqrstuvwxyz";
   const calpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -713,3 +715,5 @@ exports.randomPasswordGenerator = function (array) {
   }
   return pass;
 };
+
+// @Ashik End 
