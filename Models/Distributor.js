@@ -1,13 +1,15 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, randomPasswordGenerator } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
 const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
+  var password = randomPasswordGenerator()
+  var link_code = randomPasswordGenerator()
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -612,7 +614,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       mentioned user ID and password
                       at www.ipdcDANA.com and login.</p>
                       <p>User ID : ${data_array[index].Official_Email}</p>
-                      <p>Password : 123456</p>
+                      <p>Your Temporary Password : ${password}</p>
+                      <p>For Password Reset Please Click this link : ${process.env.HOSTIP}/reset_password/${link_code}  </p>
                       <p>Regards, </p>
                       <p>IPDC Finance</p>
                       `
@@ -655,7 +658,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 name: data_array[index].Distributor_Name,
                 email: data_array[index].Official_Email,
                 phone: data_array[index].Official_Contact_Number,
-                password: "5efd3b0647df9045c240729d31622c79",
+                // password: "5efd3b0647df9045c240729d31622c79",
+                password: password,
+                link_token: link_code,
                 cr_user_type: folder_name,
               };
               const insert_user = await knex("APSISIPDC.cr_users")

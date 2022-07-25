@@ -160,3 +160,23 @@ exports.deviceToken = async (req, res) => {
   return res.send(true, "You have Successfully Logged In.", data);
 
 }
+
+exports.updatePassword = async (req, res) => {
+  const { link_token, password } = req.body;
+  const data = await knex("APSISIPDC.cr_users").where("link_token", link_token).update({
+    password: password,
+  });
+  return res.send(true, "You have Successfully Reset Password.", data);
+}
+
+exports.getPassAndMail = async (req, res) => {
+  const { link_token } = req.query;
+  try {
+    const data = await knex("APSISIPDC.cr_users").select('password', 'email').where("link_token", link_token)
+    if (data == 0) res.send(sendApiResult(false, "Not found."));
+    res.send(sendApiResult(true, "Data fetched successfully", data));
+  } catch (error) {
+    sendApiResult(false, error.message);
+  }
+}
+

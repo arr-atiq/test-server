@@ -1854,4 +1854,22 @@ FileUpload.GetAdminDisbursement = function (req) {
   });
 }
 
+
+FileUpload.GetAdminAmount = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_cbs_init")
+        .where("cr_remarks_feedback_id", req.params.id)
+
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+
+    } catch (error) {
+
+      reject(sendApiResult(false, error.message));
+    }
+  });
+}
+
 module.exports = FileUpload;
