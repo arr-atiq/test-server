@@ -477,7 +477,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 supervisor_insert_ids.push(insert_supervisor[0]);
 
                 const temp_manufacturer_vs_supervisor_map = {
-
                   supervisor_id: insert_supervisor[0],
                   supervisor_employee_code: data_array[index].Supervisor_Employee_Code,
                   distributor_id: data_array[index].Distributor,
@@ -645,13 +644,13 @@ FileUpload.getAllManufacturerForSupervisor = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const manufacturer = await knex("APSISIPDC.cr_supervisor")
-        .leftJoin("APSISIPDC.cr_manufacturer_vs_distributor",
-          "cr_manufacturer_vs_distributor.distributor_id",
-          "cr_supervisor.distributor_id")
+        .leftJoin("APSISIPDC.cr_supervisor_distributor_manufacturer_map",
+          "cr_supervisor_distributor_manufacturer_map.supervisor_employee_code",
+          "cr_supervisor.supervisor_employee_code")
         .leftJoin("APSISIPDC.cr_manufacturer",
           "cr_manufacturer.id",
-          "cr_manufacturer_vs_distributor.manufacturer_id")
-        .where("cr_supervisor.supervisor_employee_code", supervisor_code)
+          "cr_supervisor_distributor_manufacturer_map.manufacturer_id")
+        .where("cr_supervisor.supervisor_employee_code", supervisor_code.toString())
         .where("cr_manufacturer.status", "Active")
         .select(
           "cr_manufacturer.id",
