@@ -794,6 +794,35 @@ FileUpload.getRetailersBySalesAgent = function (req) {
   });
 };
 
+
+FileUpload.getManufacturerListBySalesagent = function (req) {
+  const { sales_agent_id } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const data = await knex("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id"
+        )
+        .where("cr_manufacturer.status", "Active")
+        .where("cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id", sales_agent_id)
+        .select(
+          "cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id",
+          "cr_manufacturer.manufacturer_name"
+        );
+
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+      
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 FileUpload.getRetailersByRegionOperation = function (req) {
   const { salesagent_id } = req.params;
   const { region_of_operation } = req.query;
