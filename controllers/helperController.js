@@ -467,11 +467,11 @@ exports.OutletCreditInfo = async function (retailer_id) {
       Number(e.due_amount) +
       Number(e.total_sys_interest_amount) +
       (Number(e.due_amount) + Number(e.total_sys_interest_amount)) *
-      howManyDays *
-      ((Number(e.interest_rate_percentage) +
-        Number(e.service_charge_rate_percentage) +
-        Number(e.penalty_rate_percentage) * Number(e.is_penalty_interest)) /
-        100);
+        howManyDays *
+        ((Number(e.interest_rate_percentage) +
+          Number(e.service_charge_rate_percentage) +
+          Number(e.penalty_rate_percentage) * Number(e.is_penalty_interest)) /
+          100);
   }
 
   let outlet_credit = {};
@@ -634,7 +634,6 @@ exports.ValidatePhoneNumber = function (phoneNumber) {
 };
 
 exports.ValidateNID = function (nid) {
-
   const nidStr = nid.toString();
   if (nidStr.includes(".") || nidStr.includes("-") || nidStr.includes("+")) {
     return false;
@@ -675,10 +674,7 @@ exports.duplication_manufacturer = async function (reg_no) {
   const reg = reg_no.toString();
   const data = await knex
     .from("APSISIPDC.cr_manufacturer")
-    .where(
-      "cr_manufacturer.registration_no",
-      reg
-    )
+    .where("cr_manufacturer.registration_no", reg)
     .select("id");
   console.log(data);
 
@@ -688,15 +684,32 @@ exports.duplication_manufacturer = async function (reg_no) {
 };
 
 exports.hasDupsManuNameInsertArray = function (array) {
-
-  return array.map(function (value) {
-    return value.Manufacturer_Name;
-
-  }).some(function (value, index, array) {
-    return array.indexOf(value) !== array.lastIndexOf(value);
-  })
+  return array
+    .map(function (value) {
+      return value.Manufacturer_Name;
+    })
+    .some(function (value, index, array) {
+      return array.indexOf(value) !== array.lastIndexOf(value);
+    });
 };
 
 exports.timeout = (ms) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+exports.randomPasswordGenerator = function (array) {
+  const alpha = "abcdefghijklmnopqrstuvwxyz";
+  const calpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const num = "1234567890";
+  const specials = ",.!@#$%^&*";
+  const options = [alpha, alpha, alpha, calpha, calpha, num, num, specials];
+  let opt, choose;
+  let pass = "";
+  for (let i = 0; i < 8; i++) {
+    opt = Math.floor(Math.random() * options.length);
+    choose = Math.floor(Math.random() * options[opt].length);
+    pass = pass + options[opt][choose];
+    options.splice(opt, 1);
+  }
+  return pass;
+};
