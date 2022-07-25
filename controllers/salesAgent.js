@@ -47,6 +47,14 @@ exports.getSalesAgentList = async (req, res) => {
   }
 };
 
+exports.getManufacturerListBySalesagent = async (req, res) => {
+  try {
+    const result = await model.getManufacturerListBySalesagent(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
 exports.getSalesAgentOperationRegion = async (req, res) => {
   try {
     const result = await model.getSalesAgentOperationRegion(req);
