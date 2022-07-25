@@ -173,7 +173,7 @@ exports.getPassAndMail = async (req, res) => {
   const { link_token } = req.query;
   try {
     const data = await knex("APSISIPDC.cr_users").select('password', 'email').where("link_token", link_token)
-    if (data == 0) reject(sendApiResult(false, "Not found."));
+    if (data == 0) res.send(sendApiResult(false, "Not found."));
     res.send(sendApiResult(true, "Data fetched successfully", data));
   } catch (error) {
     sendApiResult(false, error.message);
