@@ -165,6 +165,7 @@ exports.updatePassword = async (req, res) => {
   const { link_token, password } = req.body;
   const data = await knex("APSISIPDC.cr_users").where("link_token", link_token).update({
     password: password,
+    link_token: 'False'
   });
   return res.send(true, "You have Successfully Reset Password.", data);
 }

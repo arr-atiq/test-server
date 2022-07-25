@@ -697,11 +697,13 @@ exports.timeout = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
+// @Ashik Start 
+
 exports.randomPasswordGenerator = function (array) {
   const alpha = "abcdefghijklmnopqrstuvwxyz";
   const calpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const num = "1234567890";
-  const specials = ",.!@#$%^&*";
+  const specials = "!@#$^&*";
   const options = [alpha, alpha, alpha, calpha, calpha, num, num, specials];
   let opt, choose;
   let pass = "";
@@ -713,3 +715,5 @@ exports.randomPasswordGenerator = function (array) {
   }
   return pass;
 };
+
+// @Ashik End 
