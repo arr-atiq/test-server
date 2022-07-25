@@ -38,8 +38,23 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const phoneNumber = rows[index].Phone;
               const autho_supervisor_code = rows[index].Authorized_supervisor_emp_code;
 
+              const distributor_id_check = rows[index].Distributor;
+              const manufacturer_id_check = rows[index].Manufacturer;
+
               const validNID = ValidateNID(agent_nid);
               const validPhoneNumber = ValidatePhoneNumber(phoneNumber.toString());
+
+              const check_manu_exist = await knex("APSISIPDC.cr_manufacturer")
+                .where(
+                  "id", manufacturer_id_check
+                )
+                .select("id");
+
+              const check_dis_exist = await knex("APSISIPDC.cr_distributor")
+                .where(
+                  "id", distributor_id_check
+                )
+                .select("id");
 
               const check_sup = await knex("APSISIPDC.cr_supervisor")
                 .where(
@@ -47,13 +62,25 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 )
                 .select("cr_supervisor.id");
 
+              const check_mapping_manu_dis_sup = await knex("APSISIPDC.cr_supervisor_distributor_manufacturer_map")
+                .where(
+                  "cr_supervisor_distributor_manufacturer_map.supervisor_employee_code", autho_supervisor_code.toString()
+                )
+                .where(
+                  "cr_supervisor_distributor_manufacturer_map.distributor_id", distributor_id_check
+                )
+                .where(
+                  "cr_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id_check
+                )
+                .select("cr_supervisor_distributor_manufacturer_map.id");
+
               const checkNidInSupervisor = await knex("APSISIPDC.cr_supervisor")
                 .where("supervisor_nid", agent_nid)
                 .select(
                   "id",
                 );
 
-              if (!validNID || !validPhoneNumber || check_sup.length == 0 || checkNidInSupervisor.length != 0) {
+              if (!validNID || !validPhoneNumber || check_manu_exist.length == 0 || check_dis_exist.length == 0 || check_sup.length == 0 || check_mapping_manu_dis_sup.length == 0 || checkNidInSupervisor.length != 0) {
 
                 let invalidStr = "invalid columns - ";
                 if (!validNID) {
@@ -62,8 +89,17 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 if (!validPhoneNumber) {
                   invalidStr = invalidStr + "Phone " + ", ";
                 }
+                if (check_manu_exist.length == 0) {
+                  invalidStr = invalidStr + "Manufacturer is not existed " + ", ";
+                }
+                if (check_dis_exist.length == 0) {
+                  invalidStr = invalidStr + "Distributor is not existed " + ", ";
+                }
                 if (check_sup.length == 0) {
                   invalidStr = invalidStr + "supervisor is not existed " + ", ";
+                }
+                if (check_mapping_manu_dis_sup.length == 0) {
+                  invalidStr = invalidStr + "supervisor distributor manufacturer mapping is not correct " + ", ";
                 }
                 if (checkNidInSupervisor.length != 0) {
                   invalidStr = invalidStr + "NID exist in supervisor_NID " + ", ";
@@ -78,6 +114,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     rows[index].Sales_Agent_Employee_Code,
                   Authorized_supervisor_emp_code:
                     rows[index].Authorized_supervisor_emp_code,
+                  Distributor: rows[index].Distributor,
+                  Manufacturer: rows[index].Manufacturer,
                   Region_of_Operation: rows[index].Region_of_Operation,
                   Remarks_Invalidated: invalidStr,
                 };
@@ -123,13 +161,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check_emp_code[0].count
               );
 
-              const exist_manu_dis_of_sup = await knex("APSISIPDC.cr_supervisor")
-                .where(
-                  "cr_supervisor.supervisor_employee_code", autho_supervisor_code.toString()
-                )
-                .select("cr_supervisor.manufacturer_id",
-                  "cr_supervisor.distributor_id");
-
               if (duplication_check_val_nid == 0
                 && duplication_check_val_phone == 0
                 && duplication_check_val_emp_code == 0) {
@@ -137,16 +168,92 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Sales_Agent_Name: rows[index].Sales_Agent_Name,
                   Sales_Agent_NID: rows[index].Sales_Agent_NID,
                   Phone: rows[index].Phone,
-                  Manufacturer: exist_manu_dis_of_sup[0].manufacturer_id,
+                  Manufacturer: rows[index].Manufacturer,
                   Sales_Agent_Employee_Code:
                     rows[index].Sales_Agent_Employee_Code,
                   Authorized_supervisor_emp_code:
                     rows[index].Authorized_supervisor_emp_code,
                   Region_of_Operation: rows[index].Region_of_Operation,
-                  Distributor: exist_manu_dis_of_sup[0].distributor_id
+                  Distributor: rows[index].Distributor
                 };
                 data_array.push(temp_data);
               } else {
+                //multiple manufacturer mapping with salesagent by supervisor and distributor
+
+                const salesAgent_manufacturer_id = rows[index].Manufacturer;
+                const sales_agent_info = await knex("APSISIPDC.cr_sales_agent")
+                  .where("status", "Active")
+                  .where(
+                    "agent_nid",
+                    salesagent_nid
+                  )
+                  .where(
+                    "phone",
+                    salesagent_phone.toString()
+                  )
+                  .where(
+                    "agent_employee_code",
+                    salesagent_emp_code.toString()
+                  )
+                  .select(
+                    "id",
+                    "agent_name",
+                    "agent_employee_code",
+                    "autho_supervisor_employee_code",
+                    "distributor_id",
+                  );
+
+                if (sales_agent_info.length != 0) {
+                  if (sales_agent_info[0].distributor_id == rows[index].Distributor) {
+                    if (sales_agent_info[0].autho_supervisor_employee_code == rows[index].Authorized_supervisor_emp_code) {
+                      const duplicate_check_sup_dis_manu = await knex
+                        .count("cr_salesagent_supervisor_distributor_manufacturer_map.id as count")
+                        .from("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
+                        .where(
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+                          sales_agent_info[0].id
+                        )
+                        .where(
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_employee_code",
+                          sales_agent_info[0].autho_supervisor_employee_code
+                        )
+                        .where(
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id",
+                          sales_agent_info[0].distributor_id
+                        )
+                        .where(
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id",
+                          salesAgent_manufacturer_id
+                        );
+
+                      const duplicate_check_sup_dis_manu_val = parseInt(
+                        duplicate_check_sup_dis_manu[0].count
+                      );
+
+                      if (duplicate_check_sup_dis_manu_val == 0) {
+                        const multiple_manu_mapping_salesagent = {
+                          salesagent_id: sales_agent_info[0].id,
+                          salesagent_employee_code: sales_agent_info[0].agent_employee_code,
+                          supervisor_employee_code: sales_agent_info[0].autho_supervisor_employee_code,
+                          distributor_id: sales_agent_info[0].distributor_id,
+                          manufacturer_id: rows[index].Manufacturer,
+                          created_by: req.user_id,
+                        }
+                        const multiple_manu_salesagent_mapping = await knex(
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
+                        ).insert(multiple_manu_mapping_salesagent).returning("id");
+
+                        //total_mapping_dis_manu.push(mapping_dis_manu[0])
+                        continue;
+                      }
+
+                    }
+
+                  }
+                }
+
+                //multiple manufacturer mapping with salesagent by supervisor and distributor
+
                 let duplicateStr = "duplicate columns - ";
 
                 if (duplication_check_val_nid != 0) {
@@ -167,6 +274,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     rows[index].Sales_Agent_Employee_Code,
                   Authorized_supervisor_emp_code:
                     rows[index].Authorized_supervisor_emp_code,
+                  Distributor: rows[index].Distributor,
+                  Manufacturer: rows[index].Manufacturer,
                   Region_of_Operation: rows[index].Region_of_Operation,
                   Remarks_Duplicated: duplicateStr
                 };
@@ -205,6 +314,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   invalidate_data_array[index].Sales_Agent_Employee_Code,
                 autho_supervisor_employee_code:
                   invalidate_data_array[index].Authorized_supervisor_emp_code,
+                distributor_id: invalidate_data_array[index].Distributor,
+                manufacturer_id: invalidate_data_array[index].Manufacturer,
                 region_of_operation: invalidate_data_array[index].Region_of_Operation,
                 remarks_invalidated: invalidate_data_array[index].Remarks_Invalidated,
                 created_by: req.user_id,
@@ -225,6 +336,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   unuploaded_data_array[index].Sales_Agent_Employee_Code,
                 autho_supervisor_employee_code:
                   unuploaded_data_array[index].Authorized_supervisor_emp_code,
+                distributor_id: unuploaded_data_array[index].Distributor,
+                manufacturer_id: unuploaded_data_array[index].Manufacturer,
                 region_of_operation: unuploaded_data_array[index].Region_of_Operation,
                 remarks_duplications: unuploaded_data_array[index].Remarks_Duplicated,
                 created_by: req.user_id,
@@ -239,7 +352,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             const user_insert_ids = [];
             const distributor_ids = [];
             for (let index = 0; index < data_array.length; index++) {
-
               const agent_nid_insert_data = data_array[index].Sales_Agent_NID;
               const agent_phone_insert_data = data_array[index].Phone;
               const agent_emp_code_insert_data = data_array[index].Sales_Agent_Employee_Code;
@@ -280,6 +392,81 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (duplication_check_val_nid_insert != 0
                 || duplication_check_val_phone_insert != 0
                 || duplication_check_val_emp_code_insert != 0) {
+
+                //multiple manufacturer mapping with salesagent by supervisor and distributor
+
+                const salesAgent_manufacturer_id_insert = data_array[index].Manufacturer;
+                const sales_agent_info_insert = await knex("APSISIPDC.cr_sales_agent")
+                  .where("status", "Active")
+                  .where(
+                    "agent_nid",
+                    agent_nid_insert_data
+                  )
+                  .where(
+                    "phone",
+                    agent_phone_insert_data.toString()
+                  )
+                  .where(
+                    "agent_employee_code",
+                    agent_emp_code_insert_data.toString()
+                  )
+                  .select(
+                    "id",
+                    "agent_name",
+                    "agent_employee_code",
+                    "autho_supervisor_employee_code",
+                    "distributor_id",
+                  );
+
+                if (sales_agent_info_insert.length != 0) {
+                  if (sales_agent_info_insert[0].distributor_id == data_array[index].Distributor) {
+                    if (sales_agent_info_insert[0].autho_supervisor_employee_code == data_array[index].Authorized_supervisor_emp_code) {
+                      const duplicate_check_sup_dis_manu_insert = await knex
+                        .count("cr_salesagent_supervisor_distributor_manufacturer_map.id as count")
+                        .from("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
+                        .where(
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+                          sales_agent_info_insert[0].id
+                        )
+                        .where(
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_employee_code",
+                          sales_agent_info_insert[0].autho_supervisor_employee_code
+                        )
+                        .where(
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id",
+                          sales_agent_info_insert[0].distributor_id
+                        )
+                        .where(
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id",
+                          salesAgent_manufacturer_id_insert
+                        );
+
+                      const duplicate_check_sup_dis_manu_val_insert = parseInt(
+                        duplicate_check_sup_dis_manu_insert[0].count
+                      );
+
+                      if (duplicate_check_sup_dis_manu_val_insert == 0) {
+                        const multiple_manu_mapping_salesagent_insert = {
+                          salesagent_id: sales_agent_info_insert[0].id,
+                          salesagent_employee_code: sales_agent_info_insert[0].agent_employee_code,
+                          supervisor_employee_code: sales_agent_info_insert[0].autho_supervisor_employee_code,
+                          distributor_id: sales_agent_info_insert[0].distributor_id,
+                          manufacturer_id: data_array[index].Manufacturer,
+                          created_by: req.user_id,
+                        }
+                        const multiple_manu_salesagent_mapping_insert = await knex(
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
+                        ).insert(multiple_manu_mapping_salesagent_insert).returning("id");
+
+                        //total_mapping_dis_manu.push(mapping_dis_manu[0])
+                        continue;
+                      }
+
+                    }
+
+                  }
+                }
+
                 let duplicateStr = "duplicate columns - ";
                 if (duplication_check_val_nid_insert != 0) {
                   duplicateStr = duplicateStr + "Sales_Agent_NID " + ", ";
@@ -299,6 +486,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     data_array[index].Sales_Agent_Employee_Code,
                   autho_supervisor_employee_code:
                     data_array[index].Authorized_supervisor_emp_code,
+                  distributor_id: data_array[index].Distributor,
+                  manufacturer_id: data_array[index].Manufacturer,
                   region_of_operation: data_array[index].Region_of_Operation,
                   remarks_duplications: duplicateStr,
                   created_by: req.user_id,
@@ -312,7 +501,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 agent_name: data_array[index].Sales_Agent_Name,
                 agent_nid: data_array[index].Sales_Agent_NID,
                 phone: data_array[index].Phone,
-                manufacturer_id: data_array[index].Manufacturer,
+                //manufacturer_id: data_array[index].Manufacturer,
                 distributor_id: data_array[index].Distributor,
                 agent_employee_code:
                   data_array[index].Sales_Agent_Employee_Code,
@@ -327,6 +516,23 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .returning("id");
               if (insert_sales_agent) {
                 sales_agent_insert_ids.push(insert_sales_agent[0]);
+
+                const temp_manufacturer_vs_salesagent_map = {
+                  salesagent_id: insert_sales_agent[0],
+                  salesagent_employee_code: data_array[index].Sales_Agent_Employee_Code,
+                  supervisor_employee_code: data_array[index].Authorized_supervisor_emp_code,
+                  distributor_id: data_array[index].Distributor,
+                  manufacturer_id: data_array[index].Manufacturer,
+                  created_by: req.user_id,
+                };
+
+                const insert_manufacturer_vs_salesagent_map = await knex(
+                  "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
+                ).insert(temp_manufacturer_vs_salesagent_map).returning("id");
+
+                //total_mapping_dis_manu.push(insert_manufacturer_vs_salesagent_map[0]);
+
+
                 // try{
                 //   const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
                 //     "email": data_array[index].Official_Email,
@@ -463,10 +669,10 @@ FileUpload.getSalesAgentList = function (req) {
     try {
       const data = await knex("APSISIPDC.cr_sales_agent")
         .where("cr_sales_agent.activation_status", "Active")
-        .leftJoin("APSISIPDC.cr_manufacturer",
-          "cr_manufacturer.id",
-          "cr_sales_agent.manufacturer_id"
-        )
+        // .leftJoin("APSISIPDC.cr_manufacturer",
+        //   "cr_manufacturer.id",
+        //   "cr_sales_agent.manufacturer_id"
+        // )
         .leftJoin("APSISIPDC.cr_distributor",
           "cr_distributor.id",
           "cr_sales_agent.distributor_id"
@@ -480,8 +686,8 @@ FileUpload.getSalesAgentList = function (req) {
           "cr_sales_agent.agent_name",
           "cr_sales_agent.agent_nid",
           "cr_sales_agent.phone",
-          "cr_sales_agent.manufacturer_id",
-          "cr_manufacturer.manufacturer_name",
+          // "cr_sales_agent.manufacturer_id",
+          // "cr_manufacturer.manufacturer_name",
           "cr_sales_agent.distributor_id",
           "cr_distributor.distributor_name",
           "cr_distributor.distributor_code",
