@@ -8,6 +8,7 @@ const {
   timeout,
 } = require("../controllers/helperController");
 const knex = require("../config/database");
+const md5 = require("md5");
 
 exports.uploadBlackListModel = async (rows, filename, req) => {
   var resValue = [];
@@ -175,3 +176,27 @@ exports.getBlockListAll = function (req) {
       console.log("--------------------------------2nd error", error);
     });
   };
+
+
+  exports.updatePassword = async (req) => {
+    console.log('req.body',req)
+
+    const { curr_pass, new_pass ,  id } = req;
+    const valueData = await knex("APSISIPDC.cr_users")
+          .where('id', id)
+          .select(
+            "id",
+            "password"
+          )
+
+     if((md5(`++${curr_pass}--`) === valueData[0]?.password)){
+      const data = await knex("APSISIPDC.cr_users").where("id", id).update({
+        password: md5(`++${new_pass}--`),
+      });
+      return sendApiResult(true, "You have Successfully Reset Password.", data);
+     }  else{
+      return sendApiResult(false, "Current Password Is Not Same.", valueData);
+     }  
+    
+    
+  }
