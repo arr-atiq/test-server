@@ -508,6 +508,74 @@ User.userDetails = function (req) {
         resolve(sendApiResult(true, "Data fetched successfully", data));
 
       }
+      if (role_type[0].role_type_id == 4) {
+
+        const distributor = await knex("APSISIPDC.cr_distributor_user")
+          .where("user_id", user_id)
+          .select(
+            "distributor_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_distributor")
+          .select()
+          .where("id", distributor[0].distributor_id);
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type[0].role_type_id == 5) {
+
+        const supervisor = await knex("APSISIPDC.cr_supervisor_user")
+          .where("user_id", user_id)
+          .select(
+            "supervisor_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_supervisor")
+          .select()
+          .where("id", supervisor[0].supervisor_id);
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type[0].role_type_id == 6) {
+
+        const salesagent = await knex("APSISIPDC.cr_sales_agent_user")
+          .where("user_id", user_id)
+          .select(
+            "sales_agent_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_sales_agent")
+          .select()
+          .where("id", salesagent[0].sales_agent_id);
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type[0].role_type_id == 7) {
+
+        const retailer = await knex("APSISIPDC.cr_retailer_user")
+          .where("user_id", user_id)
+          .select(
+            "retailer_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_retailer")
+          .select()
+          .where("id", retailer[0].retailer_id);
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
 
     } catch (error) {
       reject(sendApiResult(false, error.message));
