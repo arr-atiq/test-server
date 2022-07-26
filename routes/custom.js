@@ -18,6 +18,11 @@ const uploadDynBulkFile = multer({ storage: uploadDynamicBulkConfig("file") });
     custom.uploadBlackListData
   );
 
+  router.put(
+    "/updatePassword",
+    custom.updatePassword
+  );
+
   router.get(
     "/getBlockList",
     custom.getBlockList

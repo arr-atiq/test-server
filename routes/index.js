@@ -29,5 +29,5 @@ module.exports = function (app) {
   app.use("/retailer", authenticateToken, require("./Retailer"));
   app.use("/loan", authenticateToken, require("./loan"));
   app.use("/job", require("./Cronjob"));
-  app.use("/custom", require("./custom"));
+  app.use("/custom",authenticateToken, require("./custom"));
 }
