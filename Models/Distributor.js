@@ -8,8 +8,9 @@ const { default: axios } = require("axios");
 const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
-  var password = randomPasswordGenerator()
-  var link_code = randomPasswordGenerator()
+  var password = randomPasswordGenerator();
+  var link_code = randomPasswordGenerator();
+  var email_official;
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -152,18 +153,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check[0].count
               );
 
-              const duplication_checkEmail_user_table = await knex
-                .count("cr_users.email as count")
-                .from("APSISIPDC.cr_users")
-                .where(
-                  "APSISIPDC.cr_users.email",
-                  email.toString()
-                );
-
-              const duplication_check_val_email_user_table = parseInt(
-                duplication_checkEmail_user_table[0].count
-              );
-
               // const duplication_check_dis_code = await knex
               //   .count("cr_distributor.distributor_code as count")
               //   .from("APSISIPDC.cr_distributor")
@@ -176,48 +165,115 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               //   duplication_check_dis_code[0].count
               // );
 
-              if (duplication_check_val == 0 && duplication_check_val_email_user_table == 0) {
-                const temp_data = {
-                  Manufacturer_id: rows[index].Manufacturer_id,
-                  Distributor_Name: rows[index].Distributor_Name,
-                  Distributor_Code: rows[index].Distributor_Code,
-                  Distributor_TIN: rows[index].Distributor_TIN,
-                  Official_Email: rows[index].Official_Email,
-                  Official_Contact_Number: rows[index].Official_Contact_Number,
-                  Is_Distributor_or_Third_Party_Agency:
-                    rows[index].Is_Distributor_or_Third_Party_Agency,
-                  Distributor_Corporate_Registration_No:
-                    rows[index]?.Distributor_Corporate_Registration_No ?? " ",
-                  Trade_License_No: rows[index]?.Trade_License_No ?? " ",
-                  Distributor_Registered_Office_in_Bangladesh:
-                    rows[index]?.Distributor_Registered_Office_in_Bangladesh ?? " ",
-                  Address_Line_1: rows[index]?.Address_Line_1 ?? " ",
-                  Address_Line_2: rows[index]?.Address_Line_2 ?? " ",
-                  Postal_Code: rows[index]?.Postal_Code ?? " ",
-                  Post_Office: rows[index]?.Post_Office ?? " ",
-                  Thana: rows[index]?.Thana ?? " ",
-                  District: rows[index]?.District ?? " ",
-                  Division: rows[index]?.Division ?? " ",
-                  Name_of_Authorized_Representative:
-                    rows[index]?.Name_of_Authorized_Representative ?? " ",
-                  Full_Name: rows[index]?.Full_Name ?? " ",
-                  NID: rows[index].NID,
-                  Designation_of_Authorized_Representative:
-                    rows[index]?.Designation_of_Authorized_Representative ?? " ",
-                  Mobile_No: rows[index].Mobile_No,
-                  Official_Email_Id_of_Authorized_Representative:
-                    rows[index].Official_Email_Id_of_Authorized_Representative,
-                  Region_of_Operation: rows[index]?.Region_of_Operation ?? " ",
-                  Distributor_Bank_Account_Number:
-                    rows[index].Distributor_Bank_Account_Number,
-                  Distributor_Bank_Account_Title:
-                    rows[index].Distributor_Bank_Account_Title,
-                  Distributor_Bank_Account_Type:
-                    rows[index].Distributor_Bank_Account_Type,
-                  Distributor_Bank_Name: rows[index].Distributor_Bank_Name,
-                  Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
-                };
-                data_array.push(temp_data);
+              if (duplication_check_val == 0) {
+
+                const duplication_checkEmail_user_table = await knex
+                  .count("cr_users.email as count")
+                  .from("APSISIPDC.cr_users")
+                  .where(
+                    "APSISIPDC.cr_users.email",
+                    email.toString()
+                  );
+
+                const duplication_check_val_email_user_table = parseInt(
+                  duplication_checkEmail_user_table[0].count
+                );
+
+                if (duplication_check_val_email_user_table == 0) {
+                  const temp_data = {
+                    Manufacturer_id: rows[index].Manufacturer_id,
+                    Distributor_Name: rows[index].Distributor_Name,
+                    Distributor_Code: rows[index].Distributor_Code,
+                    Distributor_TIN: rows[index].Distributor_TIN,
+                    Official_Email: rows[index].Official_Email,
+                    Official_Contact_Number: rows[index].Official_Contact_Number,
+                    Is_Distributor_or_Third_Party_Agency:
+                      rows[index].Is_Distributor_or_Third_Party_Agency,
+                    Distributor_Corporate_Registration_No:
+                      rows[index]?.Distributor_Corporate_Registration_No ?? " ",
+                    Trade_License_No: rows[index]?.Trade_License_No ?? " ",
+                    Distributor_Registered_Office_in_Bangladesh:
+                      rows[index]?.Distributor_Registered_Office_in_Bangladesh ?? " ",
+                    Address_Line_1: rows[index]?.Address_Line_1 ?? " ",
+                    Address_Line_2: rows[index]?.Address_Line_2 ?? " ",
+                    Postal_Code: rows[index]?.Postal_Code ?? " ",
+                    Post_Office: rows[index]?.Post_Office ?? " ",
+                    Thana: rows[index]?.Thana ?? " ",
+                    District: rows[index]?.District ?? " ",
+                    Division: rows[index]?.Division ?? " ",
+                    Name_of_Authorized_Representative:
+                      rows[index]?.Name_of_Authorized_Representative ?? " ",
+                    Full_Name: rows[index]?.Full_Name ?? " ",
+                    NID: rows[index].NID,
+                    Designation_of_Authorized_Representative:
+                      rows[index]?.Designation_of_Authorized_Representative ?? " ",
+                    Mobile_No: rows[index].Mobile_No,
+                    Official_Email_Id_of_Authorized_Representative:
+                      rows[index].Official_Email_Id_of_Authorized_Representative,
+                    Region_of_Operation: rows[index]?.Region_of_Operation ?? " ",
+                    Distributor_Bank_Account_Number:
+                      rows[index].Distributor_Bank_Account_Number,
+                    Distributor_Bank_Account_Title:
+                      rows[index].Distributor_Bank_Account_Title,
+                    Distributor_Bank_Account_Type:
+                      rows[index].Distributor_Bank_Account_Type,
+                    Distributor_Bank_Name: rows[index].Distributor_Bank_Name,
+                    Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
+                  };
+                  data_array.push(temp_data);
+                }
+
+                else {
+                  let duplicateStr = "duplicate columns - ";
+                  if (duplication_check_val_email_user_table != 0) {
+                    duplicateStr = duplicateStr + "Email is existed in system " + ", ";
+                  }
+
+                  const temp_data = {
+                    Manufacturer_id: rows[index].Manufacturer_id,
+                    Distributor_Name: rows[index].Distributor_Name,
+                    Distributor_Code: rows[index].Distributor_Code,
+                    Distributor_TIN: rows[index].Distributor_TIN,
+                    Official_Email: rows[index].Official_Email,
+                    Official_Contact_Number: rows[index].Official_Contact_Number,
+                    Is_Distributor_or_Third_Party_Agency:
+                      rows[index].Is_Distributor_or_Third_Party_Agency,
+                    Distributor_Corporate_Registration_No:
+                      rows[index]?.Distributor_Corporate_Registration_No ?? " ",
+                    Trade_License_No: rows[index]?.Trade_License_No ?? " ",
+                    Distributor_Registered_Office_in_Bangladesh:
+                      rows[index]?.Distributor_Registered_Office_in_Bangladesh ?? " ",
+                    Address_Line_1: rows[index]?.Address_Line_1 ?? " ",
+                    Address_Line_2: rows[index]?.Address_Line_2 ?? " ",
+                    Postal_Code: rows[index]?.Postal_Code ?? " ",
+                    Post_Office: rows[index]?.Post_Office ?? " ",
+                    Thana: rows[index]?.Thana ?? " ",
+                    District: rows[index]?.District ?? " ",
+                    Division: rows[index]?.Division ?? " ",
+                    Name_of_Authorized_Representative:
+                      rows[index]?.Name_of_Authorized_Representative ?? " ",
+                    Full_Name: rows[index]?.Full_Name ?? " ",
+                    NID: rows[index].NID,
+                    Designation_of_Authorized_Representative:
+                      rows[index]?.Designation_of_Authorized_Representative ?? " ",
+                    Mobile_No: rows[index].Mobile_No,
+                    Official_Email_Id_of_Authorized_Representative:
+                      rows[index].Official_Email_Id_of_Authorized_Representative,
+                    Region_of_Operation: rows[index]?.Region_of_Operation ?? " ",
+                    Distributor_Bank_Account_Number:
+                      rows[index].Distributor_Bank_Account_Number,
+                    Distributor_Bank_Account_Title:
+                      rows[index].Distributor_Bank_Account_Title,
+                    Distributor_Bank_Account_Type:
+                      rows[index].Distributor_Bank_Account_Type,
+                    Distributor_Bank_Name: rows[index].Distributor_Bank_Name,
+                    Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
+                    Remarks_Duplicated: duplicateStr
+                  };
+                  unuploaded_data_array.push(temp_data);
+
+                }
+
               } else {
                 //multiple manufacturer mapping with distributor
 
@@ -226,10 +282,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   .where("distributor_tin", distributor_tin.toString())
                   .select(
                     "id",
-                    "distributor_name"
+                    "distributor_name",
+                    "official_email"
                   );
 
-                console.log(distributor_info);
+                email_official = distributor_info[0].official_email;
 
                 if (distributor_info.length == 1) {
                   const manufacturer_id_check = rows[index].Manufacturer_id;
@@ -261,6 +318,31 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       "APSISIPDC.cr_manufacturer_vs_distributor"
                     ).insert(multiple_manu_mapping_dis).returning("id");
                     total_mapping_dis_manu.push(mapping_dis_manu[0])
+
+                    try {
+                      const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
+                        "email": email_official,
+                        "mail_subject": "IPDC DANA | Registration Completed",
+                        "mail_body": `
+                          <p>Greetings from IPDC DANA!</p>
+                          <p>Congratulations! Your registration
+                          with IPDC DANA has been
+                          completed. Please enter the below
+                          mentioned user ID and password
+                          at www.ipdcDANA.com and login.</p>
+                          <p>User ID : ${email_official}</p>
+                          <p>Your Temporary Password : ${password}</p>
+                          <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
+                          <p>Regards, </p>
+                          <p>IPDC Finance</p>
+                          `
+                      })
+                      console.log('sendMailsendMailsendMail', sendMail)
+                    }
+                    catch (err) {
+                      console.log('errorerrorerrorerrorerror', err)
+                    }
+    
                     continue;
                   }
                 }
@@ -453,17 +535,17 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_checkTIN_insert_data[0].count
               );
 
-              const duplication_checkEmail_user_table_insert_data = await knex
-                .count("cr_users.email as count")
-                .from("APSISIPDC.cr_users")
-                .where(
-                  "APSISIPDC.cr_users.email",
-                  email_insert_data.toString()
-                );
+              // const duplication_checkEmail_user_table_insert_data = await knex
+              //   .count("cr_users.email as count")
+              //   .from("APSISIPDC.cr_users")
+              //   .where(
+              //     "APSISIPDC.cr_users.email",
+              //     email_insert_data.toString()
+              //   );
 
-              const duplication_check_val_email_user_table_insert_date = parseInt(
-                duplication_checkEmail_user_table_insert_data[0].count
-              );
+              // const duplication_check_val_email_user_table_insert_date = parseInt(
+              //   duplication_checkEmail_user_table_insert_data[0].count
+              // );
 
               // const duplication_checkCode_insert_data = await knex
               //   .count("cr_distributor.distributor_code as count")
@@ -477,7 +559,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               // );
 
 
-              if (duplication_check_val_tin_insert_data != 0 || duplication_check_val_email_user_table_insert_date != 0) {
+              if (duplication_check_val_tin_insert_data != 0) {
                 //multiple manu-distri mapping-check-code-in-same-excel
 
                 const distributor_info_insert_data = await knex("APSISIPDC.cr_distributor")
@@ -527,9 +609,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 if (duplication_check_val_tin_insert_data != 0) {
                   duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
                 }
-                if (duplication_check_val_email_user_table_insert_date != 0) {
-                  duplicateStr = duplicateStr + "Email is existed in system " + ", ";
-                }
+                // if (duplication_check_val_email_user_table_insert_date != 0) {
+                //   duplicateStr = duplicateStr + "Email is existed in system " + ", ";
+                // }
                 const duplicate_data_array = {
                   distributor_name: data_array[index].Distributor_Name,
                   manufacturer_id: data_array[index].Manufacturer_id,
@@ -636,29 +718,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
                 total_mapping_dis_manu.push(insert_manufacturer_vs_distributor[0]);
 
-                try {
-                  const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
-                    "email": data_array[index].Official_Email,
-                    "mail_subject": "IPDC DANA | Registration Completed",
-                    "mail_body": `
-                      <p>Greetings from IPDC DANA!</p>
-                      <p>Congratulations! Your registration
-                      with IPDC DANA has been
-                      completed. Please enter the below
-                      mentioned user ID and password
-                      at www.ipdcDANA.com and login.</p>
-                      <p>User ID : ${data_array[index].Official_Email}</p>
-                      <p>Your Temporary Password : ${password}</p>
-                      <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
-                      <p>Regards, </p>
-                      <p>IPDC Finance</p>
-                      `
-                  })
-                  console.log('sendMailsendMailsendMail', sendMail)
-                }
-                catch (err) {
-                  console.log('errorerrorerrorerrorerror', err)
-                }
 
                 const acc_num =
                   data_array[index].Distributor_Bank_Account_Number.toString().split(";");
@@ -702,6 +761,33 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .returning("id");
               if (insert_user) {
                 user_insert_ids.push(insert_user[0]);
+
+                try {
+                  const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
+                    "email": data_array[index].Official_Email,
+                    "mail_subject": "IPDC DANA | Registration Completed",
+                    "mail_body": `
+                      <p>Greetings from IPDC DANA!</p>
+                      <p>Congratulations! Your registration
+                      with IPDC DANA has been
+                      completed. Please enter the below
+                      mentioned user ID and password
+                      at www.ipdcDANA.com and login.</p>
+                      <p>User ID : ${data_array[index].Official_Email}</p>
+                      <p>Your Temporary Password : ${password}</p>
+                      <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
+                      <p>Regards, </p>
+                      <p>IPDC Finance</p>
+                      `
+                  })
+                  console.log('sendMailsendMailsendMail', sendMail)
+                }
+                catch (err) {
+                  console.log('errorerrorerrorerrorerror', err)
+                }
+
+
+
               }
             }
 
