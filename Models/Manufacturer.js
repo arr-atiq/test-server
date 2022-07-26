@@ -721,7 +721,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
                 try {
-                  const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
+                  const sendMail = await axios.post(`${process.env.CLIENTIP}/mail/tempSendmail`, {
                     "email": data_array[index].Official_Email_ID,
                     "mail_subject": "IPDC DANA | Registration Completed",
                     "mail_body": `

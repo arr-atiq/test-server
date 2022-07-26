@@ -603,7 +603,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 total_mapping_dis_manu.push(insert_manufacturer_vs_distributor[0]);
 
                 try {
-                  const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
+                  const sendMail = await axios.post(`${process.env.CLIENTIP}/mail/tempSendmail`, {
                     "email": data_array[index].Official_Email,
                     "mail_subject": "IPDC DANA | Registration Completed",
                     "mail_body": `
