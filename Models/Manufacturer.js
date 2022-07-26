@@ -737,7 +737,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
                 try {
-                  const sendMail = await axios.post(`${process.env.CLIENTIP}/mail/tempSendmail`, {
+                  const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
                     "email": data_array[index].Official_Email_ID,
                     "mail_subject": "IPDC DANA | Registration Completed",
                     "mail_body": `
@@ -749,7 +749,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     at www.ipdcDANA.com and login.</p>
                     <p>User ID : ${data_array[index].Official_Email_ID}</p>
                     <p>Your Temporary Password : ${password}</p>
-                    <p>For Password Reset Please Click this link : ${process.env.HOSTIP}/reset_password/${link_code}  </p>
+                    <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
                     <p>Regards, </p>
                     <p>IPDC Finance</p>
                     `
