@@ -13,6 +13,15 @@ exports.userList = async (req, res) => {
   }
 };
 
+exports.userDetails = async (req, res) => {
+  try {
+    const result = await User.userDetails(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.getDashboard = async (req, res) => {
   try {
     const result = await User.getDashboard(req);

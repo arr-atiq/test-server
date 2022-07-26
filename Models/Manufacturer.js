@@ -459,7 +459,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 created_by: req.user_id,
               };
 
-              console.log(invalidated_manufacture);
               await knex("APSISIPDC.cr_manufacturer_invalidated_data")
                 .insert(invalidated_manufacture);
             }
@@ -515,9 +514,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 autho_rep_designation:
                   unuploaded_data_array[index].Authorized_Representative_Designation,
                 autho_rep_phone:
-                  unuploaded_data_array[index]?.Authorized_Representative_Mobile_No ?? '',
+                  unuploaded_data_array[index]?.Authorized_Representative_Mobile_No ?? ' ',
                 autho_rep_email:
-                  unuploaded_data_array[index]?.Authorized_Representative_Official_Email_ID ?? '',
+                  unuploaded_data_array[index]?.Authorized_Representative_Official_Email_ID ?? ' ',
                 remarks_duplications: unuploaded_data_array[index]?.Remarks_Duplicated ?? ' ',
                 created_by: req.user_id,
               };
@@ -543,7 +542,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .from("APSISIPDC.cr_manufacturer")
                 .where(
                   "APSISIPDC.cr_manufacturer.registration_no",
-                  reg_no_string
+                  reg_no_string.toString()
                 );
               const duplication_check_val_reg_insert_data = parseInt(
                 duplication_checkReg_insert_data[0].count
@@ -750,7 +749,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 name: data_array[index].Manufacturer_Name,
                 email: data_array[index].Official_Email_ID,
                 phone: data_array[index].Official_Phone_Number,
-                // password: "5efd3b0647df9045c240729d31622c79",
+                password: "5efd3b0647df9045c240729d31622c79",
                 password: password,
                 link_token: link_code,
                 cr_user_type: folder_name,
@@ -859,6 +858,7 @@ FileUpload.getManufacturerListDropDown = function (req) {
     }
   });
 };
+
 FileUpload.getManufacturerList = function (req) {
   const { page, per_page } = req.query;
   return new Promise(async (resolve, reject) => {
