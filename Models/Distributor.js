@@ -152,6 +152,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check[0].count
               );
 
+              const duplication_checkEmail_user_table = await knex
+                .count("cr_users.email as count")
+                .from("APSISIPDC.cr_users")
+                .where(
+                  "APSISIPDC.cr_users.email",
+                  email.toString()
+                );
+
+              const duplication_check_val_email_user_table = parseInt(
+                duplication_checkEmail_user_table[0].count
+              );
+
               // const duplication_check_dis_code = await knex
               //   .count("cr_distributor.distributor_code as count")
               //   .from("APSISIPDC.cr_distributor")
@@ -164,7 +176,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               //   duplication_check_dis_code[0].count
               // );
 
-              if (duplication_check_val == 0) {
+              if (duplication_check_val == 0 && duplication_check_val_email_user_table == 0) {
                 const temp_data = {
                   Manufacturer_id: rows[index].Manufacturer_id,
                   Distributor_Name: rows[index].Distributor_Name,
@@ -255,6 +267,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 let duplicateStr = "duplicate columns - ";
                 if (duplication_check_val != 0) {
                   duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
+                }
+                if (duplication_check_val_email_user_table != 0) {
+                  duplicateStr = duplicateStr + "Email is existed in system " + ", ";
                 }
 
                 // if (duplication_check_val_dis_code != 0) {
@@ -420,6 +435,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             const user_insert_ids = [];
             for (let index = 0; index < data_array.length; index++) {
               const tin_insert_data = data_array[index].Distributor_TIN;
+              const email_insert_data = data_array[index].Official_Email;
               const duplication_checkTIN_insert_data = await knex
                 .count("cr_distributor.distributor_tin as count")
                 .from("APSISIPDC.cr_distributor")
@@ -429,6 +445,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 );
               const duplication_check_val_tin_insert_data = parseInt(
                 duplication_checkTIN_insert_data[0].count
+              );
+
+              const duplication_checkEmail_user_table_insert_data = await knex
+                .count("cr_users.email as count")
+                .from("APSISIPDC.cr_users")
+                .where(
+                  "APSISIPDC.cr_users.email",
+                  email_insert_data.toString()
+                );
+
+              const duplication_check_val_email_user_table_insert_date = parseInt(
+                duplication_checkEmail_user_table_insert_data[0].count
               );
 
               // const duplication_checkCode_insert_data = await knex
@@ -443,7 +471,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               // );
 
 
-              if (duplication_check_val_tin_insert_data != 0) {
+              if (duplication_check_val_tin_insert_data != 0 || duplication_check_val_email_user_table_insert_date != 0) {
                 //multiple manu-distri mapping-check-code-in-same-excel
 
                 const distributor_info_insert_data = await knex("APSISIPDC.cr_distributor")
@@ -493,8 +521,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 if (duplication_check_val_tin_insert_data != 0) {
                   duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
                 }
-                if (duplication_check_val_code_insert_data != 0) {
-                  duplicateStr = duplicateStr + "Distributor_Code " + ", ";
+                if (duplication_check_val_email_user_table_insert_date != 0) {
+                  duplicateStr = duplicateStr + "Email is existed in system " + ", ";
                 }
                 const duplicate_data_array = {
                   distributor_name: data_array[index].Distributor_Name,

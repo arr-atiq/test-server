@@ -193,6 +193,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_checkEmail[0].count
               );
 
+              const duplication_checkEmail_user_table = await knex
+                .count("cr_users.email as count")
+                .from("APSISIPDC.cr_users")
+                .where(
+                  "APSISIPDC.cr_users.email",
+                  email.toString()
+                );
+
+              const duplication_check_val_email_user_table = parseInt(
+                duplication_checkEmail_user_table[0].count
+              );
+
               const duplication_checkPhone = await knex
                 .count("cr_manufacturer.official_phone as count")
                 .from("APSISIPDC.cr_manufacturer")
@@ -254,7 +266,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (duplication_check_val_reg == 0
                 && duplication_check_val_email == 0
                 && duplication_check_val_phone == 0
-                && duplication_check_val_name == 0) {
+                && duplication_check_val_name == 0
+                && duplication_check_val_email_user_table == 0) {
                 const temp_data = {
                   Manufacturer_Name: rows[index].Manufacturer_Name,
                   Type_of_Entity: type_entity_arr[rows[index].Type_of_Entity.trim()],
@@ -315,6 +328,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 }
                 if (duplication_check_val_email != 0) {
                   duplicateStr = duplicateStr + "Official_Email_ID " + ", ";
+                }
+                if (duplication_check_val_email_user_table != 0) {
+                  duplicateStr = duplicateStr + "Email is existed in system " + ", ";
                 }
                 if (duplication_check_val_phone != 0) {
                   duplicateStr = duplicateStr + "Official_Phone_Number " + ", ";
@@ -1077,31 +1093,31 @@ FileUpload.retailersByManufacturer = function (req) {
     manufacturer_id,
   } = req.params;
   return new Promise(async (resolve, reject) => {
-    
+
     try {
       await knex.transaction(async (trx) => {
         const retailers = await knex("APSISIPDC.cr_retailer")
-        .leftJoin(
-          "APSISIPDC.cr_retailer_manu_scheme_mapping",
-          "cr_retailer_manu_scheme_mapping.retailer_id",
-          "cr_retailer.id"
-        )
-        .where("cr_retailer.status", "Active")
-        // .where("cr_retailer_vs_sales_agent.status", "Active")
-        // .where("cr_retailer_vs_sales_agent.sales_agent_id", salesagent_id)
-        // .where("cr_retailer_vs_sales_agent.manufacturer_id", manufacturer_id)
-        .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
-        .select(
-          "cr_retailer.id",
-          "cr_retailer.retailer_name",
-          "cr_retailer.retailer_code",
-          "cr_retailer_manu_scheme_mapping.retailer_id",
-          "cr_retailer_manu_scheme_mapping.ac_number_1rmn",
-          "cr_retailer_manu_scheme_mapping.processing_fee",
-          "cr_retailer_manu_scheme_mapping.crm_approve_limit",
-        );
-    
-        if(retailers.length == 0) resolve(sendApiResult(true, "No retailer found", retailers))
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .where("cr_retailer.status", "Active")
+          // .where("cr_retailer_vs_sales_agent.status", "Active")
+          // .where("cr_retailer_vs_sales_agent.sales_agent_id", salesagent_id)
+          // .where("cr_retailer_vs_sales_agent.manufacturer_id", manufacturer_id)
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+          .select(
+            "cr_retailer.id",
+            "cr_retailer.retailer_name",
+            "cr_retailer.retailer_code",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer_manu_scheme_mapping.ac_number_1rmn",
+            "cr_retailer_manu_scheme_mapping.processing_fee",
+            "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+          );
+
+        if (retailers.length == 0) resolve(sendApiResult(true, "No retailer found", retailers))
         resolve(
           sendApiResult(
             true,
