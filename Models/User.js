@@ -485,7 +485,7 @@ User.userDetails = function (req) {
           "role_type_id"
         );
 
-        console.log(role_type[0].role_type_id);
+      console.log(role_type[0].role_type_id);
 
       if (role_type[0].role_type_id == 3) {
 
@@ -495,13 +495,11 @@ User.userDetails = function (req) {
             "manufacturer_id"
           );
 
-          console.log(manufacture[0].manufacturer_id);
+        console.log(manufacture[0].manufacturer_id);
 
         const data = await knex("APSISIPDC.cr_manufacturer")
           .select()
           .where("id", manufacture[0].manufacturer_id);
-
-        console.log(data);
 
         if (data == 0) reject(sendApiResult(false, "Not found."));
 
@@ -574,6 +572,11 @@ User.userDetails = function (req) {
         if (data == 0) reject(sendApiResult(false, "Not found."));
 
         resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+
+      else {
+        reject(sendApiResult(false, "Not found."));
 
       }
 

@@ -144,9 +144,22 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   duplication_check_emp_code[0].count
                 );
 
+                const duplication_checkEmpCode_user_table = await knex
+                  .count("cr_users.email as count")
+                  .from("APSISIPDC.cr_users")
+                  .where(
+                    "APSISIPDC.cr_users.email",
+                    supervisor_emp_code.toString()
+                  );
+
+                const duplication_check_val_empCode_user_table = parseInt(
+                  duplication_checkEmpCode_user_table[0].count
+                );
+
                 if (duplication_check_val_nid == 0
                   && duplication_check_val_phone == 0
-                  && duplication_check_val_emp_code == 0) {
+                  && duplication_check_val_emp_code == 0
+                  && duplication_check_val_empCode_user_table == 0) {
                   const temp_data = {
                     Supervisor_Name: rows[index].Supervisor_Name,
                     Supervisor_NID: rows[index].Supervisor_NID,
@@ -235,6 +248,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   }
                   if (duplication_check_val_emp_code != 0) {
                     duplicateStr = duplicateStr + "Supervisor_Employee_Code " + ", ";
+                  }
+                  if (duplication_check_val_empCode_user_table != 0) {
+                    duplicateStr = duplicateStr + "Code is existed in system " + ", ";
                   }
 
                   const temp_data = {
