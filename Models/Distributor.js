@@ -229,38 +229,40 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     "distributor_name"
                   );
 
-                //const distributor_name_check = rows[index].Distributor_Name;
-                //const distributor_code_check = rows[index].Distributor_Code;
-                const manufacturer_id_check = rows[index].Manufacturer_id;
+                console.log(distributor_info);
 
-                const duplication_check_manu_id = await knex
-                  .count("cr_manufacturer_vs_distributor.id as count")
-                  .from("APSISIPDC.cr_manufacturer_vs_distributor")
-                  .where(
-                    "APSISIPDC.cr_manufacturer_vs_distributor.distributor_id",
-                    distributor_info[0].id
-                  )
-                  .where(
-                    "APSISIPDC.cr_manufacturer_vs_distributor.manufacturer_id",
-                    manufacturer_id_check
+                if (distributor_info.length == 1) {
+                  const manufacturer_id_check = rows[index].Manufacturer_id;
+
+                  const duplication_check_manu_id = await knex
+                    .count("cr_manufacturer_vs_distributor.id as count")
+                    .from("APSISIPDC.cr_manufacturer_vs_distributor")
+                    .where(
+                      "APSISIPDC.cr_manufacturer_vs_distributor.distributor_id",
+                      distributor_info[0].id
+                    )
+                    .where(
+                      "APSISIPDC.cr_manufacturer_vs_distributor.manufacturer_id",
+                      manufacturer_id_check
+                    );
+
+                  const duplication_check_val_manu_id = parseInt(
+                    duplication_check_manu_id[0].count
                   );
 
-                const duplication_check_val_manu_id = parseInt(
-                  duplication_check_manu_id[0].count
-                );
-
-                if (duplication_check_val_manu_id == 0) {
-                  const multiple_manu_mapping_dis = {
-                    manufacturer_id: rows[index].Manufacturer_id,
-                    distributor_id: distributor_info[0].id,
-                    distributor_code: rows[index].Distributor_Code,
-                    created_by: req.user_id,
+                  if (duplication_check_val_manu_id == 0) {
+                    const multiple_manu_mapping_dis = {
+                      manufacturer_id: rows[index].Manufacturer_id,
+                      distributor_id: distributor_info[0].id,
+                      distributor_code: rows[index].Distributor_Code,
+                      created_by: req.user_id,
+                    }
+                    const mapping_dis_manu = await knex(
+                      "APSISIPDC.cr_manufacturer_vs_distributor"
+                    ).insert(multiple_manu_mapping_dis).returning("id");
+                    total_mapping_dis_manu.push(mapping_dis_manu[0])
+                    continue;
                   }
-                  const mapping_dis_manu = await knex(
-                    "APSISIPDC.cr_manufacturer_vs_distributor"
-                  ).insert(multiple_manu_mapping_dis).returning("id");
-                  total_mapping_dis_manu.push(mapping_dis_manu[0])
-                  continue;
                 }
                 //multiple manufacturer mapping with distributor
 
@@ -317,6 +319,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Remarks_Duplicated: duplicateStr
                 };
                 unuploaded_data_array.push(temp_data);
+
+                //const distributor_name_check = rows[index].Distributor_Name;
+                //const distributor_code_check = rows[index].Distributor_Code;
+
               }
             }
           }
