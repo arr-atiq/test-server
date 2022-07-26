@@ -411,7 +411,7 @@ User.getCollectionDisbursementGraphData = function (req) {
 
       if (remainingDays > 0) {
         let startWeekDate = moment(date_start_week_iteration).startOf('date').format('YYYY-MM-DD');
-        let endWeekDate = moment(date_start_week_iteration).add(remainingDays-1, 'days').startOf('date').format('YYYY-MM-DD');
+        let endWeekDate = moment(date_start_week_iteration).add(remainingDays - 1, 'days').startOf('date').format('YYYY-MM-DD');
         let endWeekDateNextDay = moment(endWeekDate).add(1, 'days').startOf('date').format('YYYY-MM-DD');
         date_start_week_iteration = endWeekDateNextDay;
         weeks = weeks + 1;
@@ -457,6 +457,58 @@ User.getCollectionDisbursementGraphData = function (req) {
       }
       if (graph_info_arr == 0) reject(sendApiResult(false, "Not found."));
       resolve(sendApiResult(true, "Data fetched successfully", graph_info_arr));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+User.userDetails = function (req) {
+
+  const { user_id } = req.query;
+  console.log(user_id);
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const role = await knex("APSISIPDC.cr_user_wise_role")
+        .where("user_id", user_id)
+        .select(
+          "role_id"
+        );
+
+      console.log(role[0].role_id);
+
+      const role_type = await knex("APSISIPDC.cr_user_roles")
+        .where("id", role[0].role_id)
+        .select(
+          "role_type_id"
+        );
+
+        console.log(role_type[0].role_type_id);
+
+      if (role_type[0].role_type_id == 3) {
+
+        const manufacture = await knex("APSISIPDC.cr_manufacturer_user")
+          .where("user_id", user_id)
+          .select(
+            "manufacturer_id"
+          );
+
+          console.log(manufacture[0].manufacturer_id);
+
+        const data = await knex("APSISIPDC.cr_manufacturer")
+          .select()
+          .where("id", manufacture[0].manufacturer_id);
+
+        console.log(data);
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
