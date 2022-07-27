@@ -9,7 +9,7 @@ const { uploadConfig } = require("../controllers/helper");
 const uploadFile = multer({ storage: uploadConfig("file") });
 
 router.get("/supervisors", supervisor.getSupervisorList);
-router.get("/manufacturers/:supervisor_code", supervisor.getAllManufacturerForSupervisor);
+router.get("/manufacturers/:supervisor_id", supervisor.getAllManufacturerForSupervisor);
 router.get("/supervisors/:manufacturer_id/:distributor_id", supervisor.getSupervisorListByManufacturerAndDistributor);
 router.put("/supervisor/:id", supervisor.editSupervisor);
 router.delete("/supervisor/:id", supervisor.deleteSupervisor);

@@ -221,7 +221,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       if (duplicate_check_dis_manu_val == 0) {
                         const multiple_manu_mapping_supervisor = {
                           supervisor_id: supervisor_info[0].id,
-                          supervisor_employee_code: supervisor_info[0].supervisor_employee_code,
+                          //supervisor_employee_code: supervisor_info[0].supervisor_employee_code,
                           distributor_id: supervisor_info[0].distributor_id,
                           manufacturer_id: rows[index].Manufacturer,
                           created_by: req.user_id,
@@ -428,7 +428,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     if (duplicate_check_dis_manu_val_insert_data == 0) {
                       const multiple_manu_mapping_supervisor_insert_data = {
                         supervisor_id: supervisor_info_insert_data[0].id,
-                        supervisor_employee_code: supervisor_info_insert_data[0].supervisor_employee_code,
+                        //supervisor_employee_code: supervisor_info_insert_data[0].supervisor_employee_code,
                         distributor_id: supervisor_info_insert_data[0].distributor_id,
                         manufacturer_id: data_array[index].Manufacturer,
                         created_by: req.user_id,
@@ -498,7 +498,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
                 const temp_manufacturer_vs_supervisor_map = {
                   supervisor_id: insert_supervisor[0],
-                  supervisor_employee_code: data_array[index].Supervisor_Employee_Code,
+                  //supervisor_employee_code: data_array[index].Supervisor_Employee_Code,
                   distributor_id: data_array[index].Distributor,
                   manufacturer_id: data_array[index].Manufacturer,
                   created_by: req.user_id,
@@ -621,18 +621,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 };
 
 FileUpload.getAllManufacturerForSupervisor = function (req) {
-  const { supervisor_code } = req.params;
+  const { supervisor_id } = req.params;
 
   return new Promise(async (resolve, reject) => {
     try {
       const manufacturer = await knex("APSISIPDC.cr_supervisor")
         .leftJoin("APSISIPDC.cr_supervisor_distributor_manufacturer_map",
-          "cr_supervisor_distributor_manufacturer_map.supervisor_employee_code",
-          "cr_supervisor.supervisor_employee_code")
+          "cr_supervisor_distributor_manufacturer_map.supervisor_id",
+          "cr_supervisor.id")
         .leftJoin("APSISIPDC.cr_manufacturer",
           "cr_manufacturer.id",
           "cr_supervisor_distributor_manufacturer_map.manufacturer_id")
-        .where("cr_supervisor.supervisor_employee_code", supervisor_code.toString())
+        .where("cr_supervisor.id", Number(supervisor_id))
         .where("cr_manufacturer.status", "Active")
         .select(
           "cr_manufacturer.id",
