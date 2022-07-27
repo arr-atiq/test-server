@@ -9,8 +9,8 @@ const FileUpload = function () { };
 require("dotenv").config();
 
 FileUpload.insertExcelData = function (rows, filename, req) {
-  var password = randomPasswordGenerator()
-  var link_code = randomPasswordGenerator()
+  var password ;
+  var link_code; 
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -730,7 +730,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 created_by: req.user_id,
               };
               console.log(team_manufacture);
-
+               password = randomPasswordGenerator()
+               link_code = randomPasswordGenerator()
               const insert_manufacture = await knex("APSISIPDC.cr_manufacturer")
                 .insert(team_manufacture)
                 .returning("id");
@@ -760,7 +761,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   console.log('errorerrorerrorerrorerror', err)
                 }
               }
-
+              
+              
               const temp_user = {
                 name: data_array[index].Manufacturer_Name,
                 email: data_array[index].Official_Email_ID,

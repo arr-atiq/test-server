@@ -8,9 +8,8 @@ const { default: axios } = require("axios");
 const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
-  var password = randomPasswordGenerator();
-  var link_code = randomPasswordGenerator();
-  var email_official;
+  var password;
+  var link_code;
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -711,6 +710,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 //     .update(distributorIDUpdate);
                 //   console.log('updateData', updateData)
                 // });
+                 password = randomPasswordGenerator()
+                 link_code = randomPasswordGenerator()
 
                 const insert_manufacturer_vs_distributor = await knex(
                   "APSISIPDC.cr_manufacturer_vs_distributor"
@@ -1057,12 +1058,25 @@ FileUpload.getDistributorByManufacturer = function (req) {
         .select(
           "cr_manufacturer_vs_distributor.distributor_id",
           "cr_distributor.distributor_name",
+          "cr_distributor.distributor_tin",
           "cr_distributor.official_email",
           "cr_distributor.official_contact_number",
           "cr_distributor.ofc_address1",
           "cr_distributor.ofc_district",
           "cr_distributor.ofc_division",
-          "cr_distributor.distributor_code"
+          "cr_manufacturer_vs_distributor.distributor_code",
+          "cr_distributor.is_distributor_or_third_party_agency",
+          "cr_distributor.corporate_registration_no",
+          "cr_distributor.registered_office_bangladesh",
+          "cr_distributor.ofc_postal_code",
+          "cr_distributor.ofc_post_office",
+          "cr_distributor.autho_rep_full_name",
+          "cr_distributor.autho_rep_designation",
+          "cr_distributor.autho_rep_phone",
+          "cr_distributor.region_of_operation",
+          "cr_distributor.autho_rep_email",
+          "cr_distributor.autho_rep_nid",
+          "cr_distributor.trade_license_no"
         )
         .distinct()
         .paginate({
