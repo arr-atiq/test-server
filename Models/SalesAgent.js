@@ -39,7 +39,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const agent_nid = rows[index].Sales_Agent_NID;
               const phoneNumber = rows[index].Phone;
               const autho_supervisor_code = rows[index].Authorized_supervisor_emp_code;
-
               const distributor_id_check = rows[index].Distributor;
               const manufacturer_id_check = rows[index].Manufacturer;
 
@@ -64,7 +63,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 )
                 .select("cr_supervisor.id");
 
-              var supervisor_id = check_sup[0]?.id  ?? null;  
+              var supervisor_id = check_sup[0]?.id ?? null;
+              console.log(" supervisor ", supervisor_id);
 
               const check_mapping_manu_dis_sup = await knex("APSISIPDC.cr_supervisor_distributor_manufacturer_map")
                 .where(
@@ -177,6 +177,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_checkEmpCode_user_table[0].count
               );
 
+
+
               if (duplication_check_val_nid == 0
                 && duplication_check_val_phone == 0
                 && duplication_check_val_emp_code == 0
@@ -197,6 +199,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               } else {
                 //multiple manufacturer mapping with salesagent by supervisor and distributor
 
+
+
                 const salesAgent_manufacturer_id = rows[index].Manufacturer;
                 const sales_agent_info = await knex("APSISIPDC.cr_sales_agent")
                   .where("status", "Active")
@@ -216,12 +220,21 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     "id",
                     "agent_name",
                     "agent_employee_code",
-                    "distributor_id",
+                    "distributor_id"
+                  );
+
+                const supervisor_info = await knex("APSISIPDC.cr_supervisor")
+                  .where(
+                    "id",
+                    Number(supervisor_id)
+                  )
+                  .select(
+                    "supervisor_employee_code"
                   );
 
                 if (sales_agent_info.length != 0) {
                   if (sales_agent_info[0].distributor_id == rows[index].Distributor) {
-                    if (sales_agent_info[0].autho_supervisor_employee_code == rows[index].Authorized_supervisor_emp_code) {
+                    if (supervisor_info[0].supervisor_employee_code == rows[index].Authorized_supervisor_emp_code) {
                       const duplicate_check_sup_dis_manu = await knex
                         .count("cr_salesagent_supervisor_distributor_manufacturer_map.id as count")
                         .from("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
@@ -247,14 +260,24 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       );
 
                       if (duplicate_check_sup_dis_manu_val == 0) {
+
+                        const check_sup_insert_info_map = await knex("APSISIPDC.cr_supervisor")
+                          .where(
+                            "cr_supervisor.supervisor_employee_code", supervisor_info[0].supervisor_employee_code.toString()
+                          )
+                          .select("cr_supervisor.id");
+
+                        var supervisor_info_id = check_sup_insert_info_map[0]?.id ?? null;
+                        console.log(" supervisor ", supervisor_info_id);
                         const multiple_manu_mapping_salesagent = {
                           salesagent_id: sales_agent_info[0].id,
                           salesagent_employee_code: sales_agent_info[0].agent_employee_code,
-                          supervisor_id: Number(supervisor_id),
+                          supervisor_id: Number(supervisor_info_id),
                           distributor_id: sales_agent_info[0].distributor_id,
                           manufacturer_id: rows[index].Manufacturer,
                           created_by: req.user_id,
                         }
+                        console.log("multiple_manu_mapping_salesagent..3", multiple_manu_mapping_salesagent)
                         mapped_data_array.push(multiple_manu_mapping_salesagent)
                         const multiple_manu_salesagent_mapping = await knex(
                           "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
@@ -321,7 +344,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               empty_insert_log
             );
             msg = "File Uploaded successfully!";
-            var response = {"insert_log" : empty_insert_log , "total_mapped" : mapped_data_array}
+            var response = { "insert_log": empty_insert_log, "total_mapped": mapped_data_array }
             resolve(sendApiResult(true, msg, response));
           }
 
@@ -438,9 +461,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     "distributor_id",
                   );
 
+                const supervisor_info_insert = await knex("APSISIPDC.cr_supervisor")
+                  .where(
+                    "id",
+                    Number(supervisor_id)
+                  )
+                  .select(
+                    "supervisor_employee_code"
+                  );
+
                 if (sales_agent_info_insert.length != 0) {
                   if (sales_agent_info_insert[0].distributor_id == data_array[index].Distributor) {
-                    if (sales_agent_info_insert[0].autho_supervisor_employee_code == data_array[index].Authorized_supervisor_emp_code) {
+                    if (supervisor_info_insert[0].supervisor_employee_code == data_array[index].Authorized_supervisor_emp_code) {
                       const duplicate_check_sup_dis_manu_insert = await knex
                         .count("cr_salesagent_supervisor_distributor_manufacturer_map.id as count")
                         .from("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
@@ -466,6 +498,15 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       );
 
                       if (duplicate_check_sup_dis_manu_val_insert == 0) {
+
+                        const check_sup_insert_info_map_nested = await knex("APSISIPDC.cr_supervisor")
+                          .where(
+                            "cr_supervisor.supervisor_employee_code", supervisor_info_insert[0].supervisor_employee_code.toString()
+                          )
+                          .select("cr_supervisor.id");
+
+                        var supervisor_info_id = check_sup_insert_info_map_nested[0]?.id ?? null;
+                        console.log("supervisor 2 ", Number(supervisor_id));
                         const multiple_manu_mapping_salesagent_insert = {
                           salesagent_id: sales_agent_info_insert[0].id,
                           salesagent_employee_code: sales_agent_info_insert[0].agent_employee_code,
@@ -474,6 +515,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                           manufacturer_id: data_array[index].Manufacturer,
                           created_by: req.user_id,
                         }
+                        console.log("multiple_manu_mapping_salesagent..1", multiple_manu_mapping_salesagent_insert)
                         mapped_data_array.push(multiple_manu_mapping_salesagent_insert)
                         const multiple_manu_salesagent_mapping_insert = await knex(
                           "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
@@ -536,15 +578,29 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (insert_sales_agent) {
                 sales_agent_insert_ids.push(insert_sales_agent[0]);
 
+                const autho_supervisor_code_insert = data_array[index].Authorized_supervisor_emp_code;
+
+
+                const check_sup_insert_info = await knex("APSISIPDC.cr_supervisor")
+                  .where(
+                    "cr_supervisor.supervisor_employee_code", autho_supervisor_code_insert.toString()
+                  )
+                  .select("cr_supervisor.id");
+
+                var supervisor_info_id = check_sup_insert_info[0]?.id ?? null;
+                console.log(" supervisor ", supervisor_info_id);
+
+
                 const temp_manufacturer_vs_salesagent_map = {
                   salesagent_id: insert_sales_agent[0],
                   salesagent_employee_code: data_array[index].Sales_Agent_Employee_Code,
-                  supervisor_id: Number(supervisor_id),
+                  supervisor_id: Number(supervisor_info_id),
                   distributor_id: data_array[index].Distributor,
                   manufacturer_id: data_array[index].Manufacturer,
                   created_by: req.user_id,
                 };
                 mapped_data_array.push(temp_manufacturer_vs_salesagent_map)
+                console.log("multiple_manu_mapping_salesagent..2", temp_manufacturer_vs_salesagent_map)
                 const insert_manufacturer_vs_salesagent_map = await knex(
                   "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
                 ).insert(temp_manufacturer_vs_salesagent_map).returning("id");
@@ -661,7 +717,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 insert_log
               );
               msg = "File Uploaded successfully!";
-              var response = {"insert_log" : insert_log , "total_mapped" : mapped_data_array}
+              var response = { "insert_log": insert_log, "total_mapped": mapped_data_array }
               resolve(sendApiResult(true, msg, response));
             }
           } else {
@@ -697,9 +753,13 @@ FileUpload.getSalesAgentList = function (req) {
           "cr_distributor.id",
           "cr_sales_agent.distributor_id"
         )
+        .leftJoin("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+          "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+          "cr_sales_agent.id"
+        )
         .leftJoin("APSISIPDC.cr_supervisor",
-          "cr_supervisor.supervisor_employee_code",
-          "cr_sales_agent.autho_supervisor_employee_code"
+          "cr_supervisor.id",
+          "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id"
         )
         .select(
           "cr_sales_agent.id",
@@ -709,7 +769,7 @@ FileUpload.getSalesAgentList = function (req) {
           "cr_sales_agent.distributor_id",
           "cr_distributor.distributor_name",
           "cr_sales_agent.agent_employee_code",
-          "cr_sales_agent.autho_supervisor_employee_code",
+          "cr_supervisor.supervisor_employee_code",
           "cr_supervisor.supervisor_name",
           "cr_sales_agent.region_of_operation"
         )
