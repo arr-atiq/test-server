@@ -225,7 +225,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 else {
                   let duplicateStr = "duplicate columns - ";
                   if (duplication_check_val_email_user_table != 0) {
-                    duplicateStr = duplicateStr + "Email is existed in system " + ", ";
+                    duplicateStr = duplicateStr + "Official_Email is existed in system " + ", ";
                   }
 
                   const temp_data = {
@@ -352,7 +352,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
                 }
                 if (duplication_check_val_email_user_table != 0) {
-                  duplicateStr = duplicateStr + "Email is existed in system " + ", ";
+                  duplicateStr = duplicateStr + "Official_Email is existed in system " + ", ";
                 }
 
                 // if (duplication_check_val_dis_code != 0) {
