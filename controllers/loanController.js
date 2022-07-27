@@ -1251,6 +1251,22 @@ exports.updateSequence = async (req, res) => {
 };
 
 
+exports.loanDashboard = async (req, res) => {
+  let { salesAgentID } = req.params;
+  let responseValue = {
+    odRetailers : 25,
+    odAmount : 25,
+    odRetailersOdRisk : 25,
+    pendingAmount : 25
+  }
+  
+  return res.send(
+    sendApiResult(true, "You have Successfully Get Dashboard Data.", responseValue)
+  );
+    
+};
+
+
 var calculateInterest = function (total, days, ratePercent, roundToPlaces) {
   var interestRate = ratePercent / 100;
   return ((days / 360) * total * interestRate).toFixed(roundToPlaces);

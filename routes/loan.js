@@ -15,6 +15,8 @@ router.post("/loanTenorInDays", loan.loanTenorInDays);
 router.post("/addSlab", loan.addSlab);
 router.post("/sequence", loan.sequence);
 router.put("/updatesequence", loan.updateSequence);
+router.get("/loanDashboard/:salesAgentID", loan.loanDashboard);
+
 
 // router.post("/totalLoan", loan.totalLoan);
 
