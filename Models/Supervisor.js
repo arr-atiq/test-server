@@ -290,7 +290,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               empty_insert_log
             );
             msg = "File Uploaded successfully!";
-            resolve(sendApiResult(true, msg, empty_insert_log));
+            var response = {"insert_log" : empty_insert_log , "total_mapped" : mapped_data_array}
+            resolve(sendApiResult(true, msg, response));
           }
 
           if (Object.keys(invalidate_data_array).length != 0) {
