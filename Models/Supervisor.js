@@ -8,6 +8,7 @@ const { default: axios } = require("axios");
 const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
+  var mapped_data_array = [];
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -225,6 +226,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                           manufacturer_id: rows[index].Manufacturer,
                           created_by: req.user_id,
                         }
+                        mapped_data_array.push(multiple_manu_mapping_supervisor);
                         const mapping_manu_supervisor_mapping = await knex(
                           "APSISIPDC.cr_supervisor_distributor_manufacturer_map"
                         ).insert(multiple_manu_mapping_supervisor).returning("id");
@@ -430,6 +432,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                         manufacturer_id: data_array[index].Manufacturer,
                         created_by: req.user_id,
                       }
+                      mapped_data_array.push(multiple_manu_mapping_supervisor_insert_data);
                       const mapping_manu_supervisor_mapping_insert_data = await knex(
                         "APSISIPDC.cr_supervisor_distributor_manufacturer_map"
                       ).insert(multiple_manu_mapping_supervisor_insert_data).returning("id");
@@ -500,49 +503,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   created_by: req.user_id,
                 };
 
+                mapped_data_array.push(temp_manufacturer_vs_supervisor_map);
                 const insert_manufacturer_vs_supervisor_map = await knex(
                   "APSISIPDC.cr_supervisor_distributor_manufacturer_map"
                 ).insert(temp_manufacturer_vs_supervisor_map).returning("id");
-
-                //total_mapping_dis_manu.push(insert_manufacturer_vs_distributor[0]);
-
-
-                // try{
-                //   const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
-                //     "email": data_array[index].Official_Email,
-                //     "mail_subject": "IPDC DANA | Registration Completed",
-                //     "mail_body": `
-                //     <p>Greetings from IPDC DANA!</p>
-                //     <p>Congratulations! Your registration
-                //     with IPDC DANA has been
-                //     completed. Please enter the below
-                //     mentioned user ID and password
-                //     at www.ipdcDANA.com and login.</p>
-                //     <p>User ID : ${data_array[index].Supervisor_Employee_Code}</p>
-                //     <p>Password : 123456</p>
-                //     <p>Regards, </p>
-                //     <p>IPDC Finance</p>
-                //     `
-                //   })
-                //   console.log('sendMailsendMailsendMail',sendMail)
-                // }
-                // catch(err){
-                //   console.log('errorerrorerrorerrorerror',err)
-                // }
-
-
-                // var supervisorIDUpdate = {
-                //   supervisor_employee_code: `${data_array[index].Supervisor_Employee_Code}-${insert_supervisor[0]}`
-                // };
-
-                // await knex.transaction(async (trx) => {
-                //   let updateData = await trx(
-                //     "APSISIPDC.cr_supervisor"
-                //   )
-                //     .where({ id: insert_supervisor[0] })
-                //     .update(supervisorIDUpdate);
-                //   console.log('updateData', updateData)
-                // });
               }
 
               const temp_user = {
@@ -633,7 +597,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 insert_log
               );
               msg = "File Uploaded successfully!";
-              resolve(sendApiResult(true, msg, insert_log));
+              var response = {...insert_log,...mapped_data_array}
+              resolve(sendApiResult(true, msg, response));
             }
           } else {
             msg = "No Data Founds to Update";
