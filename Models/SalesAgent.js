@@ -8,6 +8,7 @@ const { default: axios } = require("axios");
 const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
+  var mapped_data_array = [];
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -252,6 +253,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                           manufacturer_id: rows[index].Manufacturer,
                           created_by: req.user_id,
                         }
+                        mapped_data_array.push(multiple_manu_mapping_salesagent)
                         const multiple_manu_salesagent_mapping = await knex(
                           "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
                         ).insert(multiple_manu_mapping_salesagent).returning("id");
@@ -317,7 +319,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               empty_insert_log
             );
             msg = "File Uploaded successfully!";
-            resolve(sendApiResult(true, msg, empty_insert_log));
+            var response = {"insert_log" : empty_insert_log , "total_mapped" : mapped_data_array}
+            resolve(sendApiResult(true, msg, response));
           }
 
           if (Object.keys(invalidate_data_array).length != 0) {
@@ -470,6 +473,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                           manufacturer_id: data_array[index].Manufacturer,
                           created_by: req.user_id,
                         }
+                        mapped_data_array.push(multiple_manu_mapping_salesagent_insert)
                         const multiple_manu_salesagent_mapping_insert = await knex(
                           "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
                         ).insert(multiple_manu_mapping_salesagent_insert).returning("id");
@@ -541,7 +545,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   manufacturer_id: data_array[index].Manufacturer,
                   created_by: req.user_id,
                 };
-
+                mapped_data_array.push(temp_manufacturer_vs_salesagent_map)
                 const insert_manufacturer_vs_salesagent_map = await knex(
                   "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
                 ).insert(temp_manufacturer_vs_salesagent_map).returning("id");
@@ -658,7 +662,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 insert_log
               );
               msg = "File Uploaded successfully!";
-              resolve(sendApiResult(true, msg, insert_log));
+              var response = {"insert_log" : insert_log , "total_mapped" : mapped_data_array}
+              resolve(sendApiResult(true, msg, response));
             }
           } else {
             msg = "No Data Founds to Update";
