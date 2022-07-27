@@ -4,6 +4,7 @@ const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
+const { check } = require("prettier");
 
 const FileUpload = function () { };
 
@@ -63,9 +64,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 )
                 .select("cr_supervisor.id");
 
+              var supervisor_id = check_sup[0]?.id  ?? null;  
+
               const check_mapping_manu_dis_sup = await knex("APSISIPDC.cr_supervisor_distributor_manufacturer_map")
                 .where(
-                  "cr_supervisor_distributor_manufacturer_map.supervisor_employee_code", autho_supervisor_code.toString()
+                  "cr_supervisor_distributor_manufacturer_map.supervisor_id", Number(supervisor_id)
                 )
                 .where(
                   "cr_supervisor_distributor_manufacturer_map.distributor_id", distributor_id_check
@@ -81,7 +84,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   "id",
                 );
 
-              if (!validNID || !validPhoneNumber || check_manu_exist.length == 0 || check_dis_exist.length == 0 || check_sup.length == 0 || check_mapping_manu_dis_sup.length == 0 || checkNidInSupervisor.length != 0) {
+              if (!validNID || !validPhoneNumber || check_manu_exist.length == 0 || check_dis_exist.length == 0 || check_sup.length == 0 || check_mapping_manu_dis_sup.length == 0 || checkNidInSupervisor.length != 0 || supervisor_id == null) {
 
                 let invalidStr = "invalid columns - ";
                 if (!validNID) {
@@ -213,7 +216,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     "id",
                     "agent_name",
                     "agent_employee_code",
-                    "autho_supervisor_employee_code",
                     "distributor_id",
                   );
 
@@ -228,8 +230,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                           sales_agent_info[0].id
                         )
                         .where(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_employee_code",
-                          sales_agent_info[0].autho_supervisor_employee_code
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
+                          Number(supervisor_id)
                         )
                         .where(
                           "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id",
@@ -248,7 +250,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                         const multiple_manu_mapping_salesagent = {
                           salesagent_id: sales_agent_info[0].id,
                           salesagent_employee_code: sales_agent_info[0].agent_employee_code,
-                          supervisor_employee_code: sales_agent_info[0].autho_supervisor_employee_code,
+                          supervisor_id: Number(supervisor_id),
                           distributor_id: sales_agent_info[0].distributor_id,
                           manufacturer_id: rows[index].Manufacturer,
                           created_by: req.user_id,
@@ -433,7 +435,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     "id",
                     "agent_name",
                     "agent_employee_code",
-                    "autho_supervisor_employee_code",
                     "distributor_id",
                   );
 
@@ -448,8 +449,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                           sales_agent_info_insert[0].id
                         )
                         .where(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_employee_code",
-                          sales_agent_info_insert[0].autho_supervisor_employee_code
+                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
+                          Number(supervisor_id),
                         )
                         .where(
                           "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id",
@@ -468,7 +469,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                         const multiple_manu_mapping_salesagent_insert = {
                           salesagent_id: sales_agent_info_insert[0].id,
                           salesagent_employee_code: sales_agent_info_insert[0].agent_employee_code,
-                          supervisor_employee_code: sales_agent_info_insert[0].autho_supervisor_employee_code,
+                          supervisor_id: Number(supervisor_id),
                           distributor_id: sales_agent_info_insert[0].distributor_id,
                           manufacturer_id: data_array[index].Manufacturer,
                           created_by: req.user_id,
@@ -525,8 +526,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 distributor_id: data_array[index].Distributor,
                 agent_employee_code:
                   data_array[index].Sales_Agent_Employee_Code,
-                autho_supervisor_employee_code:
-                  data_array[index].Authorized_supervisor_emp_code,
                 region_of_operation: data_array[index].Region_of_Operation,
                 created_by: req.user_id,
               };
@@ -540,7 +539,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 const temp_manufacturer_vs_salesagent_map = {
                   salesagent_id: insert_sales_agent[0],
                   salesagent_employee_code: data_array[index].Sales_Agent_Employee_Code,
-                  supervisor_employee_code: data_array[index].Authorized_supervisor_emp_code,
+                  supervisor_id: Number(supervisor_id),
                   distributor_id: data_array[index].Distributor,
                   manufacturer_id: data_array[index].Manufacturer,
                   created_by: req.user_id,
