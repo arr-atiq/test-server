@@ -306,7 +306,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   duplicateStr = duplicateStr + "Sales_Agent_Employee_Code " + ", ";
                 }
                 if (duplication_check_val_empCode_user_table != 0) {
-                  duplicateStr = duplicateStr + "Code is existed in system " + ", ";
+                  duplicateStr = duplicateStr + "Sales_Agent_Employee_Code is existed in system " + ", ";
                 }
 
                 const temp_data = {

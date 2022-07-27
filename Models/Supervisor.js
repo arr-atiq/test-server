@@ -252,7 +252,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     duplicateStr = duplicateStr + "Supervisor_Employee_Code " + ", ";
                   }
                   if (duplication_check_val_empCode_user_table != 0) {
-                    duplicateStr = duplicateStr + "Code is existed in system " + ", ";
+                    duplicateStr = duplicateStr + "Supervisor_Employee_Code already used by another user " + ", ";
                   }
 
                   const temp_data = {

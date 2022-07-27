@@ -330,7 +330,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   duplicateStr = duplicateStr + "Official_Email_ID " + ", ";
                 }
                 if (duplication_check_val_email_user_table != 0) {
-                  duplicateStr = duplicateStr + "Email is existed in system " + ", ";
+                  duplicateStr = duplicateStr + "Official_Email_ID is existed in system " + ", ";
                 }
                 if (duplication_check_val_phone != 0) {
                   duplicateStr = duplicateStr + "Official_Phone_Number " + ", ";
