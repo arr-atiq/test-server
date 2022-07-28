@@ -532,7 +532,22 @@ User.userDetails = function (req) {
           );
 
         const data = await knex("APSISIPDC.cr_supervisor")
-          .select()
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_supervisor.distributor_id"
+          )
+          .select(
+            "cr_supervisor.*",
+            "cr_distributor.distributor_name",
+            "cr_distributor.official_email",
+            "cr_distributor.official_contact_number",
+            "cr_distributor.registered_office_bangladesh",
+            "cr_distributor.ofc_postal_code",
+            "cr_distributor.ofc_post_office",
+            "cr_distributor.ofc_thana",
+            "cr_distributor.ofc_district"
+          )
           .where("id", supervisor[0].supervisor_id);
 
         if (data == 0) reject(sendApiResult(false, "Not found."));
@@ -549,7 +564,36 @@ User.userDetails = function (req) {
           );
 
         const data = await knex("APSISIPDC.cr_sales_agent")
-          .select()
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_sales_agent.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_sales_agent.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_supervisor",
+            "cr_supervisor.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id"
+          )
+          .select(
+            "cr_sales_agent.*",
+            "cr_distributor.distributor_name",
+            "cr_distributor.official_email",
+            "cr_distributor.official_contact_number",
+            "cr_distributor.registered_office_bangladesh",
+            "cr_distributor.ofc_postal_code",
+            "cr_distributor.ofc_post_office",
+            "cr_distributor.ofc_thana",
+            "cr_distributor.ofc_district",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
+            "cr_supervisor.supervisor_name",
+            "cr_supervisor.phone",
+            "cr_supervisor.region_of_operation"
+          )
           .where("id", salesagent[0].sales_agent_id);
 
         if (data == 0) reject(sendApiResult(false, "Not found."));
@@ -625,22 +669,7 @@ User.getManufacturersForUser = function (req) {
           )
           .where("cr_manufacturer_vs_distributor.distributor_id", distributor[0].distributor_id)
           .select(
-            "cr_manufacturer.id",
-            "cr_manufacturer.manufacturer_name",
-            "cr_manufacturer.website_link",
-            "cr_manufacturer.corporate_ofc_address",
-            "cr_manufacturer.corporate_ofc_postal_code",
-            "cr_manufacturer.corporate_ofc_post_office",
-            "cr_manufacturer.corporate_ofc_thana",
-            "cr_manufacturer.corporate_ofc_district",
-            "cr_manufacturer.corporate_ofc_division",
-            "cr_manufacturer.official_phone",
-            "cr_manufacturer.official_email",
-            "cr_manufacturer.name_of_authorized_representative",
-            "cr_manufacturer.autho_rep_full_name",
-            "cr_manufacturer.autho_rep_designation",
-            "cr_manufacturer.autho_rep_phone",
-            "cr_manufacturer.autho_rep_email"
+            "cr_manufacturer.*"
           )
           .paginate({
             perPage: per_page,
@@ -669,22 +698,7 @@ User.getManufacturersForUser = function (req) {
           )
           .where("cr_supervisor_distributor_manufacturer_map.supervisor_id", supervisor[0].supervisor_id)
           .select(
-            "cr_manufacturer.id",
-            "cr_manufacturer.manufacturer_name",
-            "cr_manufacturer.website_link",
-            "cr_manufacturer.corporate_ofc_address",
-            "cr_manufacturer.corporate_ofc_postal_code",
-            "cr_manufacturer.corporate_ofc_post_office",
-            "cr_manufacturer.corporate_ofc_thana",
-            "cr_manufacturer.corporate_ofc_district",
-            "cr_manufacturer.corporate_ofc_division",
-            "cr_manufacturer.official_phone",
-            "cr_manufacturer.official_email",
-            "cr_manufacturer.name_of_authorized_representative",
-            "cr_manufacturer.autho_rep_full_name",
-            "cr_manufacturer.autho_rep_designation",
-            "cr_manufacturer.autho_rep_phone",
-            "cr_manufacturer.autho_rep_email"
+            "cr_manufacturer.*"
           )
           .paginate({
             perPage: per_page,
@@ -713,22 +727,7 @@ User.getManufacturersForUser = function (req) {
           )
           .where("cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id", salesagent[0].sales_agent_id)
           .select(
-            "cr_manufacturer.id",
-            "cr_manufacturer.manufacturer_name",
-            "cr_manufacturer.website_link",
-            "cr_manufacturer.corporate_ofc_address",
-            "cr_manufacturer.corporate_ofc_postal_code",
-            "cr_manufacturer.corporate_ofc_post_office",
-            "cr_manufacturer.corporate_ofc_thana",
-            "cr_manufacturer.corporate_ofc_district",
-            "cr_manufacturer.corporate_ofc_division",
-            "cr_manufacturer.official_phone",
-            "cr_manufacturer.official_email",
-            "cr_manufacturer.name_of_authorized_representative",
-            "cr_manufacturer.autho_rep_full_name",
-            "cr_manufacturer.autho_rep_designation",
-            "cr_manufacturer.autho_rep_phone",
-            "cr_manufacturer.autho_rep_email"
+            "cr_manufacturer.*"
           )
           .paginate({
             perPage: per_page,
@@ -757,22 +756,7 @@ User.getManufacturersForUser = function (req) {
           )
           .where("cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id", retailer[0].retailer_id)
           .select(
-            "cr_manufacturer.id",
-            "cr_manufacturer.manufacturer_name",
-            "cr_manufacturer.website_link",
-            "cr_manufacturer.corporate_ofc_address",
-            "cr_manufacturer.corporate_ofc_postal_code",
-            "cr_manufacturer.corporate_ofc_post_office",
-            "cr_manufacturer.corporate_ofc_thana",
-            "cr_manufacturer.corporate_ofc_district",
-            "cr_manufacturer.corporate_ofc_division",
-            "cr_manufacturer.official_phone",
-            "cr_manufacturer.official_email",
-            "cr_manufacturer.name_of_authorized_representative",
-            "cr_manufacturer.autho_rep_full_name",
-            "cr_manufacturer.autho_rep_designation",
-            "cr_manufacturer.autho_rep_phone",
-            "cr_manufacturer.autho_rep_email"
+            "cr_manufacturer.*"
           )
           .paginate({
             perPage: per_page,
@@ -841,12 +825,7 @@ User.getSupervisorsForUser = function (req) {
           )
           .where("cr_supervisor_distributor_manufacturer_map.manufacturer_id", manufacture[0].manufacturer_id)
           .select(
-            "cr_supervisor.id",
-            "cr_supervisor.supervisor_name",
-            "cr_supervisor.phone",
-            "cr_supervisor.supervisor_employee_code",
-            "cr_supervisor.region_of_operation",
-            "cr_supervisor.distributor_id",
+            "cr_supervisor.*",
             "cr_distributor.distributor_name"
           )
           .distinct()
@@ -877,11 +856,7 @@ User.getSupervisorsForUser = function (req) {
           )
           .where("cr_supervisor_distributor_manufacturer_map.distributor_id", distributor[0].distributor_id)
           .select(
-            "cr_supervisor.id",
-            "cr_supervisor.supervisor_name",
-            "cr_supervisor.phone",
-            "cr_supervisor.supervisor_employee_code",
-            "cr_supervisor.region_of_operation",
+            "cr_supervisor.*"
           )
           .distinct()
           .paginate({
@@ -911,11 +886,7 @@ User.getSupervisorsForUser = function (req) {
           )
           .where("cr_supervisor_distributor_manufacturer_map.distributor_id", salesagent[0].sales_agent_id)
           .select(
-            "cr_supervisor.id",
-            "cr_supervisor.supervisor_name",
-            "cr_supervisor.phone",
-            "cr_supervisor.supervisor_employee_code",
-            "cr_supervisor.region_of_operation",
+            "cr_supervisor.*",
           )
           .distinct()
           .paginate({
@@ -1006,12 +977,7 @@ User.getSalesagentsForUser = function (req) {
           )
           .where("cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id", manufacture[0].manufacturer_id)
           .select(
-            "cr_sales_agent.id",
-            "cr_sales_agent.agent_name",
-            "cr_sales_agent.phone",
-            "cr_sales_agent.agent_employee_code",
-            "cr_sales_agent.region_of_operation",
-            "cr_sales_agent.distributor_id",
+            "cr_sales_agent.*",
             "cr_distributor.distributor_name",
             "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
             "cr_supervisor.supervisor_name"
@@ -1049,11 +1015,7 @@ User.getSalesagentsForUser = function (req) {
           )
           .where("cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id", distributor[0].distributor_id)
           .select(
-            "cr_sales_agent.id",
-            "cr_sales_agent.agent_name",
-            "cr_sales_agent.phone",
-            "cr_sales_agent.agent_employee_code",
-            "cr_sales_agent.region_of_operation",
+            "cr_sales_agent.*",
             "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
             "cr_supervisor.supervisor_name"
           )
@@ -1071,7 +1033,7 @@ User.getSalesagentsForUser = function (req) {
       }
       if (role_type_id == 5) {
 
-        const supervisor = await knex("APSISIPDC.cr_sales_agent_user")
+        const supervisor = await knex("APSISIPDC.cr_supervisor_user")
           .where("user_id", user_id)
           .select(
             "supervisor_id"
@@ -1088,14 +1050,9 @@ User.getSalesagentsForUser = function (req) {
             "cr_distributor.id",
             "cr_sales_agent.distributor_id"
           )
-          .where("cr_supervisor_distributor_manufacturer_map.distributor_id", supervisor[0].supervisor_id)
+          .where("cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id", supervisor[0].supervisor_id)
           .select(
-            "cr_sales_agent.id",
-            "cr_sales_agent.agent_name",
-            "cr_sales_agent.phone",
-            "cr_sales_agent.agent_employee_code",
-            "cr_sales_agent.region_of_operation",
-            "cr_sales_agent.distributor_id",
+            "cr_sales_agent.*",
             "cr_distributor.distributor_name",
           )
           .distinct()
