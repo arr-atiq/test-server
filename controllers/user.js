@@ -40,6 +40,15 @@ exports.getSupervisorsForUser = async (req, res) => {
   }
 };
 
+exports.getSalesagentsForUser = async (req, res) => {
+  try {
+    const result = await User.getSalesagentsForUser(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.getDashboard = async (req, res) => {
   try {
     const result = await User.getDashboard(req);
