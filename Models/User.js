@@ -625,22 +625,7 @@ User.getManufacturersForUser = function (req) {
           )
           .where("cr_manufacturer_vs_distributor.distributor_id", distributor[0].distributor_id)
           .select(
-            "cr_manufacturer.id",
-            "cr_manufacturer.manufacturer_name",
-            "cr_manufacturer.website_link",
-            "cr_manufacturer.corporate_ofc_address",
-            "cr_manufacturer.corporate_ofc_postal_code",
-            "cr_manufacturer.corporate_ofc_post_office",
-            "cr_manufacturer.corporate_ofc_thana",
-            "cr_manufacturer.corporate_ofc_district",
-            "cr_manufacturer.corporate_ofc_division",
-            "cr_manufacturer.official_phone",
-            "cr_manufacturer.official_email",
-            "cr_manufacturer.name_of_authorized_representative",
-            "cr_manufacturer.autho_rep_full_name",
-            "cr_manufacturer.autho_rep_designation",
-            "cr_manufacturer.autho_rep_phone",
-            "cr_manufacturer.autho_rep_email"
+            "cr_manufacturer.*",
           )
           .paginate({
             perPage: per_page,
