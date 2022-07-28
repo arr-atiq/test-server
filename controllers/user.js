@@ -49,6 +49,16 @@ exports.getSalesagentsForUser = async (req, res) => {
   }
 };
 
+exports.getRetailersForUser = async (req, res) => {
+  try {
+    const result = await User.getRetailersForUser(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+
 exports.getDashboard = async (req, res) => {
   try {
     const result = await User.getDashboard(req);
