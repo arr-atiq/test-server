@@ -2830,7 +2830,12 @@ Retailer.retailerLoanStatusView = async (req, res) => {
         ).distinct();
 
       if (onermn_acc_data == 0) {
-        reject(sendApiResult(false, "Account Number Not found between the date range"))
+        reject(sendApiResult(false, "Account Number Not found between the date range"));
+        // reject({
+        //   success: false,
+        //   message: "Account Number Not found between the date range",
+        //   response: retailer_loan_status_Arr11,
+        // });
       }
 
       const retailer_loan_status_Arr = [];
