@@ -2,7 +2,7 @@ const moment = require("moment");
 const excel = require('excel4node');
 const fs = require('fs');
 const { getJsDateFromExcel } = require("excel-date-to-js");
-const { sendApiResult, ValidateNID, timeout } = require("../controllers/helperController");
+const { sendApiResult, ValidateNID, timeout, sendReportApiResult } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { getSchemeDetailsById } = require("../controllers/scheme");
 const { creditLimit } = require("../controllers/credit_limit");
@@ -2653,7 +2653,7 @@ Retailer.generateRetailersLoanStatusReport = async (req, res) => {
         ).distinct();
 
       if (onermn_acc_data == 0) {
-        reject(sendApiResult(false, "Account Number Not found between the date range"))
+        reject(sendReportApiResult(false, "Account Number Not found between the date range"))
       }
 
       const retailer_loan_status_Arr = [];
@@ -2830,7 +2830,7 @@ Retailer.retailerLoanStatusView = async (req, res) => {
         ).distinct();
 
       if (onermn_acc_data == 0) {
-        reject(sendApiResult(false, "Account Number Not found between the date range"));
+        reject(sendReportApiResult(false, "Account Number Not found between the date range"));
         // reject({
         //   success: false,
         //   message: "Account Number Not found between the date range",
@@ -2911,9 +2911,9 @@ Retailer.retailerLoanStatusView = async (req, res) => {
         retailer_loan_status_Arr.push(retailer_loan_status_info);
       }
 
-      if (retailer_loan_status_Arr == 0) reject(sendApiResult(false, "Not found."));
+      if (retailer_loan_status_Arr == 0) reject(sendReportApiResult(false, "Not found."));
 
-      resolve(sendApiResult(true, "Retailer Loan Status filter successfully", retailer_loan_status_Arr));
+      resolve(sendReportApiResult(true, "Retailer Loan Status filter successfully", retailer_loan_status_Arr));
 
     } catch (error) {
       console.log(error);

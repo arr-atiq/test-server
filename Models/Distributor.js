@@ -1,7 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail, randomPasswordGenerator } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, randomPasswordGenerator, sendReportApiResult } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
@@ -10,6 +10,9 @@ const FileUpload = function () { };
 FileUpload.insertExcelData = function (rows, filename, req) {
   var password;
   var link_code;
+  var invalidated_rows_arr = [];
+  var duplicated_rows_arr = [];
+  var mapping_rows_arr = [];
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -129,7 +132,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
                   Remarks_Invalidated: invalidStr,
                 };
-
+                invalidated_rows_arr.push(temp_data);
                 invalidate_data_array.push(temp_data);
                 continue;
               }
@@ -269,6 +272,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
                     Remarks_Duplicated: duplicateStr
                   };
+                  duplicated_rows_arr.push(temp_data);
                   unuploaded_data_array.push(temp_data);
 
                 }
@@ -285,7 +289,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     "official_email"
                   );
 
-                email_official = distributor_info[0].official_email;
+                let email_official = distributor_info[0].official_email;
 
                 if (distributor_info.length == 1) {
                   const manufacturer_id_check = rows[index].Manufacturer_id;
@@ -316,21 +320,21 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     const mapping_dis_manu = await knex(
                       "APSISIPDC.cr_manufacturer_vs_distributor"
                     ).insert(multiple_manu_mapping_dis).returning("id");
+                    mapping_rows_arr.push(multiple_manu_mapping_dis);
                     total_mapping_dis_manu.push(mapping_dis_manu[0])
 
                     try {
                       const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
                         "email": email_official,
-                        "mail_subject": "IPDC DANA | Registration Completed",
+                        "mail_subject": "IPDC DANA | Mapping Completed",
                         "mail_body": `
                           <p>Greetings from IPDC DANA!</p>
-                          <p>Congratulations! Your registration
-                          with IPDC DANA has been
+                          <p>Congratulations! Your Mapping
+                          with Manufacturer ID :${manufacturer_id_check} has been
                           completed. Please enter the below
                           mentioned user ID and password
                           at www.ipdcDANA.com and login.</p>
                           <p>User ID : ${email_official}</p>
-                          <p>Your Temporary Password : ${password}</p>
                           <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
                           <p>Regards, </p>
                           <p>IPDC Finance</p>
@@ -341,7 +345,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     catch (err) {
                       console.log('errorerrorerrorerrorerror', err)
                     }
-    
+
                     continue;
                   }
                 }
@@ -351,9 +355,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 if (duplication_check_val != 0) {
                   duplicateStr = duplicateStr + "Distributor_TIN " + ", ";
                 }
-                if (duplication_check_val_email_user_table != 0) {
-                  duplicateStr = duplicateStr + "Official_Email is existed in system " + ", ";
-                }
+                // if (duplication_check_val_email_user_table != 0) {
+                //   duplicateStr = duplicateStr + "Official_Email is existed in system " + ", ";
+                // }
 
                 // if (duplication_check_val_dis_code != 0) {
                 //   duplicateStr = duplicateStr + "Distributor_Code " + ", ";
@@ -399,6 +403,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Distributor_Bank_Branch: rows[index].Distributor_Bank_Branch,
                   Remarks_Duplicated: duplicateStr
                 };
+                duplicated_rows_arr.push(temp_data);
                 unuploaded_data_array.push(temp_data);
 
                 //const distributor_name_check = rows[index].Distributor_Name;
@@ -426,7 +431,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               empty_insert_log
             );
             msg = "File Uploaded successfully!";
-            resolve(sendApiResult(true, msg, empty_insert_log));
+            var response = {
+              "insert_log": empty_insert_log,
+              "total_mapping_row": mapping_rows_arr.length,
+              "total_invalidated_row": invalidated_rows_arr.length,
+              "total_duplicated_row:": duplicated_rows_arr.length
+            }
+            resolve(sendApiResult(true, msg, response));
           }
 
           if (Object.keys(invalidate_data_array).length != 0) {
@@ -566,8 +577,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   .where("distributor_tin", tin_insert_data.toString())
                   .select(
                     "id",
-                    "distributor_name"
+                    "distributor_name",
+                    "official_email"
                   );
+
+                let official_email_insert_data = distributor_info_insert_data[0].official_email;
 
                 // const distributor_name_check_insert_data = data_array[index].Distributor_Name;
                 //const distributor_code_check_insert_data = data_array[index].Distributor_Code;
@@ -599,6 +613,29 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   await knex(
                     "APSISIPDC.cr_manufacturer_vs_distributor"
                   ).insert(multiple_manu_mapping_dis_insert_data);
+                  mapping_rows_arr.push(multiple_manu_mapping_dis_insert_data);
+                  try {
+                    const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
+                      "email": official_email_insert_data,
+                      "mail_subject": "IPDC DANA | Mapping Completed",
+                      "mail_body": `
+                        <p>Greetings from IPDC DANA!</p>
+                        <p>Congratulations! Your Mapping
+                        with Manufacturer ID :${manufacturer_id_check_insert_data} has been
+                        completed. Please enter the below
+                        mentioned user ID and password
+                        at www.ipdcDANA.com and login.</p>
+                        <p>User ID : ${official_email_insert_data}</p>
+                        <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
+                        <p>Regards, </p>
+                        <p>IPDC Finance</p>
+                        `
+                    })
+                    console.log('sendMailsendMailsendMail', sendMail)
+                  }
+                  catch (err) {
+                    console.log('errorerrorerrorerrorerror', err)
+                  }
                   continue;
                 }
 
@@ -647,10 +684,69 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   remarks_duplications: duplicateStr,
                   created_by: req.user_id,
                 };
+                duplicated_rows_arr.push(duplicate_data_array);
                 await knex("APSISIPDC.cr_distributor_unuploaded_data")
                   .insert(duplicate_data_array);
                 continue;
               }
+
+              const emailOfficial_insert_data = data_array[index].Official_Email;
+              const duplication_checkEmail_user_insert_data = await knex
+                .count("cr_users.email as count")
+                .from("APSISIPDC.cr_users")
+                .where(
+                  "APSISIPDC.cr_users.email",
+                  emailOfficial_insert_data.toString()
+                );
+
+              const duplication_checkEmail_user_insert_data_val = parseInt(
+                duplication_checkEmail_user_insert_data[0].count
+              )
+
+              if (duplication_checkEmail_user_insert_data_val != 0) {
+                let duplicateStr = "duplicate columns - Official_Email is existed in system";
+                const duplicate_user_data_array = {
+                  distributor_name: data_array[index].Distributor_Name,
+                  manufacturer_id: data_array[index].Manufacturer_id,
+                  distributor_code: data_array[index].Distributor_Code,
+                  distributor_tin: data_array[index].Distributor_TIN,
+                  official_email: data_array[index].Official_Email,
+                  official_contact_number:
+                    data_array[index].Official_Contact_Number,
+                  is_distributor_or_third_party_agency:
+                    data_array[index].Is_Distributor_or_Third_Party_Agency,
+                  corporate_registration_no:
+                    data_array[index].Distributor_Corporate_Registration_No,
+                  trade_license_no: data_array[index].Trade_License_No,
+                  registered_office_bangladesh:
+                    data_array[index].Distributor_Registered_Office_in_Bangladesh,
+                  ofc_address1: data_array[index].Address_Line_1,
+                  ofc_address2: data_array[index].Address_Line_2,
+                  ofc_postal_code: data_array[index].Postal_Code,
+                  ofc_post_office: data_array[index].Post_Office,
+                  ofc_thana: data_array[index].Thana,
+                  ofc_district: data_array[index].District,
+                  ofc_division: data_array[index].Division,
+                  name_of_authorized_representative:
+                    data_array[index].Name_of_Authorized_Representative,
+                  autho_rep_full_name: data_array[index].Full_Name,
+                  autho_rep_nid: data_array[index].NID,
+                  autho_rep_designation:
+                    data_array[index].Designation_of_Authorized_Representative,
+                  autho_rep_phone: data_array[index].Mobile_No,
+                  autho_rep_email:
+                    data_array[index]
+                      .Official_Email_Id_of_Authorized_Representative,
+                  region_of_operation: data_array[index].Region_of_Operation,
+                  remarks_duplications: duplicateStr,
+                  created_by: req.user_id,
+                };
+                duplicated_rows_arr.push(duplicate_data_array);
+                await knex("APSISIPDC.cr_distributor_unuploaded_data")
+                  .insert(duplicate_data_array);
+                continue;
+              }
+
               const team_distributor = {
                 distributor_name: data_array[index].Distributor_Name,
                 distributor_tin: data_array[index].Distributor_TIN,
@@ -710,12 +806,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 //     .update(distributorIDUpdate);
                 //   console.log('updateData', updateData)
                 // });
-                 password = randomPasswordGenerator()
-                 link_code = randomPasswordGenerator()
+                password = randomPasswordGenerator()
+                link_code = randomPasswordGenerator()
 
                 const insert_manufacturer_vs_distributor = await knex(
                   "APSISIPDC.cr_manufacturer_vs_distributor"
                 ).insert(temp_manufacturer_vs_distributor_map).returning("id");
+                mapping_rows_arr.push(insert_manufacturer_vs_distributor);
 
                 total_mapping_dis_manu.push(insert_manufacturer_vs_distributor[0]);
 
@@ -858,7 +955,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 insert_log
               );
               msg = "File Uploaded successfully!";
-              resolve(sendApiResult(true, msg, insert_log));
+              var response = {
+                "insert_log": insert_log,
+                "total_mapping_row": mapping_rows_arr.length,
+                "total_invalidated": invalidated_rows_arr.length,
+                "total_duplicated:": duplicated_rows_arr.length
+              }
+              resolve(sendApiResult(true, msg, response));
             }
           } else {
             msg = "No Data Founds to Update";
@@ -1148,6 +1251,242 @@ FileUpload.getDistributorCodeByDistributor = function (req) {
       if (data == 0) reject(sendApiResult(false, "Not found."));
       resolve(sendApiResult(true, "Data fetched successfully", data));
     } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.generateDistributorAnnualReport = async (req, res) => {
+  const { distributor_id, manufacturer_id, select_date } = req.query;
+  const selctDate = moment(select_date).startOf('date').format('YYYY-MM-DD');
+  const selectDatePreviousDay = moment(select_date).subtract(1, 'days').format('YYYY-MM-DD');
+  const currentYearJuly = moment(select_date).startOf('year').add(6, 'months').format('YYYY-MM-DD');
+  const previousYearJuly = moment(select_date).startOf('year').add(6, 'months').subtract(1, 'years').format('YYYY-MM-DD');
+  const currentMonth = 1 + moment(selctDate, 'YYYY-MM-DD').month();
+  const comparison_financial_year = currentMonth > 6 ? currentYearJuly : previousYearJuly;
+  console.log(comparison_financial_year);
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const distributor_info = await knex("APSISIPDC.cr_distributor")
+        .where(function () {
+          if (distributor_id) {
+            this.where("cr_distributor.id", distributor_id);
+          }
+        })
+        .select(
+          "cr_distributor.id",
+          "cr_distributor.distributor_name"
+        );
+
+      console.log(distributor_info);
+      const distributor_annual_performance_Arr = [];
+
+      if (distributor_info.length == 0) {
+        reject(sendReportApiResult(false, "Distributor Not Found", distributor_annual_performance_Arr))
+      }
+
+      for (let i = 0; i < distributor_info.length; i++) {
+
+        const total_manufacturers = await knex
+          .count("cr_manufacturer_vs_distributor.manufacturer_id as count")
+          .from("APSISIPDC.cr_manufacturer_vs_distributor")
+          .where("cr_manufacturer_vs_distributor.distributor_id", distributor_info[i].id)
+          .where(function () {
+
+            // if (start_date && end_date) {
+            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
+            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+            // }
+          });
+        const total_retailers = await knex
+          .countDistinct("cr_retailer_manu_scheme_mapping.retailer_id as count")
+          .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
+          .where(function () {
+
+            // if (start_date && end_date) {
+            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
+            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+            // }
+          });
+
+        const total_supervisors = await knex
+          .countDistinct("cr_supervisor.id as count")
+          .from("APSISIPDC.cr_supervisor")
+          .where("cr_supervisor.distributor_id", distributor_info[i].id)
+          .where(function () {
+
+            // if (start_date && end_date) {
+            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
+            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+            // }
+          });
+
+        const total_salesagents = await knex
+          .countDistinct("cr_sales_agent.id as count")
+          .from("APSISIPDC.cr_sales_agent")
+          .where("cr_sales_agent.distributor_id", distributor_info[i].id)
+          .where(function () {
+
+            // if (start_date && end_date) {
+            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
+            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+            // }
+          });
+
+        const principal_outstanding_blans = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .select("cr_retailer_loan_calculation.principal_outstanding")
+          .where("cr_retailer_loan_calculation.onermn_acc", onermn_acc_data[i].onermn_acc)
+          .orderBy("cr_retailer_loan_calculation.id", "desc")
+          .first()
+          .where(function () {
+            if (start_date && end_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const principal_outstanding_beginning_blans =
+          principal_outstanding_blans != undefined ? principal_outstanding_blans.principal_outstanding : 0;
+
+        const onermn_acc_info_beginning_blans = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .sum("cr_retailer_loan_calculation.daily_principal_interest as daily_principal_interest")
+          .sum("cr_retailer_loan_calculation.penal_interest as penal_interest")
+          .sum("cr_retailer_loan_calculation.transaction_cost as transaction_cost")
+          .sum("cr_retailer_loan_calculation.other_charge as other_charges")
+          .where("cr_retailer_loan_calculation.onermn_acc", onermn_acc_data[i].onermn_acc)
+          .where(function () {
+            if (start_date && end_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_amount = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .sum("cr_retailer_loan_calculation.disburshment as disbursement")
+          .sum("cr_retailer_loan_calculation.repayment as recovery")
+          .sum("cr_retailer_loan_calculation.daily_principal_interest as interest_charged")
+          .sum("cr_retailer_loan_calculation.penal_interest as penal_interest")
+          .sum("cr_retailer_loan_calculation.other_charge as other_charges")
+          .where("cr_retailer_loan_calculation.onermn_acc", onermn_acc_data[i].onermn_acc)
+          .where(function () {
+            if (start_date && end_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const beginning_balance = principal_outstanding_beginning_blans
+          + onermn_acc_info_beginning_blans[0].daily_principal_interest
+          + onermn_acc_info_beginning_blans[0].penal_interest
+          + onermn_acc_info_beginning_blans[0].transaction_cost
+          + onermn_acc_info_beginning_blans[0].other_charges;
+
+        const ending_balance = beginning_balance
+          + total_amount[0].disbursement
+          + total_amount[0].interest_charged
+          + total_amount[0].penal_interest
+          + total_amount[0].other_charges
+          - total_amount[0].recovery;
+
+        const retailer_loan_status_info = {
+          onermn_acc: onermn_acc_data[i].onermn_acc,
+          beginning_balance: beginning_balance,
+          disbursement: total_amount[0].disbursement,
+          recovery: total_amount[0].recovery,
+          interest_charged: total_amount[0].interest_charged,
+          penal_interest: total_amount[0].penal_interest,
+          other_charges: total_amount[0].other_charges,
+          ending_balance: ending_balance
+        }
+
+        retailer_loan_status_Arr.push(retailer_loan_status_info);
+      }
+      const headers = [
+        "Sr.",
+        "Name of distributor",
+        "Distributor ID",
+        "No of associated manufacturers",
+        "No of retailers onboarded",
+        "No of supervisors allocated",
+        "No of sales agents allocated",
+        "Total number of transactions",
+        "Total sales volume (BDT)",
+        "Total loan amount (BDT)",
+        "Total collection amount (BDT)",
+        "Current outstanding amount (BDT)",
+        "Number of times discrepancies occurred in collection amount",
+        "Number of suspended Retailers",
+        "Number of blacklisted Retailers",
+        "Total Amount of Non-performing Loans",
+        "Total number of Non-performing accounts"
+      ];
+      const workbook = new excel.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet 1");
+      const headerStyle = workbook.createStyle({
+        fill: {
+          type: "pattern",
+          patternType: "solid",
+          bgColor: "#E1F0FF",
+          fgColor: "#E1F0FF",
+        },
+        font: {
+          color: "#000000",
+          size: "10",
+          bold: true,
+        },
+      });
+      const col = 1;
+      let row = 1;
+      let col_addH = 0;
+      headers.forEach((e) => {
+        worksheet
+          .cell(row, col + col_addH)
+          .string(e)
+          .style(headerStyle);
+        col_addH++;
+      });
+      row++;
+      for (let i = 0; i < retailer_loan_status_Arr.length; i++) {
+        var col_add = 0;
+        let e = retailer_loan_status_Arr[i];
+        worksheet.cell(row, col + col_add).number(i + 1);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.onermn_acc ? e.onermn_acc : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.beginning_balance ? e.beginning_balance : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.disbursement ? e.disbursement : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.interest_charged ? e.interest_charged : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.penal_interest ? e.penal_interest : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.other_charges ? e.other_charges : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.recovery ? e.recovery : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.ending_balance ? e.ending_balance : 0);
+        col_add++;
+
+        // worksheet.cell(row, col + col_add).number(0);
+        // col_add++;
+        row++;
+      }
+      await workbook.write("public/reports_retailer/retailer_loan_status_reports.xlsx");
+      const fileName = "./reports_retailer/retailer_loan_status_reports.xlsx";
+      setTimeout(() => {
+        resolve(sendApiResult(true, "File Generated", fileName));
+      }, 1500);
+    } catch (error) {
+      console.log(error);
       reject(sendApiResult(false, error.message));
     }
   });
