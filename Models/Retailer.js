@@ -141,8 +141,8 @@ Retailer.getRetailerList = function (req) {
           "autho_rep_full_name",
           "autho_rep_phone",
           "region_operation",
-          "kyc_status",
-          "cib_status"
+          knex.raw(`CASE "cr_retailer"."kyc_status" WHEN 1 THEN 'True' ELSE 'False' END AS "kyc_status"`),
+          knex.raw(`CASE "cr_retailer"."cib_status" WHEN 1 THEN 'True' ELSE 'False' END AS "cib_status"`),
         )
         .orderBy("id", "desc")
         .paginate({
