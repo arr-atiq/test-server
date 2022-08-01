@@ -421,7 +421,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             var response = {
               "insert_log": empty_insert_log,
               "total_invalidated": invalidated_rows_arr.length,
-              "total_duplicated:": duplicated_rows_arr.length
+              "total_duplicated": duplicated_rows_arr.length
             }
             resolve(sendApiResult(true, msg, response));
           }
@@ -852,7 +852,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               var response = {
                 "insert_log": insert_log,
                 "total_invalidated": invalidated_rows_arr.length,
-                "total_duplicated:": duplicated_rows_arr.length
+                "total_duplicated": duplicated_rows_arr.length
               }
               resolve(sendApiResult(true, msg, response));
             }
