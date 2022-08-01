@@ -788,6 +788,7 @@ FileUpload.getSalesAgentList = function (req) {
           "cr_sales_agent.region_of_operation"
         )
         .orderBy("cr_sales_agent.id", "desc")
+        .distinct()
         .paginate({
           perPage: per_page,
           currentPage: page,
