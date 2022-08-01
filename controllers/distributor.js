@@ -499,3 +499,22 @@ exports.generateDistributorInvalidatedReport = async (req, res) => {
   }
 };
 
+//Consolidated Annual Distributor Performance for IPDC Report
+exports.generateDistributorAnnualReport = async (req, res) => {
+  try {
+    const result = await distModel.generateDistributorAnnualReport(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.filterDistributorAnnualView = async (req, res) => {
+  try {
+    const result = await distModel.filterDistributorAnnualView(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+//Consolidated Annual Distributor Performance for IPDC Report

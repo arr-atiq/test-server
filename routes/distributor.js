@@ -24,4 +24,9 @@ router.get(
 router.get("/unuploaded-distributor-data", distributor.generateDistributorUnuploadedReport);
 router.get("/invalidated-distributor-data", distributor.generateDistributorInvalidatedReport);
 
+//Consolidated Annual Distributor Performance for IPDC Report
+router.get("/distributor-consolidated-annual-report", distributor.generateDistributorAnnualReport);
+router.get("distributor-consolidated-annual-filter-view", distributor.filterDistributorAnnualView);
+//Consolidated Annual Distributor Performance for IPDC Report
+
 module.exports = router;

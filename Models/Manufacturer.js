@@ -9,8 +9,10 @@ const FileUpload = function () { };
 require("dotenv").config();
 
 FileUpload.insertExcelData = function (rows, filename, req) {
-  var password ;
-  var link_code; 
+  var password;
+  var link_code;
+  var invalidated_rows_arr = [];
+  var duplicated_rows_arr = [];
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -165,6 +167,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     rows[index].Authorized_Representative_Official_Email_ID,
                   Remarks_Invalidated: invalidStr,
                 };
+                invalidated_rows_arr.push(temp_data);
                 invalidate_data_array.push(temp_data);
                 continue;
               }
@@ -391,6 +394,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     rows[index].Authorized_Representative_Official_Email_ID,
                   Remarks_Duplicated: duplicateStr,
                 };
+                duplicated_rows_arr.push(temp_data);
                 unuploaded_data_array.push(temp_data);
               }
             }
@@ -414,7 +418,12 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               empty_insert_log
             );
             msg = "File Uploaded successfully!";
-            resolve(sendApiResult(true, msg, empty_insert_log));
+            var response = {
+              "insert_log": empty_insert_log,
+              "total_invalidated": invalidated_rows_arr.length,
+              "total_duplicated:": duplicated_rows_arr.length
+            }
+            resolve(sendApiResult(true, msg, response));
           }
 
           if (Object.keys(invalidate_data_array).length != 0) {
@@ -669,6 +678,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   remarks_duplications: duplicateStr,
                   created_by: req.user_id,
                 };
+                duplicated_rows_arr.push(duplicate_data_array);
                 await knex("APSISIPDC.cr_manufacturer_unuploaded_data")
                   .insert(duplicate_data_array);
 
@@ -730,8 +740,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 created_by: req.user_id,
               };
               console.log(team_manufacture);
-               password = randomPasswordGenerator()
-               link_code = randomPasswordGenerator()
+              password = randomPasswordGenerator()
+              link_code = randomPasswordGenerator()
               const insert_manufacture = await knex("APSISIPDC.cr_manufacturer")
                 .insert(team_manufacture)
                 .returning("id");
@@ -761,8 +771,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   console.log('errorerrorerrorerrorerror', err)
                 }
               }
-              
-              
+
+
               const temp_user = {
                 name: data_array[index].Manufacturer_Name,
                 email: data_array[index].Official_Email_ID,
@@ -839,7 +849,12 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 insert_log
               );
               msg = "File Uploaded successfully!";
-              resolve(sendApiResult(true, msg, insert_log));
+              var response = {
+                "insert_log": insert_log,
+                "total_invalidated": invalidated_rows_arr.length,
+                "total_duplicated:": duplicated_rows_arr.length
+              }
+              resolve(sendApiResult(true, msg, response));
             }
           } else {
             msg = "No Data Founds to Update";

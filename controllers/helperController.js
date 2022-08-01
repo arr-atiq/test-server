@@ -17,6 +17,15 @@ exports.sendApiResult = function (success, message, data = {}) {
   return data;
 };
 
+exports.sendReportApiResult = function (success, message, data = []) {
+  var data = {
+    success,
+    message,
+    data,
+  };
+  return data;
+};
+
 exports.blockunblock = function (success, paginate, data = {}) {
   var data = {
     success,

@@ -10,6 +10,8 @@ const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   var mapped_data_array = [];
+  var invalidated_rows_arr = [];
+  var duplicated_rows_arr = [];
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -123,7 +125,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Region_of_Operation: rows[index].Region_of_Operation,
                   Remarks_Invalidated: invalidStr,
                 };
-
+                invalidated_rows_arr.push(temp_data);
                 invalidate_data_array.push(temp_data);
                 continue;
               }
@@ -322,6 +324,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Region_of_Operation: rows[index].Region_of_Operation,
                   Remarks_Duplicated: duplicateStr
                 };
+                duplicated_rows_arr.push(temp_data);
                 unuploaded_data_array.push(temp_data);
               }
             }
@@ -344,7 +347,12 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               empty_insert_log
             );
             msg = "File Uploaded successfully!";
-            var response = { "insert_log": empty_insert_log, "total_mapped": mapped_data_array }
+            var response = {
+              "insert_log": empty_insert_log,
+              "total_mapped": mapped_data_array,
+              "total_invalidated_row": invalidated_rows_arr.length,
+              "total_duplicated_row": duplicated_rows_arr.length
+            }
             resolve(sendApiResult(true, msg, response));
           }
 
@@ -555,6 +563,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   remarks_duplications: duplicateStr,
                   created_by: req.user_id,
                 };
+                duplicated_rows_arr.push(duplicate_data_array);
                 await knex("APSISIPDC.cr_salesagent_unuploaded_data")
                   .insert(duplicate_data_array);
                 continue;
@@ -717,7 +726,12 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 insert_log
               );
               msg = "File Uploaded successfully!";
-              var response = { "insert_log": insert_log, "total_mapped": mapped_data_array }
+              var response = {
+                "insert_log": insert_log,
+                "total_mapped": mapped_data_array,
+                "total_invalidated_row": invalidated_rows_arr.length,
+                "total_duplicated_row": duplicated_rows_arr.length
+              }
               resolve(sendApiResult(true, msg, response));
             }
           } else {
