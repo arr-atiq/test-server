@@ -1286,7 +1286,6 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
       const distributor_annual_performance_Arr = [];
 
       for (let i = 0; i < distributor_info.length; i++) {
-
         const total_manufacturers = await knex
           .count("cr_manufacturer_vs_distributor.manufacturer_id as count")
           .from("APSISIPDC.cr_manufacturer_vs_distributor")
@@ -1298,6 +1297,7 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
             //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
             // }
           });
+
         const total_retailers = await knex
           .countDistinct("cr_retailer_manu_scheme_mapping.retailer_id as count")
           .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
@@ -1335,28 +1335,39 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
           });
 
         const principal_outstanding_blans = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
           .select("cr_retailer_loan_calculation.principal_outstanding")
-          .where("cr_retailer_loan_calculation.onermn_acc", onermn_acc_data[i].onermn_acc)
-          .orderBy("cr_retailer_loan_calculation.id", "desc")
-          .first()
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
           .where(function () {
             // if (start_date && end_date) {
             //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
             //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
             // }
-          });
+          })
+          .orderBy("cr_retailer_loan_calculation.id", "desc")
+          .first();
 
         const principal_outstanding_beginning_blans =
           principal_outstanding_blans != undefined ? principal_outstanding_blans.principal_outstanding : 0;
 
         const total_amount = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
           .sum("cr_retailer_loan_calculation.disburshment as loan")
           .sum("cr_retailer_loan_calculation.repayment as collection")
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
           .where(function () {
-            if (start_date && end_date) {
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
-            }
+            // if (start_date && end_date) {
+            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
+            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
+            // }
           });
 
         const total_blacklist_retailer = await knex("APSISIPDC.cr_retailer")
@@ -1373,6 +1384,7 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
         const total_suspened_retailer = await knex("APSISIPDC.cr_retailer")
           .count("cr_retailer.id as count")
           .where("cr_retailer.retailer_status", "SUSPEND")
+
           .where(function () {
             // if (start_date && end_date) {
             //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
@@ -1381,8 +1393,14 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
           });
 
         const total_transactions_number = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
           .count("cr_retailer_loan_calculation.id as count")
-          .whereIn("cr_retailer.retailer_status", "SUSPEND")
+          .whereIn("cr_retailer_loan_calculation.transaction_type", ["DISBURSEMENT", "REPAYMENT"])
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
           .where(function () {
             // if (start_date && end_date) {
             //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
@@ -1390,18 +1408,22 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
             // }
           });
 
-        const retailer_loan_status_info = {
-          onermn_acc: onermn_acc_data[i].onermn_acc,
-          beginning_balance: beginning_balance,
-          disbursement: total_amount[0].disbursement,
-          recovery: total_amount[0].recovery,
-          interest_charged: total_amount[0].interest_charged,
-          penal_interest: total_amount[0].penal_interest,
-          other_charges: total_amount[0].other_charges,
-          ending_balance: ending_balance
+        const distributor_annual_performance_consolidated_info = {
+          distributor_name: distributor_info[i].distributor_name,
+          distributor_id: distributor_info[i].id,
+          total_manufacturers: total_manufacturers[0].count,
+          total_retailers: total_retailers[0].count,
+          total_supervisors: total_supervisors[0].count,
+          total_salesagents: total_salesagents[0].count,
+          total_transactions_number: total_transactions_number[0].count,
+          total_loan: total_amount[0].loan,
+          total_collection: total_amount[0].collection,
+          current_outstanding_amount: principal_outstanding_beginning_blans,
+          total_blacklist_retailer: total_blacklist_retailer[0].count,
+          total_suspened_retailer: total_suspened_retailer[0].count
         }
 
-        distributor_annual_performance_Arr.push(retailer_loan_status_info);
+        distributor_annual_performance_Arr.push(distributor_annual_performance_consolidated_info);
       }
       const headers = [
         "Sr.",
@@ -1448,24 +1470,50 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
         col_addH++;
       });
       row++;
-      for (let i = 0; i < retailer_loan_status_Arr.length; i++) {
+      for (let i = 0; i < distributor_annual_performance_Arr.length; i++) {
         var col_add = 0;
-        let e = retailer_loan_status_Arr[i];
+        let e = distributor_annual_performance_Arr[i];
         worksheet.cell(row, col + col_add).number(i + 1);
         col_add++;
         worksheet
           .cell(row, col + col_add)
-          .string(e.onermn_acc ? e.onermn_acc : "");
+          .string(e.distributor_name ? e.distributor_name : "");
         col_add++;
         worksheet
           .cell(row, col + col_add)
-          .number(e.beginning_balance ? e.beginning_balance : 0);
+          .number(e.distributor_id ? e.distributor_id : 0);
         col_add++;
         worksheet
           .cell(row, col + col_add)
-          .number(e.disbursement ? e.disbursement : 0);
+          .number(e.total_manufacturers ? e.total_manufacturers : 0);
         col_add++;
-        worksheet.cell(row, col + col_add).number(e.interest_charged ? e.interest_charged : 0);
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_retailers ? e.total_retailers : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_supervisors ? e.total_supervisors : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_salesagents ? e.total_salesagents : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_transactions_number ? e.total_transactions_number : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.total_sales ? e.total_sales : "-");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_loan ? e.total_loan : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_collection ? e.total_collection : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.total_sales ? e.total_sales : "-");
         col_add++;
         worksheet.cell(row, col + col_add).number(e.penal_interest ? e.penal_interest : 0);
         col_add++;
@@ -1480,8 +1528,8 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
         // col_add++;
         row++;
       }
-      await workbook.write("public/reports_retailer/retailer_loan_status_reports.xlsx");
-      const fileName = "./reports_retailer/retailer_loan_status_reports.xlsx";
+      await workbook.write("public/reports_retailer/consolidated_annual_distributor_performance_report.xlsx");
+      const fileName = "./reports_retailer/consolidated_annual_distributor_performance_report.xlsx";
       setTimeout(() => {
         resolve(sendApiResult(true, "File Generated", fileName));
       }, 1500);
