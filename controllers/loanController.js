@@ -5,7 +5,7 @@ const { sendApiResult, blockunblock } = require("./helperController");
 const model = require("../Models/Retailer");
 const { default: axios } = require("axios");
 const knex = require("../config/database");
-const { pushNotification } = require("./notification_helper")
+const { pushNotification } = require("./notification_helper");
 
 // var moment = require('moment');
 
@@ -289,7 +289,9 @@ exports.disbursement = async (req, res) => {
       let distributor_Email;
       let SchemeValue;
       if (getSchemeId) {
-        distributor_Email = await getDistributorEmail(getSchemeId[0]?.distributor_id)
+        distributor_Email = await getDistributorEmail(
+          getSchemeId[0]?.distributor_id
+        );
         SchemeValue = await getSchemeValue(getSchemeId[0].scheme_id);
       } else {
         /**
@@ -331,7 +333,7 @@ exports.disbursement = async (req, res) => {
           retailer_id: retailer_id,
           principal_outstanding: principalAmount?.principal_outstanding
             ? parseInt(principalAmount.principal_outstanding) +
-            parseFloat(disbursement_amount)
+              parseFloat(disbursement_amount)
             : parseFloat(disbursement_amount),
           disburshment: disbursement_amount,
           onermn_acc: onermn_acc,
@@ -339,7 +341,7 @@ exports.disbursement = async (req, res) => {
           disbursement_id: createDisbursment[0],
           total_outstanding: outstanding + disbursement_amount,
           sales_agent_id: sales_agent_id,
-          manu_scheme_mapping_id: getLimitAmountValue[0]?.id
+          manu_scheme_mapping_id: getLimitAmountValue[0]?.id,
           // 'transaction_cost_type':transaction_cost_type
         };
         console.log("loan", loan);
@@ -372,18 +374,24 @@ exports.disbursement = async (req, res) => {
         // }
 
         await knex("APSISIPDC.cr_retailer_loan_calculation")
-          .insert(loan).returning("id")
+          .insert(loan)
+          .returning("id")
           .then(async (response) => {
-            try{
-              const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
-                "email":distributor_Email && distributor_Email[0]?.official_email,
-                "mail_subject": `IPDC DANA | Collection Confirmation| <${parseInt(response[0])}.>`,
-                "mail_body": `
+            try {
+              const sendMail = await axios.post(
+                `${process.env.HOSTIP}/mail/tempSendmail`,
+                {
+                  email:
+                    distributor_Email && distributor_Email[0]?.official_email,
+                  mail_subject: `IPDC DANA | Collection Confirmation| <${parseInt(
+                    response[0]
+                  )}.>`,
+                  mail_body: `
                 <p>Dear IPDC DANA Partner,</p>
   
                 <p>Please find the disbursement details:</p>
   
-                <p>Disbursement Date: ${moment().format('YYYY-MM-DD')}</p>
+                <p>Disbursement Date: ${moment().format("YYYY-MM-DD")}</p>
                 <p>Disbursed Amount: ${disbursement_amount}</p>
                 <p>Request ID: ${response[0]}</p>
                 <p>Bank Account:  ${onermn_acc}</p>
@@ -391,12 +399,12 @@ exports.disbursement = async (req, res) => {
                 <p>Please let us know if you have any queries. </p>
                 <p>Regards, </p>
                 <p>IPDC Finance</p>
-                `
-              })
-              console.log('sendMailsendMailsendMail',sendMail)
-            }
-            catch(err){
-              console.log('errorerrorerrorerrorerror',err)
+                `,
+                }
+              );
+              console.log("sendMailsendMailsendMail", sendMail);
+            } catch (err) {
+              console.log("errorerrorerrorerrorerror", err);
             }
             // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(processingFee).then(async ()=>{
             await knex.transaction(async (trx) => {
@@ -420,19 +428,26 @@ exports.disbursement = async (req, res) => {
         /* Implementin push notification */
         let body = `BDT ${disbursement_amount} has been disbursed to your bank account upon your request. Your account number is : ${onermn_acc} `;
         const device_token_response = await knex("APSISIPDC.cr_users")
-          .leftJoin("APSISIPDC.cr_sales_agent_user",
+          .leftJoin(
+            "APSISIPDC.cr_sales_agent_user",
             "cr_sales_agent_user.user_id",
-            "cr_users.id")
+            "cr_users.id"
+          )
           .where("cr_users.status", "Active")
           .where("cr_sales_agent_user.sales_agent_id", sales_agent_id)
-          .select(
-            "cr_users.device_token"
-          );
-        console.log("device_token", device_token_response)  
+          .select("cr_users.device_token");
+        console.log("device_token", device_token_response);
         let receiver_token = device_token_response[0].device_token;
-        console.log("device_token", device_token_response)
+        console.log("device_token", device_token_response);
 
-        await pushNotification(retailer_id, sales_agent_id, "DISBURSEMENT", "Disbursement completed!", body, receiver_token)
+        await pushNotification(
+          retailer_id,
+          sales_agent_id,
+          "DISBURSEMENT",
+          "Disbursement completed!",
+          body,
+          receiver_token
+        );
       }
       return res.send(
         sendApiResult(true, "You have Successfully Added Credit.", loan)
@@ -454,7 +469,6 @@ exports.repayment = async (req, res) => {
     req.body;
   // let transaction_cost = transaction_cost_value;
 
-
   const findSalesAgent = await findSalesrelation(sales_agent_id, retailer_id);
   const firstRepaymentID = await getfirstRepaymentID(onermn_acc);
 
@@ -466,7 +480,9 @@ exports.repayment = async (req, res) => {
   var distributor_Email;
   var SchemeValue;
   if (getSchemeId) {
-    distributor_Email = await getDistributorEmail(getSchemeId[0]?.distributor_id)
+    distributor_Email = await getDistributorEmail(
+      getSchemeId[0]?.distributor_id
+    );
     SchemeValue = await getSchemeValue(getSchemeId[0]?.scheme_id);
   } else {
     /**
@@ -484,92 +500,96 @@ exports.repayment = async (req, res) => {
     // };
     let calculateRepaymentInterest =
       parseFloat(principalAmount.total_outstanding) -
-      parseFloat(principalAmount.principal_outstanding) ?? 0;
+        parseFloat(principalAmount.principal_outstanding) ?? 0;
 
     // const createRepayment = await knex("APSISIPDC.cr_disbursement")
     //   .insert(repaymentType)
     //   .returning("id");
     // if (createRepayment) {
-      // if(getSchemeId[0]?.transaction_type == 'SLAB'){
-      //   const now = moment.utc();
-      //   var end = moment(dateSlab);
-      //   var days = now.diff(end, "days");
-      //   const getSlabValue =await getSlabAmount(repayment , days )
-      //   transaction_cost = getSlabValue[0]?.transaction_fee ?? 0
-      // }else{
-      //   transaction_cost = repayment * (SchemeValue[0]?.transaction_fee/100) ?? 0
+    // if(getSchemeId[0]?.transaction_type == 'SLAB'){
+    //   const now = moment.utc();
+    //   var end = moment(dateSlab);
+    //   var days = now.diff(end, "days");
+    //   const getSlabValue =await getSlabAmount(repayment , days )
+    //   transaction_cost = getSlabValue[0]?.transaction_fee ?? 0
+    // }else{
+    //   transaction_cost = repayment * (SchemeValue[0]?.transaction_fee/100) ?? 0
+    // }
+
+    var intersetPaid = 0;
+
+    if (calculateRepaymentInterest > repayment) {
+      intersetPaid = parseFloat(repayment);
+      // intersetPaid = parseFloat(calculateRepaymentInterest) - parseFloat(repayment)
+      // let totalInterestResponse = {
+      //   'totalInterest' : calculateRepaymentInterest
       // }
+      // return res.send((sendApiResult(false, "Your repayment is less than your total interest",totalInterestResponse)));
+    } else {
+      // intersetPaid = parseFloat(repayment) - parseFloat(calculateRepaymentInterest)
+      intersetPaid = parseFloat(calculateRepaymentInterest);
+    }
 
-      var intersetPaid = 0;
-
-      if (calculateRepaymentInterest > repayment) {
-        intersetPaid = parseFloat(repayment);
-        // intersetPaid = parseFloat(calculateRepaymentInterest) - parseFloat(repayment)
-        // let totalInterestResponse = {
-        //   'totalInterest' : calculateRepaymentInterest
-        // }
-        // return res.send((sendApiResult(false, "Your repayment is less than your total interest",totalInterestResponse)));
-      } else {
-        // intersetPaid = parseFloat(repayment) - parseFloat(calculateRepaymentInterest)
-        intersetPaid = parseFloat(calculateRepaymentInterest);
-      }
-
-      console.log("intersetPaidintersetPaid", intersetPaid);
-      // let dailyInterestValue = {...principalAmount,
-      let repaymentValueAll = {
-        principal_outstanding:
-          calculateRepaymentInterest >= repayment
-            ? parseFloat(principalAmount.principal_outstanding)
-            : parseFloat(principalAmount.principal_outstanding) -
+    console.log("intersetPaidintersetPaid", intersetPaid);
+    // let dailyInterestValue = {...principalAmount,
+    let repaymentValueAll = {
+      principal_outstanding:
+        calculateRepaymentInterest >= repayment
+          ? parseFloat(principalAmount.principal_outstanding)
+          : parseFloat(principalAmount.principal_outstanding) -
             parseFloat(repayment) +
             parseFloat(intersetPaid),
-        retailer_id: principalAmount.retailer_id,
-        onermn_acc: principalAmount.onermn_acc,
-        disbursement_id: principalAmount.disbursement_id,
-        total_outstanding:
-          parseFloat(principalAmount.total_outstanding) - parseFloat(repayment),
-        repayment: repayment,
-        sales_agent_id: sales_agent_id,
-        //  'transaction_cost_type':principalAmount.transaction_cost_type,
-        transaction_cost: parseFloat(transaction_cost),
-        manu_scheme_mapping_id: getLimitAmountValue[0]?.id,
-        transaction_type: "REPAYMENT",
-      };
-      //   let transactionCost = {
-      //     'principal_outstanding': calculateRepaymentInterest > repayment ? (parseFloat(principalAmount.principal_outstanding)) :
-      //     (parseFloat(principalAmount.principal_outstanding) - parseFloat(intersetPaid)),
-      //     'retailer_id': principalAmount.retailer_id,
-      //     'onermn_acc': principalAmount.onermn_acc,
-      //     'disbursement_id': createRepayment[0],
-      //     'total_outstanding': (parseFloat(principalAmount.total_outstanding) - repayment) + parseFloat(transaction_cost) ,
-      //     'transaction_cost_type':principalAmount.transaction_cost_type,
-      //     'transaction_cost':parseFloat(transaction_cost),
-      //     'transaction_type':'TRANSACTION'
-      //  }
-      var limitUpdate = {
-        current_limit:
-          parseFloat(getLimitAmountValue[0]?.current_limit) -
-          parseFloat(repayment),
-      };
+      retailer_id: principalAmount.retailer_id,
+      onermn_acc: principalAmount.onermn_acc,
+      disbursement_id: principalAmount.disbursement_id,
+      total_outstanding:
+        parseFloat(principalAmount.total_outstanding) - parseFloat(repayment),
+      repayment: repayment,
+      sales_agent_id: sales_agent_id,
+      //  'transaction_cost_type':principalAmount.transaction_cost_type,
+      transaction_cost: parseFloat(transaction_cost),
+      manu_scheme_mapping_id: getLimitAmountValue[0]?.id,
+      transaction_type: "REPAYMENT",
+    };
+    //   let transactionCost = {
+    //     'principal_outstanding': calculateRepaymentInterest > repayment ? (parseFloat(principalAmount.principal_outstanding)) :
+    //     (parseFloat(principalAmount.principal_outstanding) - parseFloat(intersetPaid)),
+    //     'retailer_id': principalAmount.retailer_id,
+    //     'onermn_acc': principalAmount.onermn_acc,
+    //     'disbursement_id': createRepayment[0],
+    //     'total_outstanding': (parseFloat(principalAmount.total_outstanding) - repayment) + parseFloat(transaction_cost) ,
+    //     'transaction_cost_type':principalAmount.transaction_cost_type,
+    //     'transaction_cost':parseFloat(transaction_cost),
+    //     'transaction_type':'TRANSACTION'
+    //  }
+    var limitUpdate = {
+      current_limit:
+        parseFloat(getLimitAmountValue[0]?.current_limit) -
+        parseFloat(repayment),
+    };
 
-      await knex("APSISIPDC.cr_retailer_loan_calculation")
-        .insert(repaymentValueAll)
-        .returning("id")
-        .then(async (response) => {
-          // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(transactionCost).then(async ()=>{
-          // console.log("firstRepaymentID", firstRepaymentID);
-          // console.log("response", response);
-          
-          try{
-            const sendMail =await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`,{
-              "email": distributor_Email[0].official_email,
-              "mail_subject": `IPDC DANA | Collection Confirmation| <${parseInt(response[0])}.>`,
-              "mail_body": `
+    await knex("APSISIPDC.cr_retailer_loan_calculation")
+      .insert(repaymentValueAll)
+      .returning("id")
+      .then(async (response) => {
+        // await knex("APSISIPDC.cr_retailer_loan_calculation").insert(transactionCost).then(async ()=>{
+        // console.log("firstRepaymentID", firstRepaymentID);
+        // console.log("response", response);
+
+        try {
+          const sendMail = await axios.post(
+            `${process.env.HOSTIP}/mail/tempSendmail`,
+            {
+              email: distributor_Email[0].official_email,
+              mail_subject: `IPDC DANA | Collection Confirmation| <${parseInt(
+                response[0]
+              )}.>`,
+              mail_body: `
               <p>Dear IPDC DANA Partner,</p>
 
               <p>Please find the collection details:</p>
 
-              <p>Collection Date: ${moment().format('YYYY-MM-DD')}</p>
+              <p>Collection Date: ${moment().format("YYYY-MM-DD")}</p>
               <p>Collected Amount: ${repayment}</p>
               <p>Request ID: ${response[0]}</p>
               <p>Due Amount: ${repaymentValueAll?.total_outstanding}</p>
@@ -577,324 +597,338 @@ exports.repayment = async (req, res) => {
               <p>Please let us know if you have any queries. </p>
               <p>Regards, </p>
               <p>IPDC Finance</p>
-              `
-            })
-            console.log('sendMailsendMailsendMail',sendMail)
-          }
-          catch(err){
-            console.log('errorerrorerrorerrorerror',err)
-          }
-        
-          var interest;
-          if (firstRepaymentID) {
-            interest = await findRepaymentInterest(
-              onermn_acc,
-              parseInt(firstRepaymentID?.id),
-              parseInt(response[0])
-            );
-          } else {
-            interest = await findRepaymentInterestFirstTime(onermn_acc);
-          }
+              `,
+            }
+          );
+          console.log("sendMailsendMailsendMail", sendMail);
+        } catch (err) {
+          console.log("errorerrorerrorerrorerror", err);
+        }
 
-          if (interest?.length > 0) {
-            let sumofReimbursement =
-              interest.reduce(function (accumulator, curValue) {
-                return (
-                  parseFloat(accumulator) +
-                  parseFloat(curValue.interest_reimbursment)
-                );
-              }, 0) ?? 0;
+        var interest;
+        if (firstRepaymentID) {
+          interest = await findRepaymentInterest(
+            onermn_acc,
+            parseInt(firstRepaymentID?.id),
+            parseInt(response[0])
+          );
+        } else {
+          interest = await findRepaymentInterestFirstTime(onermn_acc);
+        }
 
-            let sumOFpenal_interest =
-              interest.reduce(function (accumulator, curValue) {
-                return (
-                  parseFloat(accumulator) + parseFloat(curValue.penal_interest)
-                );
-              }, 0) ?? 0;
+        if (interest?.length > 0) {
+          let sumofReimbursement =
+            interest.reduce(function (accumulator, curValue) {
+              return (
+                parseFloat(accumulator) +
+                parseFloat(curValue.interest_reimbursment)
+              );
+            }, 0) ?? 0;
 
-            let sumOfoverdue_amount =
-              interest.reduce(function (accumulator, curValue) {
-                return (
-                  parseFloat(accumulator) + parseFloat(curValue.overdue_amount)
-                );
-              }, 0) ?? 0;
+          let sumOFpenal_interest =
+            interest.reduce(function (accumulator, curValue) {
+              return (
+                parseFloat(accumulator) + parseFloat(curValue.penal_interest)
+              );
+            }, 0) ?? 0;
 
-            let sumOfpenal_charge =
-              interest.reduce(function (accumulator, curValue) {
-                return (
-                  parseFloat(accumulator) + parseFloat(curValue.penal_charge)
-                );
-              }, 0) ?? 0;
+          let sumOfoverdue_amount =
+            interest.reduce(function (accumulator, curValue) {
+              return (
+                parseFloat(accumulator) + parseFloat(curValue.overdue_amount)
+              );
+            }, 0) ?? 0;
 
-            let sumOfdaily_principal_interest =
-              interest.reduce(function (accumulator, curValue) {
-                return (
-                  parseFloat(accumulator) +
-                  parseFloat(curValue.daily_principal_interest)
-                );
-              }, 0) ?? 0;
+          let sumOfpenal_charge =
+            interest.reduce(function (accumulator, curValue) {
+              return (
+                parseFloat(accumulator) + parseFloat(curValue.penal_charge)
+              );
+            }, 0) ?? 0;
 
-            let sumOfcharge =
-              interest.reduce(function (accumulator, curValue) {
-                return parseFloat(accumulator) + parseFloat(curValue.charge);
-              }, 0) ?? 0;
+          let sumOfdaily_principal_interest =
+            interest.reduce(function (accumulator, curValue) {
+              return (
+                parseFloat(accumulator) +
+                parseFloat(curValue.daily_principal_interest)
+              );
+            }, 0) ?? 0;
 
-            let sumOfother_charge =
-              interest.reduce(function (accumulator, curValue) {
-                return (
-                  parseFloat(accumulator) + parseFloat(curValue.other_charge)
-                );
-              }, 0) ?? 0;
+          let sumOfcharge =
+            interest.reduce(function (accumulator, curValue) {
+              return parseFloat(accumulator) + parseFloat(curValue.charge);
+            }, 0) ?? 0;
 
-            var interest_reimbursment = sumofReimbursement;
-            var penal_interest = sumOFpenal_interest;
-            var overdue_amount = sumOfoverdue_amount;
-            var penal_charge = sumOfpenal_charge;
-            var daily_principal_interest = sumOfdaily_principal_interest;
-            var charge = sumOfcharge;
-            var other_charge = sumOfother_charge;
+          let sumOfother_charge =
+            interest.reduce(function (accumulator, curValue) {
+              return (
+                parseFloat(accumulator) + parseFloat(curValue.other_charge)
+              );
+            }, 0) ?? 0;
 
-            var payInterest_reimbursment = 0;
-            var paypenal_interest = 0;
-            var payoverdue_amount = 0;
-            var paypenal_charge = 0;
-            var paydaily_principal_interest = 0;
-            var paycharge = 0;
-            var payintersetPaid = 0;
+          var interest_reimbursment = sumofReimbursement;
+          var penal_interest = sumOFpenal_interest;
+          var overdue_amount = sumOfoverdue_amount;
+          var penal_charge = sumOfpenal_charge;
+          var daily_principal_interest = sumOfdaily_principal_interest;
+          var charge = sumOfcharge;
+          var other_charge = sumOfother_charge;
 
-            console.log("intersetPaidintersetPaidintersetPaid", intersetPaid);
+          var payInterest_reimbursment = 0;
+          var paypenal_interest = 0;
+          var payoverdue_amount = 0;
+          var paypenal_charge = 0;
+          var paydaily_principal_interest = 0;
+          var paycharge = 0;
+          var payintersetPaid = 0;
 
-            console.log("sumofReimbursement", sumofReimbursement);
-            console.log("sumOFpenal_interest", sumOFpenal_interest);
-            console.log("sumOfoverdue_amount", sumOfoverdue_amount);
-            console.log("sumOfpenal_charge", sumOfpenal_charge);
-            console.log(
-              "sumOfdaily_principal_interest",
-              sumOfdaily_principal_interest
-            );
-            console.log("sumOfcharge", sumOfcharge);
-            console.log("sumOfother_charge", sumOfother_charge);
+          console.log("intersetPaidintersetPaidintersetPaid", intersetPaid);
 
+          console.log("sumofReimbursement", sumofReimbursement);
+          console.log("sumOFpenal_interest", sumOFpenal_interest);
+          console.log("sumOfoverdue_amount", sumOfoverdue_amount);
+          console.log("sumOfpenal_charge", sumOfpenal_charge);
+          console.log(
+            "sumOfdaily_principal_interest",
+            sumOfdaily_principal_interest
+          );
+          console.log("sumOfcharge", sumOfcharge);
+          console.log("sumOfother_charge", sumOfother_charge);
 
+          const sequenceData = await getSequenceData();
 
-            const sequenceData =await getSequenceData()
-
-            sequenceData && sequenceData.length > 0 && sequenceData?.map((sequenceValue)=>{
-
-            if(sequenceValue.name == 'interest_reimbursment'){
-              if (intersetPaid > 0) {
-                if (parseFloat(intersetPaid) >= parseFloat(sumofReimbursement)) {
-                  intersetPaid =
-                    parseFloat(intersetPaid) - parseFloat(sumofReimbursement);
-                  payInterest_reimbursment = parseFloat(sumofReimbursement);
-                  interest_reimbursment = 0;
-                } else {
-                  interest_reimbursment =
-                    parseFloat(sumofReimbursement) - parseFloat(intersetPaid);
-                  payInterest_reimbursment = parseFloat(intersetPaid);
-                  intersetPaid = 0;
+          sequenceData &&
+            sequenceData.length > 0 &&
+            sequenceData?.map((sequenceValue) => {
+              if (sequenceValue.name == "interest_reimbursment") {
+                if (intersetPaid > 0) {
+                  if (
+                    parseFloat(intersetPaid) >= parseFloat(sumofReimbursement)
+                  ) {
+                    intersetPaid =
+                      parseFloat(intersetPaid) - parseFloat(sumofReimbursement);
+                    payInterest_reimbursment = parseFloat(sumofReimbursement);
+                    interest_reimbursment = 0;
+                  } else {
+                    interest_reimbursment =
+                      parseFloat(sumofReimbursement) - parseFloat(intersetPaid);
+                    payInterest_reimbursment = parseFloat(intersetPaid);
+                    intersetPaid = 0;
+                  }
                 }
               }
-            }
 
-            if(sequenceValue.name == 'penal_interest'){
-              if (intersetPaid > 0) {
-                if (parseFloat(intersetPaid) >= parseFloat(sumOFpenal_interest)) {
-                  intersetPaid =
-                    parseFloat(intersetPaid) - parseFloat(sumOFpenal_interest);
-                  paypenal_interest = parseFloat(sumOFpenal_interest);
-                  penal_interest = 0;
-                } else {
-                  penal_interest =
-                    parseFloat(sumOFpenal_interest) - parseFloat(intersetPaid);
-                  paypenal_interest = parseFloat(intersetPaid);
-                  intersetPaid = 0;
+              if (sequenceValue.name == "penal_interest") {
+                if (intersetPaid > 0) {
+                  if (
+                    parseFloat(intersetPaid) >= parseFloat(sumOFpenal_interest)
+                  ) {
+                    intersetPaid =
+                      parseFloat(intersetPaid) -
+                      parseFloat(sumOFpenal_interest);
+                    paypenal_interest = parseFloat(sumOFpenal_interest);
+                    penal_interest = 0;
+                  } else {
+                    penal_interest =
+                      parseFloat(sumOFpenal_interest) -
+                      parseFloat(intersetPaid);
+                    paypenal_interest = parseFloat(intersetPaid);
+                    intersetPaid = 0;
+                  }
                 }
               }
-            }
 
-            if(sequenceValue.name == 'overdue_amount'){
-              if (intersetPaid > 0) {
-                if (parseFloat(intersetPaid) >= parseFloat(sumOfoverdue_amount)) {
-                  intersetPaid =
-                    parseFloat(intersetPaid) - parseFloat(sumOfoverdue_amount);
-                  payoverdue_amount = parseFloat(sumOfoverdue_amount);
-                  overdue_amount = 0;
-                } else {
-                  overdue_amount =
-                    parseFloat(sumOfoverdue_amount) - parseFloat(intersetPaid);
-                  payoverdue_amount = parseFloat(intersetPaid);
-                  intersetPaid = 0;
+              if (sequenceValue.name == "overdue_amount") {
+                if (intersetPaid > 0) {
+                  if (
+                    parseFloat(intersetPaid) >= parseFloat(sumOfoverdue_amount)
+                  ) {
+                    intersetPaid =
+                      parseFloat(intersetPaid) -
+                      parseFloat(sumOfoverdue_amount);
+                    payoverdue_amount = parseFloat(sumOfoverdue_amount);
+                    overdue_amount = 0;
+                  } else {
+                    overdue_amount =
+                      parseFloat(sumOfoverdue_amount) -
+                      parseFloat(intersetPaid);
+                    payoverdue_amount = parseFloat(intersetPaid);
+                    intersetPaid = 0;
+                  }
                 }
               }
-            }
-            
-            if(sequenceValue.name == 'penal_charge'){
-              if (intersetPaid > 0) {
-                if (parseFloat(intersetPaid) >= parseFloat(sumOfpenal_charge)) {
-                  intersetPaid =
-                    parseFloat(intersetPaid) - parseFloat(sumOfpenal_charge);
-                  paypenal_charge = parseFloat(sumOfpenal_charge);
-                  penal_charge = 0;
-                } else {
-                  penal_charge =
-                    parseFloat(sumOfpenal_charge) - parseFloat(intersetPaid);
-                  paypenal_charge = parseFloat(intersetPaid);
-                  intersetPaid = 0;
+
+              if (sequenceValue.name == "penal_charge") {
+                if (intersetPaid > 0) {
+                  if (
+                    parseFloat(intersetPaid) >= parseFloat(sumOfpenal_charge)
+                  ) {
+                    intersetPaid =
+                      parseFloat(intersetPaid) - parseFloat(sumOfpenal_charge);
+                    paypenal_charge = parseFloat(sumOfpenal_charge);
+                    penal_charge = 0;
+                  } else {
+                    penal_charge =
+                      parseFloat(sumOfpenal_charge) - parseFloat(intersetPaid);
+                    paypenal_charge = parseFloat(intersetPaid);
+                    intersetPaid = 0;
+                  }
                 }
               }
-            }
-            
-            if(sequenceValue.name == 'daily_principal_interest'){
-              if (intersetPaid > 0) {
-                if (
-                  parseFloat(intersetPaid) >=
-                  parseFloat(sumOfdaily_principal_interest)
-                ) {
-                  intersetPaid =
-                    parseFloat(intersetPaid) -
-                    parseFloat(sumOfdaily_principal_interest);
-                  paydaily_principal_interest = parseFloat(
-                    sumOfdaily_principal_interest
-                  );
-                  daily_principal_interest = 0;
-                } else {
-                  daily_principal_interest =
-                    parseFloat(sumOfdaily_principal_interest) -
-                    parseFloat(intersetPaid);
-                  paydaily_principal_interest = parseFloat(intersetPaid);
-                  intersetPaid = 0;
+
+              if (sequenceValue.name == "daily_principal_interest") {
+                if (intersetPaid > 0) {
+                  if (
+                    parseFloat(intersetPaid) >=
+                    parseFloat(sumOfdaily_principal_interest)
+                  ) {
+                    intersetPaid =
+                      parseFloat(intersetPaid) -
+                      parseFloat(sumOfdaily_principal_interest);
+                    paydaily_principal_interest = parseFloat(
+                      sumOfdaily_principal_interest
+                    );
+                    daily_principal_interest = 0;
+                  } else {
+                    daily_principal_interest =
+                      parseFloat(sumOfdaily_principal_interest) -
+                      parseFloat(intersetPaid);
+                    paydaily_principal_interest = parseFloat(intersetPaid);
+                    intersetPaid = 0;
+                  }
                 }
               }
-            }
-           
-            if(sequenceValue.name == 'charge'){
-              if (intersetPaid > 0) {
-                if (parseFloat(intersetPaid) >= parseFloat(sumOfcharge)) {
-                  intersetPaid =
-                    parseFloat(intersetPaid) - parseFloat(sumOfcharge);
-                  paycharge = parseFloat(sumOfcharge);
-                  charge = 0;
-                } else {
-                  charge = parseFloat(sumOfcharge) - parseFloat(intersetPaid);
-                  paycharge = parseFloat(intersetPaid);
-                  intersetPaid = 0;
+
+              if (sequenceValue.name == "charge") {
+                if (intersetPaid > 0) {
+                  if (parseFloat(intersetPaid) >= parseFloat(sumOfcharge)) {
+                    intersetPaid =
+                      parseFloat(intersetPaid) - parseFloat(sumOfcharge);
+                    paycharge = parseFloat(sumOfcharge);
+                    charge = 0;
+                  } else {
+                    charge = parseFloat(sumOfcharge) - parseFloat(intersetPaid);
+                    paycharge = parseFloat(intersetPaid);
+                    intersetPaid = 0;
+                  }
                 }
               }
-            }
-            if(sequenceValue.name == 'other_charge'){
-              if (intersetPaid > 0) {
-                if (parseFloat(intersetPaid) >= parseFloat(sumOfother_charge)) {
-                  intersetPaid =
-                    parseFloat(intersetPaid) - parseFloat(sumOfother_charge);
-                  payintersetPaid = parseFloat(sumOfother_charge);
-                  other_charge = 0;
-                } else {
-                  other_charge =
-                    parseFloat(other_charge) - parseFloat(intersetPaid);
-                  payintersetPaid = parseFloat(intersetPaid);
-                  intersetPaid = 0;
+              if (sequenceValue.name == "other_charge") {
+                if (intersetPaid > 0) {
+                  if (
+                    parseFloat(intersetPaid) >= parseFloat(sumOfother_charge)
+                  ) {
+                    intersetPaid =
+                      parseFloat(intersetPaid) - parseFloat(sumOfother_charge);
+                    payintersetPaid = parseFloat(sumOfother_charge);
+                    other_charge = 0;
+                  } else {
+                    other_charge =
+                      parseFloat(other_charge) - parseFloat(intersetPaid);
+                    payintersetPaid = parseFloat(intersetPaid);
+                    intersetPaid = 0;
+                  }
+                  // intersetPaid = parseFloat(intersetPaid) - parseFloat(other_charge)
                 }
-                // intersetPaid = parseFloat(intersetPaid) - parseFloat(other_charge)
-              }
-            }
-            
-          })
-           
-
-            let updateInterest = {
-              interest_reimbursment: parseFloat(interest_reimbursment).toFixed(
-                2
-              ),
-              penal_interest: parseFloat(penal_interest).toFixed(2),
-              overdue_amount: parseFloat(overdue_amount).toFixed(2),
-              penal_charge: parseFloat(penal_charge).toFixed(2),
-              daily_principal_interest: parseFloat(
-                daily_principal_interest
-              ).toFixed(2),
-              charge: parseFloat(charge).toFixed(2),
-              other_charge: parseFloat(other_charge).toFixed(2),
-            };
-
-            let InterestCalculation = {
-              retailer_id: retailer_id,
-              onermn_acc: onermn_acc,
-              interest_reimbursment: parseFloat(
-                payInterest_reimbursment
-              ).toFixed(2),
-              penal_interest: parseFloat(paypenal_interest).toFixed(2),
-              overdue_amount: parseFloat(payoverdue_amount).toFixed(2),
-              penal_charge: parseFloat(paypenal_charge).toFixed(2),
-              daily_principal_interest: parseFloat(
-                paydaily_principal_interest
-              ).toFixed(2),
-              charge: parseFloat(paycharge).toFixed(2),
-              other_charge: parseFloat(payintersetPaid).toFixed(2),
-            };
-
-            console.log("InterestCalculation", InterestCalculation);
-
-            await knex("APSISIPDC.cr_retailer_loan_interest_calculation")
-              .insert(InterestCalculation)
-              .then(async (resPonseSaveInterest) => {
-                console.log("resPonseSaveInterest", resPonseSaveInterest);
-              });
-
-            await knex.transaction(async (trx) => {
-              const interest_update = await trx(
-                "APSISIPDC.cr_retailer_loan_calculation"
-              )
-                .where({ id: response[0] })
-                .update(updateInterest);
-              console.log("limit_update", interest_update);
-              if (interest_update <= 0) {
-                return res.send(
-                  sendApiResult(false, "failed to update one rmn account ")
-                );
               }
             });
-          }
 
-          // let sumOfother_charge= allRepayment.reduce(function (accumulator, curValue) {
-          //   return parseFloat(accumulator) + parseFloat(curValue.other_charge:)
-          // }, 0) ?? 0;
-          // return
+          let updateInterest = {
+            interest_reimbursment: parseFloat(interest_reimbursment).toFixed(2),
+            penal_interest: parseFloat(penal_interest).toFixed(2),
+            overdue_amount: parseFloat(overdue_amount).toFixed(2),
+            penal_charge: parseFloat(penal_charge).toFixed(2),
+            daily_principal_interest: parseFloat(
+              daily_principal_interest
+            ).toFixed(2),
+            charge: parseFloat(charge).toFixed(2),
+            other_charge: parseFloat(other_charge).toFixed(2),
+          };
+
+          let InterestCalculation = {
+            retailer_id: retailer_id,
+            onermn_acc: onermn_acc,
+            interest_reimbursment: parseFloat(payInterest_reimbursment).toFixed(
+              2
+            ),
+            penal_interest: parseFloat(paypenal_interest).toFixed(2),
+            overdue_amount: parseFloat(payoverdue_amount).toFixed(2),
+            penal_charge: parseFloat(paypenal_charge).toFixed(2),
+            daily_principal_interest: parseFloat(
+              paydaily_principal_interest
+            ).toFixed(2),
+            charge: parseFloat(paycharge).toFixed(2),
+            other_charge: parseFloat(payintersetPaid).toFixed(2),
+          };
+
+          console.log("InterestCalculation", InterestCalculation);
+
+          await knex("APSISIPDC.cr_retailer_loan_interest_calculation")
+            .insert(InterestCalculation)
+            .then(async (resPonseSaveInterest) => {
+              console.log("resPonseSaveInterest", resPonseSaveInterest);
+            });
+
           await knex.transaction(async (trx) => {
-            const limit_update = await trx(
-              "APSISIPDC.cr_retailer_manu_scheme_mapping"
+            const interest_update = await trx(
+              "APSISIPDC.cr_retailer_loan_calculation"
             )
-              .where({ ac_number_1rmn: onermn_acc })
-              .update(limitUpdate);
-            console.log("limit_update", limit_update);
-            if (limit_update <= 0) {
+              .where({ id: response[0] })
+              .update(updateInterest);
+            console.log("limit_update", interest_update);
+            if (interest_update <= 0) {
               return res.send(
                 sendApiResult(false, "failed to update one rmn account ")
               );
             }
           });
-          //  });
+        }
 
-
-
-          /* Implementin push notification */
-          let body = `BDT ${repayment} has been collected in our bank account upon your request <Request ID>. . Your account number is : ${onermn_acc} `;
-          const device_token_response = await knex("APSISIPDC.cr_users")
-            .leftJoin("APSISIPDC.cr_sales_agent_user",
-              "cr_sales_agent_user.user_id",
-              "cr_users.id")
-            .where("cr_users.status", "Active")
-            .where("cr_sales_agent_user.sales_agent_id", sales_agent_id)
-            .select(
-              "cr_users.device_token"
+        // let sumOfother_charge= allRepayment.reduce(function (accumulator, curValue) {
+        //   return parseFloat(accumulator) + parseFloat(curValue.other_charge:)
+        // }, 0) ?? 0;
+        // return
+        await knex.transaction(async (trx) => {
+          const limit_update = await trx(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping"
+          )
+            .where({ ac_number_1rmn: onermn_acc })
+            .update(limitUpdate);
+          console.log("limit_update", limit_update);
+          if (limit_update <= 0) {
+            return res.send(
+              sendApiResult(false, "failed to update one rmn account ")
             );
-
-          let receiver_token = device_token_response[0]?.device_token ?? '';
-          await pushNotification(retailer_id, sales_agent_id, "REPAYMENT", "Collection completed!", body, receiver_token)
-
-          return res.send(
-            sendApiResult(true, "Sucessly Repayment", repaymentValueAll)
-          );
+          }
         });
+        //  });
+
+        /* Implementin push notification */
+        let body = `BDT ${repayment} has been collected in our bank account upon your request <Request ID>. . Your account number is : ${onermn_acc} `;
+        const device_token_response = await knex("APSISIPDC.cr_users")
+          .leftJoin(
+            "APSISIPDC.cr_sales_agent_user",
+            "cr_sales_agent_user.user_id",
+            "cr_users.id"
+          )
+          .where("cr_users.status", "Active")
+          .where("cr_sales_agent_user.sales_agent_id", sales_agent_id)
+          .select("cr_users.device_token");
+
+        let receiver_token = device_token_response[0]?.device_token ?? "";
+        await pushNotification(
+          retailer_id,
+          sales_agent_id,
+          "REPAYMENT",
+          "Collection completed!",
+          body,
+          receiver_token
+        );
+
+        return res.send(
+          sendApiResult(true, "Sucessly Repayment", repaymentValueAll)
+        );
+      });
     // }
 
     //let totalLimit = parseInt(getLimitAmountValue[0]?.crm_approve_limit) - parseInt(getLimitAmountValue[0]?.current_limit)
@@ -912,8 +946,8 @@ exports.slab = async (req, res) => {
   const getSlabDateValue = await getSlabDate(onermn_acc);
 
   // const dateSlab = getSlabDateValue?.created_at;
-  const dateSlab =await getSlapValueDate(onermn_acc)
-  console.log('dateSlabdateSlab',dateSlab)
+  const dateSlab = await getSlapValueDate(onermn_acc);
+  console.log("dateSlabdateSlab", dateSlab);
 
   // const dateSlab = getSlabDateValue?.crm_approve_date
 
@@ -932,17 +966,21 @@ exports.slab = async (req, res) => {
     const now = moment.utc();
     var end = moment(dateSlab);
     var days = now.diff(end, "days");
-    console.log('daysdaysdays')
+    console.log("daysdaysdays");
 
-    console.log('daysdaysdays',days)
+    console.log("daysdaysdays", days);
 
-    const getSlabValue = await getSlabAmount(repayment, days , getSchemeId[0]?.scheme_id);
+    const getSlabValue = await getSlabAmount(
+      repayment,
+      days,
+      getSchemeId[0]?.scheme_id
+    );
     transaction_cost = getSlabValue[0]?.transaction_fee ?? 0;
   } else {
     transaction_cost = repayment * (SchemeValue[0]?.transaction_fee / 100) ?? 0;
   }
-  console.log('transaction_costtransaction_cost',transaction_cost)
-  return
+  console.log("transaction_costtransaction_cost", transaction_cost);
+  return;
   var value = {
     transaction_cost: transaction_cost,
   };
@@ -962,13 +1000,13 @@ exports.totalLoan = async (req, res) => {
     loanTenorDays = await findLoanTenorIndays(onermn_acc, SchemeValue[0]);
   }
   let totalValue = await getPrincipalAmount(onermn_acc);
-  console.log('totalValue',totalValue);
+  console.log("totalValue", totalValue);
   let retailerPhone;
-  if(totalValue){
-     retailerPhone = await getRetailerPhone(totalValue?.retailer_id) ?? '';
+  if (totalValue) {
+    retailerPhone = (await getRetailerPhone(totalValue?.retailer_id)) ?? "";
   }
-  
-  console.log('retailerPhone',retailerPhone);
+
+  console.log("retailerPhone", retailerPhone);
   var resPonseVaslue = {
     ...loanTenorDays,
     total_outstanding: totalValue?.total_outstanding.toFixed(2) ?? 0,
@@ -980,9 +1018,8 @@ exports.totalLoan = async (req, res) => {
       ).toFixed(2) ?? 0,
     retailer_id: totalValue?.retailer_id,
     onermn_acc: totalValue?.onermn_acc,
-    retailer_phone: retailerPhone ? retailerPhone[0]?.phone : '',
-    retailer_status: retailerPhone ? retailerPhone[0]?.retailer_status : ''
-
+    retailer_phone: retailerPhone ? retailerPhone[0]?.phone : "",
+    retailer_status: retailerPhone ? retailerPhone[0]?.retailer_status : "",
   };
   if (totalValue) {
     return res.send(sendApiResult(true, "Find Total Cost", resPonseVaslue));
@@ -1192,26 +1229,22 @@ exports.loanTenorInDays = async (req, res) => {
   // });
 };
 
-
 exports.addSlab = async (req, res) => {
   let reqValue = req.body;
   console.log(reqValue);
-  const createSlab = await knex(
-    "APSISIPDC.cr_slab"
-  ).insert(reqValue);
+  const createSlab = await knex("APSISIPDC.cr_slab").insert(reqValue);
   return res.send(
     sendApiResult(true, "You have Successfully Add Slab.", createSlab)
   );
 };
 
-
 exports.sequence = async (req, res) => {
   let reqValue = req.body;
   console.log(reqValue);
   const showSequence = await knex
-  .from("APSISIPDC.cr_repayment_sequence")
-  .select()
-  .orderBy("sequence", "asc");
+    .from("APSISIPDC.cr_repayment_sequence")
+    .select()
+    .orderBy("sequence", "asc");
 
   return res.send(
     sendApiResult(true, "You have Successfully Get Sequence.", showSequence)
@@ -1220,52 +1253,101 @@ exports.sequence = async (req, res) => {
 
 exports.updateSequence = async (req, res) => {
   let reqValue = req?.body?.sequence;
-   console.log('reqValue',reqValue)
-  var responseValue = []
-  reqValue && reqValue.length > 0 && reqValue.map(async (seqValue , index) =>{
-    const myPromise = new Promise(async(resolve, reject) => {
-    let  update_sequence
-    await knex.transaction(async (trx) => {
-       update_sequence = await trx(
-        "APSISIPDC.cr_repayment_sequence"
-      )
-        .whereIn("name", seqValue.label)
-        .update({
-          'sequence' : index+1,
+  console.log("reqValue", reqValue);
+  var responseValue = [];
+  reqValue &&
+    reqValue.length > 0 &&
+    reqValue.map(async (seqValue, index) => {
+      const myPromise = new Promise(async (resolve, reject) => {
+        let update_sequence;
+        await knex.transaction(async (trx) => {
+          update_sequence = await trx("APSISIPDC.cr_repayment_sequence")
+            .whereIn("name", seqValue.label)
+            .update({
+              sequence: index + 1,
+            });
         });
-    });
-    responseValue.push(update_sequence)
-  
-    if(reqValue.length == index+1){
-      resolve(true)
-    }
-  })
-  .then(() => {
-    console.log('responseValue',responseValue)
-    return res.send(
-      sendApiResult(true, "You have Successfully Get Sequence.", responseValue)
-    );
-  })
-})
-    
-};
+        responseValue.push(update_sequence);
 
+        if (reqValue.length == index + 1) {
+          resolve(true);
+        }
+      }).then(() => {
+        console.log("responseValue", responseValue);
+        return res.send(
+          sendApiResult(
+            true,
+            "You have Successfully Get Sequence.",
+            responseValue
+          )
+        );
+      });
+    });
+};
 
 exports.loanDashboard = async (req, res) => {
   let { salesAgentID } = req.params;
-  let responseValue = {
-    odRetailers : 25,
-    odAmount : 25,
-    odRetailersOdRisk : 25,
-    pendingAmount : 25
-  }
-  
-  return res.send(
-    sendApiResult(true, "You have Successfully Get Dashboard Data.", responseValue)
-  );
-    
-};
+  let pendingAmountValue = 0;
+  // const pendingAmount = await knex("APSISIPDC.cr_retailer_loan_calculation")
+  //       .select(
+  //         knex.raw('SUM("cr_retailer_loan_calculation"."total_outstanding") AS total_amount')
+  //       )
+  //       .where("sales_agent_id",salesAgentID);
+  const saRetailer = await knex("APSISIPDC.cr_retailer_loan_calculation")
+    .select("retailer_id")
+    .where("sales_agent_id", salesAgentID)
+    .distinct();
 
+  console.log("saRetailer", saRetailer);
+  // const myPromise = new Promise((resolve, reject) => {
+  saRetailer.length > 0 &&
+    saRetailer.map(async (saRetailerData, index) => {
+      new Promise(async (resolve, reject) => {
+        let pdAmount = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .select("total_outstanding")
+          .where("sales_agent_id", salesAgentID)
+          .where("retailer_id", saRetailerData.retailer_id)
+          .orderBy("id", "desc")
+          .first();
+        console.log("pdAmount", pdAmount);
+        pendingAmountValue = pendingAmountValue + pdAmount.total_outstanding;
+        if (saRetailer.length == index + 1) {
+          resolve(true);
+        }
+      }).then(() => {
+        let responseValue = {
+          odRetailers: 25,
+          odAmount: 25,
+          odRetailersOdRisk: 25,
+          pendingAmount: pendingAmountValue,
+        };
+
+        return res.send(
+          sendApiResult(
+            true,
+            "You have Successfully Get Dashboard Data.",
+            responseValue
+          )
+        );
+      });
+    });
+
+  // let responseValue = {
+  //   odRetailers: 25,
+  //   odAmount: 25,
+  //   odRetailersOdRisk: 25,
+  //   pendingAmount: pendingAmountValue,
+  //   // pendingAmount : pendingAmount[0]?.TOTAL_AMOUNT ?? 0
+  // };
+
+  // return res.send(
+  //   sendApiResult(
+  //     true,
+  //     "You have Successfully Get Dashboard Data.",
+  //     responseValue
+  //   )
+  // );
+};
 
 var calculateInterest = function (total, days, ratePercent, roundToPlaces) {
   var interestRate = ratePercent / 100;
@@ -1339,8 +1421,8 @@ var getLimitAmount = async (onermn_acc) => {
     .where("ac_number_1rmn", onermn_acc);
 };
 
-var getSlabAmount = async (repayment, days , scheme_id) => {
-  console.log('repayment days scheme_id',repayment, days , scheme_id)
+var getSlabAmount = async (repayment, days, scheme_id) => {
+  console.log("repayment days scheme_id", repayment, days, scheme_id);
   return await knex
     .from("APSISIPDC.cr_slab")
     .select()
@@ -1348,8 +1430,7 @@ var getSlabAmount = async (repayment, days , scheme_id) => {
     .where("upper_limit", ">=", repayment)
     .where("day_dis_lower_limit", "<=", days)
     .where("day_dis_upper_limit", ">=", days)
-    .where("scheme_id", scheme_id)
-    ;
+    .where("scheme_id", scheme_id);
 };
 
 var getAllRmnAccount = async (page, per_page) => {
@@ -1413,7 +1494,7 @@ var findLoanTenorIndays = async (oneRMn, schemeValue) => {
       break;
     }
   }
-  
+
   // const todayDate = new Date(tenorValue?.created_at.toString().replaceAll(/\s/g, ''))
   const todayDate = new Date(tenorValue?.created_at);
   // console.log("parseFloat(disbursementAdd)", parseFloat(disbursementAdd));
@@ -1461,7 +1542,6 @@ var findRepaymentInterestFirstTime = async (onermn_acc, firstId, secondId) => {
   // .whereBetween('id', [firstId+1, secondId-1]);
 };
 
-
 var getSlapValueDate = async (oneRMn, schemeValue) => {
   var allDisbursements = await getAllDisbursement(oneRMn);
   var allRepayment = await getAllRepayment(oneRMn);
@@ -1480,29 +1560,27 @@ var getSlapValueDate = async (oneRMn, schemeValue) => {
       break;
     }
   }
-  
-  return tenorValue?.created_at ?? [];
 
+  return tenorValue?.created_at ?? [];
 };
 
- var getSequenceData =async () =>{
+var getSequenceData = async () => {
   return await knex
     .from("APSISIPDC.cr_repayment_sequence")
     .select()
     .orderBy("sequence", "asc");
- }
+};
 
- var getDistributorEmail =async (id)=>{
+var getDistributorEmail = async (id) => {
   return await knex
-  .from("APSISIPDC.cr_distributor")
-  .select('official_email')
-  .where("id", id)
- }
- 
- var getRetailerPhone =async (id)=>{
+    .from("APSISIPDC.cr_distributor")
+    .select("official_email")
+    .where("id", id);
+};
+
+var getRetailerPhone = async (id) => {
   return await knex
-  .from("APSISIPDC.cr_retailer")
-  .select('phone' , 'retailer_status')
-  .where("id", id)
- }
- 
+    .from("APSISIPDC.cr_retailer")
+    .select("phone", "retailer_status")
+    .where("id", id);
+};
