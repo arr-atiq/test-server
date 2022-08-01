@@ -995,17 +995,17 @@ FileUpload.editManufacturer = function (req) {
 
   return new Promise(async (resolve, reject) => {
     try {
-      const type_entity_manufacturer = await knex(
-        "APSISIPDC.cr_manufacturer_type_entity"
-      )
-        .where("name", type_of_entity)
-        .select("id");
+      // const type_entity_manufacturer = await knex(
+      //   "APSISIPDC.cr_manufacturer_type_entity"
+      // )
+      //   .where("name", type_of_entity)
+      //   .select("id");
       await knex.transaction(async (trx) => {
         const manufacturer_update = await trx("APSISIPDC.cr_manufacturer")
           .where({ id: req.params.id })
           .update({
             manufacturer_name,
-            type_of_entity: type_entity_manufacturer[0].id,
+            // type_of_entity: type_entity_manufacturer[0]?.id,
             name_of_scheme,
             registration_no,
             manufacturer_tin,
