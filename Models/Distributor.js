@@ -1,5 +1,7 @@
 const moment = require("moment");
 const express = require("express");
+const excel = require('excel4node');
+const fs = require('fs');
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const { ValidateNID, ValidatePhoneNumber, ValidateEmail, randomPasswordGenerator, sendReportApiResult } = require("../controllers/helperController");
 const knex = require("../config/database");
@@ -1515,13 +1517,17 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
         col_add++;
         worksheet.cell(row, col + col_add).string(e.total_sales ? e.total_sales : "-");
         col_add++;
-        worksheet.cell(row, col + col_add).number(e.penal_interest ? e.penal_interest : 0);
+        worksheet.cell(row, col + col_add).number(e.current_outstanding_amount ? e.current_outstanding_amount : 0);
         col_add++;
-        worksheet.cell(row, col + col_add).number(e.other_charges ? e.other_charges : 0);
+        worksheet.cell(row, col + col_add).string(e.total_num_times_discrepancies ? e.total_num_times_discrepancies : "-");
         col_add++;
-        worksheet.cell(row, col + col_add).number(e.recovery ? e.recovery : 0);
+        worksheet.cell(row, col + col_add).number(e.total_blacklist_retailer ? e.total_blacklist_retailer : 0);
         col_add++;
-        worksheet.cell(row, col + col_add).number(e.ending_balance ? e.ending_balance : 0);
+        worksheet.cell(row, col + col_add).number(e.total_suspened_retailer ? e.total_suspened_retailer : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.total_non_performing_loan ? e.total_non_performing_loan : "-");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.total_non_performing_account ? e.total_non_performing_account : "-");
         col_add++;
 
         // worksheet.cell(row, col + col_add).number(0);
