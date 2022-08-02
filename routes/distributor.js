@@ -29,4 +29,9 @@ router.get("/distributor-consolidated-annual-report", distributor.generateDistri
 router.get("/distributor-consolidated-annual-filter-view", distributor.filterDistributorAnnualView);
 //Consolidated Annual Distributor Performance for IPDC Report
 
+//Consolidated Annual Distributor Performance for Report Manufacturer
+router.get("/distributor-consolidated-annual-report-manufacturer", distributor.generateDistributorAnnualReportForManufacturer);
+router.get("/distributor-consolidated-annual-filter-view-manufacturer", distributor.filterDistributorAnnualViewForManufacturer);
+//Consolidated Annual Distributor Performance for Report Manufacturer
+
 module.exports = router;
