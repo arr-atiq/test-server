@@ -14,4 +14,9 @@ router.get("/unuploaded-manufacturer-data", manufacturer.generateManufacturerUnu
 router.get("/invalidated-manufacturer-data", manufacturer.generateManufacturerInvalidatedReport);
 router.get("/retailer-by-manufacture/:manufacturer_id", manufacturer.retailersByManufacturer);
 
+//Consolidated Annual Manufacturer Performance for IPDC Report
+router.get("/manufacturer-consolidated-annual-report", manufacturer.generateManufacturerAnnualReport);
+router.get("/manufacturer-consolidated-annual-filter-view", manufacturer.filterManufacturerAnnualView);
+//Consolidated Annual Manufacturer Performance for IPDC Report
+
 module.exports = router;

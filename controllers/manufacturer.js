@@ -708,5 +708,25 @@ exports.generateManufacturerInvalidatedReport = async (req, res) => {
   }
 };
 
+//Consolidated Annual Distributor Performance for IPDC Report
+exports.generateManufacturerAnnualReport = async (req, res) => {
+  try {
+    const result = await manuFacModel.generateManufacturerAnnualReport(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.filterManufacturerAnnualView = async (req, res) => {
+  try {
+    const result = await manuFacModel.filterManufacturerAnnualView(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+//Consolidated Annual Distributor Performance for IPDC Report
+
 
 // @Arfin - Code End
