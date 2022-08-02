@@ -1288,6 +1288,10 @@ exports.updateSequence = async (req, res) => {
 exports.loanDashboard = async (req, res) => {
   let { salesAgentID } = req.params;
   let pendingAmountValue = 0;
+  let odRetailers = 0;
+  let odRetailersRisk = 0;
+  let odAmount = 0;
+
   // const pendingAmount = await knex("APSISIPDC.cr_retailer_loan_calculation")
   //       .select(
   //         knex.raw('SUM("cr_retailer_loan_calculation"."total_outstanding") AS total_amount')
@@ -1304,21 +1308,47 @@ exports.loanDashboard = async (req, res) => {
     saRetailer.map(async (saRetailerData, index) => {
       new Promise(async (resolve, reject) => {
         let pdAmount = await knex("APSISIPDC.cr_retailer_loan_calculation")
-          .select("total_outstanding")
+          .select("total_outstanding", "onermn_acc")
           .where("sales_agent_id", salesAgentID)
           .where("retailer_id", saRetailerData.retailer_id)
           .orderBy("id", "desc")
           .first();
         console.log("pdAmount", pdAmount);
         pendingAmountValue = pendingAmountValue + pdAmount.total_outstanding;
+        const getSchemeId = await getSchemeID(pdAmount.onermn_acc);
+        const schemavalue = await getSchemeValue(getSchemeId[0].scheme_id);
+        const rmnAccount = await oneRMnAccDateValue(pdAmount.onermn_acc);
+        console.log("schemavalue", schemavalue[0].expiry_date);
+
+        if (schemavalue) {
+          var date = moment(
+            moment(rmnAccount?.crm_approve_date),
+            "YYYY-MM-DD"
+          ).add(schemavalue[0].expiry_date * 30, "days");
+          var riskDate = moment(
+            moment(rmnAccount?.crm_approve_date),
+            "YYYY-MM-DD"
+          ).add(schemavalue[0].expiry_date * 29, "days");
+
+          var now = moment();
+
+          if (now >= date) {
+            odAmount = odAmount + parseFloat(pdAmount.total_outstanding);
+            odRetailers++;
+          }
+          if (riskDate >= date) {
+            odRetailersRisk++;
+          }
+        }
+
         if (saRetailer.length == index + 1) {
           resolve(true);
         }
       }).then(() => {
         let responseValue = {
-          odRetailers: 25,
+          odRetailers: odRetailers,
           odAmount: 25,
-          odRetailersOdRisk: 25,
+          odRetailersOdRisk: odRetailersRisk,
           pendingAmount: pendingAmountValue,
         };
 
@@ -1331,22 +1361,6 @@ exports.loanDashboard = async (req, res) => {
         );
       });
     });
-
-  // let responseValue = {
-  //   odRetailers: 25,
-  //   odAmount: 25,
-  //   odRetailersOdRisk: 25,
-  //   pendingAmount: pendingAmountValue,
-  //   // pendingAmount : pendingAmount[0]?.TOTAL_AMOUNT ?? 0
-  // };
-
-  // return res.send(
-  //   sendApiResult(
-  //     true,
-  //     "You have Successfully Get Dashboard Data.",
-  //     responseValue
-  //   )
-  // );
 };
 
 var calculateInterest = function (total, days, ratePercent, roundToPlaces) {
