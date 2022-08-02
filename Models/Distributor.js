@@ -984,14 +984,27 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 };
 FileUpload.getDistributorListDropDown = function (req) {
 
+  const { manufacturer_id } = req.query;
+
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_distributor")
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer_vs_distributor",
+          "cr_manufacturer_vs_distributor.distributor_id",
+          "cr_distributor.id"
+        )
         .select(
           "cr_distributor.id",
           "cr_distributor.distributor_name"
         )
-        .orderBy("cr_distributor.id", "desc");
+        .where(function () {
+          if (manufacturer_id) {
+            this.where("cr_manufacturer_vs_distributor.manufacturer_id", manufacturer_id)
+          }
+        })
+        .orderBy("cr_distributor.id", "desc")
+        .distinct();
       if (data == 0) reject(sendApiResult(false, "Not found."));
       resolve(sendApiResult(true, "Data fetched successfully", data));
     } catch (error) {
