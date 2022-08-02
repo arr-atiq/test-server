@@ -879,7 +879,7 @@ FileUpload.getManufacturerListDropDown = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_manufacturer")
-        .left(
+        .leftJoin(
           "APSISIPDC.cr_manufacturer_vs_distributor",
           "cr_manufacturer_vs_distributor.manufacturer_id",
           "cr_manufacturer.id"
