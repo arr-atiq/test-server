@@ -1260,11 +1260,11 @@ FileUpload.getDistributorCodeByDistributor = function (req) {
 
 FileUpload.generateDistributorAnnualReport = async (req, res) => {
   const { distributor_id, manufacturer_id, select_date } = req.query;
-  const selctDate = moment(select_date).startOf('date').format('YYYY-MM-DD');
+  const selectDate = moment(select_date).startOf('date').format('YYYY-MM-DD');
   const selectDatePreviousDay = moment(select_date).subtract(1, 'days').format('YYYY-MM-DD');
   const currentYearJuly = moment(select_date).startOf('year').add(6, 'months').format('YYYY-MM-DD');
   const previousYearJuly = moment(select_date).startOf('year').add(6, 'months').subtract(1, 'years').format('YYYY-MM-DD');
-  const currentMonth = 1 + moment(selctDate, 'YYYY-MM-DD').month();
+  const currentMonth = 1 + moment(selectDate, 'YYYY-MM-DD').month();
   const comparison_financial_year = currentMonth > 6 ? currentYearJuly : previousYearJuly;
   console.log(comparison_financial_year);
 
@@ -1293,11 +1293,14 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
           .from("APSISIPDC.cr_manufacturer_vs_distributor")
           .where("cr_manufacturer_vs_distributor.distributor_id", distributor_info[i].id)
           .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_manufacturer_vs_distributor.manufacturer_id", manufacturer_id)
+            }
 
-            // if (start_date && end_date) {
-            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
-            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-            // }
+            if (select_date) {
+              this.whereRaw(`"cr_manufacturer_vs_distributor"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_manufacturer_vs_distributor"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
           });
 
         const total_retailers = await knex
@@ -1305,35 +1308,53 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
           .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
           .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
           .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
 
-            // if (start_date && end_date) {
-            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
-            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-            // }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_manu_scheme_mapping"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_manu_scheme_mapping"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
           });
 
         const total_supervisors = await knex
           .countDistinct("cr_supervisor.id as count")
           .from("APSISIPDC.cr_supervisor")
+          .leftJoin(
+            "APSISIPDC.cr_supervisor_distributor_manufacturer_map",
+            "cr_supervisor_distributor_manufacturer_map.supervisor_id",
+            "cr_supervisor.id"
+          )
           .where("cr_supervisor.distributor_id", distributor_info[i].id)
           .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+            }
 
-            // if (start_date && end_date) {
-            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
-            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-            // }
+            if (select_date) {
+              this.whereRaw(`"cr_supervisor_distributor_manufacturer_map"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_supervisor_distributor_manufacturer_map"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
           });
 
         const total_salesagents = await knex
           .countDistinct("cr_sales_agent.id as count")
           .from("APSISIPDC.cr_sales_agent")
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_sales_agent.id"
+          )
           .where("cr_sales_agent.distributor_id", distributor_info[i].id)
           .where(function () {
-
-            // if (start_date && end_date) {
-            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
-            //   // this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-            // }
+            if (manufacturer_id) {
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_salesagent_supervisor_distributor_manufacturer_map"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_salesagent_supervisor_distributor_manufacturer_map"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
           });
 
         const principal_outstanding_blans = await knex("APSISIPDC.cr_retailer_loan_calculation")
@@ -1345,10 +1366,13 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
           .select("cr_retailer_loan_calculation.principal_outstanding")
           .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
           .where(function () {
-            // if (start_date && end_date) {
-            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
-            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-            // }
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${selectDatePreviousDay}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
           })
           .orderBy("cr_retailer_loan_calculation.id", "desc")
           .first();
@@ -1366,32 +1390,51 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
           .sum("cr_retailer_loan_calculation.repayment as collection")
           .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
           .where(function () {
-            // if (start_date && end_date) {
-            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${endDate}', 'YYYY-MM-DD')`)
-            // }
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
           });
 
         const total_blacklist_retailer = await knex("APSISIPDC.cr_retailer")
-          .count("cr_retailer.id as count")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .countDistinct("cr_retailer.id as count")
           .where("cr_retailer.retailer_status", "BLOCK")
-          // .where("cr_retailer.retailer_status", "SUSPEND")
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
           .where(function () {
-            // if (start_date && end_date) {
-            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
-            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-            // }
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer"."updated_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer"."updated_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
           });
 
         const total_suspened_retailer = await knex("APSISIPDC.cr_retailer")
-          .count("cr_retailer.id as count")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .countDistinct("cr_retailer.id as count")
           .where("cr_retailer.retailer_status", "SUSPEND")
-
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
           .where(function () {
-            // if (start_date && end_date) {
-            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
-            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-            // }
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer"."updated_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer"."updated_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
           });
 
         const total_transactions_number = await knex("APSISIPDC.cr_retailer_loan_calculation")
@@ -1404,10 +1447,13 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
           .whereIn("cr_retailer_loan_calculation.transaction_type", ["DISBURSEMENT", "REPAYMENT"])
           .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
           .where(function () {
-            // if (start_date && end_date) {
-            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${startDatePreviousDay}', 'YYYY-MM-DD')`)
-            //   this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${startDate}', 'YYYY-MM-DD')`)
-            // }
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
           });
 
         const distributor_annual_performance_consolidated_info = {
@@ -1515,8 +1561,6 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
           .cell(row, col + col_add)
           .number(e.total_collection ? e.total_collection : 0);
         col_add++;
-        worksheet.cell(row, col + col_add).string(e.total_sales ? e.total_sales : "-");
-        col_add++;
         worksheet.cell(row, col + col_add).number(e.current_outstanding_amount ? e.current_outstanding_amount : 0);
         col_add++;
         worksheet.cell(row, col + col_add).string(e.total_num_times_discrepancies ? e.total_num_times_discrepancies : "-");
@@ -1545,4 +1589,231 @@ FileUpload.generateDistributorAnnualReport = async (req, res) => {
     }
   });
 };
+
+FileUpload.filterDistributorAnnualView = async (req, res) => {
+  const { distributor_id, manufacturer_id, select_date } = req.query;
+  const selectDate = moment(select_date).startOf('date').format('YYYY-MM-DD');
+  const selectDatePreviousDay = moment(select_date).subtract(1, 'days').format('YYYY-MM-DD');
+  const currentYearJuly = moment(select_date).startOf('year').add(6, 'months').format('YYYY-MM-DD');
+  const previousYearJuly = moment(select_date).startOf('year').add(6, 'months').subtract(1, 'years').format('YYYY-MM-DD');
+  const currentMonth = 1 + moment(selectDate, 'YYYY-MM-DD').month();
+  const comparison_financial_year = currentMonth > 6 ? currentYearJuly : previousYearJuly;
+  console.log("financial year",comparison_financial_year);
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const distributor_info = await knex("APSISIPDC.cr_distributor")
+        .where(function () {
+          if (distributor_id) {
+            this.where("cr_distributor.id", distributor_id);
+          }
+        })
+        .select(
+          "cr_distributor.id",
+          "cr_distributor.distributor_name"
+        );
+
+      if (distributor_info.length == 0) {
+        reject(sendReportApiResult(false, "Distributor Not Found"))
+      }
+
+      const distributor_annual_performance_Arr = [];
+
+      for (let i = 0; i < distributor_info.length; i++) {
+        const total_manufacturers = await knex
+          .count("cr_manufacturer_vs_distributor.manufacturer_id as count")
+          .from("APSISIPDC.cr_manufacturer_vs_distributor")
+          .where("cr_manufacturer_vs_distributor.distributor_id", distributor_info[i].id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_manufacturer_vs_distributor.manufacturer_id", manufacturer_id)
+            }
+
+            if (select_date) {
+              this.whereRaw(`"cr_manufacturer_vs_distributor"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_manufacturer_vs_distributor"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_retailers = await knex
+          .countDistinct("cr_retailer_manu_scheme_mapping.retailer_id as count")
+          .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_manu_scheme_mapping"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_manu_scheme_mapping"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_supervisors = await knex
+          .countDistinct("cr_supervisor.id as count")
+          .from("APSISIPDC.cr_supervisor")
+          .leftJoin(
+            "APSISIPDC.cr_supervisor_distributor_manufacturer_map",
+            "cr_supervisor_distributor_manufacturer_map.supervisor_id",
+            "cr_supervisor.id"
+          )
+          .where("cr_supervisor.distributor_id", distributor_info[i].id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+            }
+
+            if (select_date) {
+              this.whereRaw(`"cr_supervisor_distributor_manufacturer_map"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_supervisor_distributor_manufacturer_map"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_salesagents = await knex
+          .countDistinct("cr_sales_agent.id as count")
+          .from("APSISIPDC.cr_sales_agent")
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_sales_agent.id"
+          )
+          .where("cr_sales_agent.distributor_id", distributor_info[i].id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_salesagent_supervisor_distributor_manufacturer_map"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_salesagent_supervisor_distributor_manufacturer_map"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const principal_outstanding_blans = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
+          .select("cr_retailer_loan_calculation.principal_outstanding")
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${selectDatePreviousDay}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          })
+          .orderBy("cr_retailer_loan_calculation.id", "desc")
+          .first();
+
+        const principal_outstanding_beginning_blans =
+          principal_outstanding_blans != undefined ? principal_outstanding_blans.principal_outstanding : 0;
+
+        const total_amount = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
+          .sum("cr_retailer_loan_calculation.disburshment as loan")
+          .sum("cr_retailer_loan_calculation.repayment as collection")
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_blacklist_retailer = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .countDistinct("cr_retailer.id as count")
+          .where("cr_retailer.retailer_status", "BLOCK")
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer"."updated_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer"."updated_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_suspened_retailer = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .countDistinct("cr_retailer.id as count")
+          .where("cr_retailer.retailer_status", "SUSPEND")
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer"."updated_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer"."updated_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_transactions_number = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
+          .count("cr_retailer_loan_calculation.id as count")
+          .whereIn("cr_retailer_loan_calculation.transaction_type", ["DISBURSEMENT", "REPAYMENT"])
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_info[i].id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const distributor_annual_performance_consolidated_info = {
+          distributor_name: distributor_info[i].distributor_name,
+          distributor_id: distributor_info[i].id,
+          total_manufacturers: total_manufacturers[0].count,
+          total_retailers: total_retailers[0].count,
+          total_supervisors: total_supervisors[0].count,
+          total_salesagents: total_salesagents[0].count,
+          total_transactions_number: total_transactions_number[0].count,
+          total_loan: total_amount[0].loan,
+          total_collection: total_amount[0].collection,
+          current_outstanding_amount: principal_outstanding_beginning_blans,
+          total_blacklist_retailer: total_blacklist_retailer[0].count,
+          total_suspened_retailer: total_suspened_retailer[0].count
+        }
+
+        distributor_annual_performance_Arr.push(distributor_annual_performance_consolidated_info);
+      }
+      if (distributor_annual_performance_Arr == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendReportApiResult(true, "Retailer Loan Status filter successfully", distributor_annual_performance_Arr));
+
+    } catch (error) {
+      console.log(error);
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 module.exports = FileUpload;
