@@ -518,3 +518,23 @@ exports.filterDistributorAnnualView = async (req, res) => {
   }
 };
 //Consolidated Annual Distributor Performance for IPDC Report
+
+//Consolidated Annual Distributor Performance Report for manufacturer
+exports.generateDistributorAnnualReportForManufacturer = async (req, res) => {
+  try {
+    const result = await distModel.generateDistributorAnnualReportForManufacturer(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.filterDistributorAnnualViewForManufacturer = async (req, res) => {
+  try {
+    const result = await distModel.filterDistributorAnnualViewForManufacturer(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+//Consolidated Annual Distributor Performance Report for manufacturer
