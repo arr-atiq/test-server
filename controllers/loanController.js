@@ -1302,7 +1302,6 @@ exports.loanDashboard = async (req, res) => {
     .where("sales_agent_id", salesAgentID)
     .distinct();
 
-  console.log("saRetailer", saRetailer);
   // const myPromise = new Promise((resolve, reject) => {
   saRetailer.length > 0 &&
     saRetailer.map(async (saRetailerData, index) => {
@@ -1318,19 +1317,21 @@ exports.loanDashboard = async (req, res) => {
         const getSchemeId = await getSchemeID(pdAmount.onermn_acc);
         const schemavalue = await getSchemeValue(getSchemeId[0].scheme_id);
         const rmnAccount = await oneRMnAccDateValue(pdAmount.onermn_acc);
-        console.log("schemavalue", schemavalue[0].expiry_date);
 
         if (schemavalue) {
           var date = moment(
             moment(rmnAccount?.crm_approve_date),
             "YYYY-MM-DD"
           ).add(schemavalue[0].expiry_date * 30, "days");
+
           var riskDate = moment(
             moment(rmnAccount?.crm_approve_date),
             "YYYY-MM-DD"
           ).add(schemavalue[0].expiry_date * 29, "days");
 
           var now = moment();
+
+          console.log('datedatedatedate',date)
 
           if (now >= date) {
             odAmount = odAmount + parseFloat(pdAmount.total_outstanding);
@@ -1347,7 +1348,7 @@ exports.loanDashboard = async (req, res) => {
       }).then(() => {
         let responseValue = {
           odRetailers: odRetailers,
-          odAmount: 25,
+          odAmount: odAmount,
           odRetailersOdRisk: odRetailersRisk,
           pendingAmount: pendingAmountValue,
         };
