@@ -11,7 +11,7 @@ const { pushNotification } = require("./notification_helper");
 
 /**
  *
- * NOTE  Transaction Type : disbursment , repayment , INTERESTANDOTHERS , EXPIRYINTEREST , TRANSACTION
+ * NOTE  Transaction Type : DISBURSEMENT , REPAYMENT , INTERESTANDOTHERS , EXPIRYINTEREST , TRANSACTION
  *
  */
 
@@ -1312,7 +1312,7 @@ exports.loanDashboard = async (req, res) => {
           .where("retailer_id", saRetailerData.retailer_id)
           .orderBy("id", "desc")
           .first();
-        console.log("pdAmount", pdAmount);
+
         pendingAmountValue = pendingAmountValue + pdAmount.total_outstanding;
         const getSchemeId = await getSchemeID(pdAmount.onermn_acc);
         const schemavalue = await getSchemeValue(getSchemeId[0].scheme_id);
