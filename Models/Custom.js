@@ -141,6 +141,7 @@ exports.getBlockListAll = function (req) {
                       .where({ id: data.Retailer_ID })
                       .update({
                         retailer_status: data.Status,
+                        updated_at: knex.fn.now(),
                         retailer_comment: data.Comment
                       });
                       if(updateData == 0){
