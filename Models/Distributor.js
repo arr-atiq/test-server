@@ -3,7 +3,7 @@ const express = require("express");
 const excel = require('excel4node');
 const fs = require('fs');
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail, randomPasswordGenerator, sendReportApiResult } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, randomPasswordGenerator, sendReportApiResult, generateUserIDMidDigitForLogin } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
@@ -12,6 +12,7 @@ const FileUpload = function () { };
 FileUpload.insertExcelData = function (rows, filename, req) {
   var password;
   var link_code;
+  var user_Id;
   var invalidated_rows_arr = [];
   var duplicated_rows_arr = [];
   var mapping_rows_arr = [];
@@ -785,6 +786,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const insert_distributor = await knex("APSISIPDC.cr_distributor")
                 .insert(team_distributor)
                 .returning("id");
+
+              user_Id = insert_distributor ? "DH-" + generateUserIDMidDigitForLogin(insert_distributor[0], 6) : 0;
+
               if (insert_distributor) {
                 const temp_manufacturer_vs_distributor_map = {
                   manufacturer_id: data_array[index].Manufacturer_id,
@@ -855,6 +859,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 password: password,
                 link_token: link_code,
                 cr_user_type: folder_name,
+                user_id: user_Id
               };
               const insert_user = await knex("APSISIPDC.cr_users")
                 .insert(temp_user)
@@ -873,7 +878,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       completed. Please enter the below
                       mentioned user ID and password
                       at www.ipdcDANA.com and login.</p>
-                      <p>User ID : ${data_array[index].Official_Email}</p>
+                      <p>User ID : ${user_Id}</p>
                       <p>Your Temporary Password : ${password}</p>
                       <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
                       <p>Regards, </p>
@@ -2290,16 +2295,16 @@ FileUpload.filterDistributorAnnualViewForManufacturer = async (req, res) => {
       }
 
       distributor_annual_performance_Arr.push(distributor_annual_performance_consolidated_info);
-    
+
       if (distributor_annual_performance_Arr == 0) reject(sendApiResult(false, "Not found."));
 
-    resolve(sendReportApiResult(true, "Distributor Annual Consolidated Performance filter successfully", distributor_annual_performance_Arr));
+      resolve(sendReportApiResult(true, "Distributor Annual Consolidated Performance filter successfully", distributor_annual_performance_Arr));
 
-  } catch (error) {
-    console.log(error);
-    reject(sendApiResult(false, error.message));
-  }
-});
+    } catch (error) {
+      console.log(error);
+      reject(sendApiResult(false, error.message));
+    }
+  });
 };
 
 module.exports = FileUpload;

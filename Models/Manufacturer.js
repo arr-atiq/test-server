@@ -3,7 +3,7 @@ const express = require("express");
 const fs = require('fs');
 const excel = require("excel4node");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail, duplication_manufacturer, randomPasswordGenerator, sendReportApiResult } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, duplication_manufacturer, randomPasswordGenerator, sendReportApiResult, generateUserIDMidDigitForLogin } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
@@ -13,6 +13,7 @@ require("dotenv").config();
 FileUpload.insertExcelData = function (rows, filename, req) {
   var password;
   var link_code;
+  var user_Id;
   var invalidated_rows_arr = [];
   var duplicated_rows_arr = [];
   return new Promise(async (resolve, reject) => {
@@ -747,6 +748,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const insert_manufacture = await knex("APSISIPDC.cr_manufacturer")
                 .insert(team_manufacture)
                 .returning("id");
+
+              user_Id = insert_manufacture ? "MAN-" + generateUserIDMidDigitForLogin(insert_manufacture[0], 6) : 0;
+
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
                 try {
@@ -760,7 +764,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     completed. Please enter the below
                     mentioned user ID and password
                     at www.ipdcDANA.com and login.</p>
-                    <p>User ID : ${data_array[index].Official_Email_ID}</p>
+                    <p>User ID : ${user_Id}</p>
                     <p>Your Temporary Password : ${password}</p>
                     <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
                     <p>Regards, </p>
@@ -783,6 +787,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 password: password,
                 link_token: link_code,
                 cr_user_type: folder_name,
+                user_id: user_Id
               };
               const insert_user = await knex("APSISIPDC.cr_users")
                 .insert(temp_user)
