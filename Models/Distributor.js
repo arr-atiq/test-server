@@ -856,7 +856,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 email: data_array[index].Official_Email,
                 phone: data_array[index].Official_Contact_Number,
                 // password: "5efd3b0647df9045c240729d31622c79",
-                password: password,
+                password: password, 
                 link_token: link_code,
                 cr_user_type: folder_name,
                 user_id: user_Id

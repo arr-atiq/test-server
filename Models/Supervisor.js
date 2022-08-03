@@ -1,7 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail, generateUserIDMidDigitForLogin } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, generateUserIDMidDigitForLogin, randomPasswordGenerator, r } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
@@ -12,6 +12,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
   var invalidated_rows_arr = [];
   var duplicated_rows_arr = [];
   var user_Id;
+  var password;
+  var link_code;
+
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -503,6 +506,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .insert(team_supervisor)
                 .returning("id");
 
+              password = randomPasswordGenerator()
+              link_code = randomPasswordGenerator()
+
               user_Id = insert_supervisor ? "SUP-" + generateUserIDMidDigitForLogin(insert_supervisor[0], 6) : 0;
 
 
@@ -527,7 +533,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 name: data_array[index].Supervisor_Name,
                 email: data_array[index].Supervisor_Employee_Code,
                 phone: data_array[index].Phone,
-                password: "5efd3b0647df9045c240729d31622c79",
+                password: password,
+                link_token: link_code,
                 cr_user_type: folder_name,
                 user_id: user_Id
               };
@@ -536,6 +543,20 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .returning("id");
               if (insert_user) {
                 user_insert_ids.push(insert_user[0]);
+
+                let sms_body = `Greetings from IPDC DANA!.Congratulations! Your registration with IPDC DANA has been completed. Please enter the below
+                    mentioned user ID and password at www.ipdcDANA.com and login.
+                    User ID: ${user_Id}
+                    Your Temporary Password : ${password}
+                    For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}
+                    Regards,
+                    IPDC Finance`;
+                    
+                const { SMS_URL, MASKING, SMS_USERNAME, SMS_PASSWORD, MSGTYPE } = process.env;
+                const response = await axios.get(`${SMS_URL}?masking=${MASKING}&userName=${SMS_USERNAME}&password=${SMS_PASSWORD}&MsgType=${MSGTYPE}&receiver=${temp_user.phone}&message=${sms_body}`);
+                if (response) {
+                  console.log("print sent sms in mobile number");
+                }
               }
 
 
