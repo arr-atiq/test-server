@@ -43,15 +43,15 @@ exports.refreshToken = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { user_id, password } = req.body;
 
-  if (!email || !password) {
+  if (!user_id || !password) {
     return res.status(400);
   }
 
   const userData = await knex("APSISIPDC.cr_users")
     .select("id", "name", "email", "phone", "password", "device_token")
-    .where({ email, status: "Active" })
+    .where({ user_id, status: "Active" })
     .first();
 
     console.log('userData', userData);

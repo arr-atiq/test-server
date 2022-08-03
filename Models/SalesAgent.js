@@ -1,7 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, generateUserIDMidDigitForLogin } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 const { check } = require("prettier");
@@ -12,6 +12,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
   var mapped_data_array = [];
   var invalidated_rows_arr = [];
   var duplicated_rows_arr = [];
+  var user_Id;
+
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -584,6 +586,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const insert_sales_agent = await knex("APSISIPDC.cr_sales_agent")
                 .insert(team_sales_agent)
                 .returning("id");
+
+              user_Id = insert_sales_agent ? "SA-" + generateUserIDMidDigitForLogin(insert_sales_agent[0], 6) : 0;
               if (insert_sales_agent) {
                 sales_agent_insert_ids.push(insert_sales_agent[0]);
 
@@ -609,7 +613,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   created_by: req.user_id,
                 };
                 mapped_data_array.push(temp_manufacturer_vs_salesagent_map)
-                console.log("multiple_manu_mapping_salesagent..2", temp_manufacturer_vs_salesagent_map)
+
                 const insert_manufacturer_vs_salesagent_map = await knex(
                   "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
                 ).insert(temp_manufacturer_vs_salesagent_map).returning("id");
@@ -647,6 +651,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 phone: data_array[index].Phone,
                 password: "5efd3b0647df9045c240729d31622c79",
                 cr_user_type: folder_name,
+                user_id: user_Id
               };
               const insert_user = await knex("APSISIPDC.cr_users")
                 .insert(temp_user)

@@ -1,7 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, generateUserIDMidDigitForLogin } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
@@ -11,6 +11,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
   var mapped_data_array = [];
   var invalidated_rows_arr = [];
   var duplicated_rows_arr = [];
+  var user_Id;
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -502,6 +503,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .insert(team_supervisor)
                 .returning("id");
 
+              user_Id = insert_supervisor ? "SUP-" + generateUserIDMidDigitForLogin(insert_supervisor[0], 6) : 0;
+
 
               if (insert_supervisor) {
                 supervisor_insert_ids.push(insert_supervisor[0]);
@@ -526,6 +529,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 phone: data_array[index].Phone,
                 password: "5efd3b0647df9045c240729d31622c79",
                 cr_user_type: folder_name,
+                user_id: user_Id
               };
               const insert_user = await knex("APSISIPDC.cr_users")
                 .insert(temp_user)

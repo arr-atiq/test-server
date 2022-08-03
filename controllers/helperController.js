@@ -726,3 +726,10 @@ exports.randomPasswordGenerator = function (array) {
 };
 
 // @Ashik End 
+
+
+//@Arfin
+exports.generateUserIDMidDigitForLogin = function(number, width) {
+  return new Array(width + 1 - (number.toString()).length).join('0') + number;
+}
+//@Arfin
