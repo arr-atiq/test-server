@@ -437,7 +437,7 @@ exports.disbursement = async (req, res) => {
           .where("cr_sales_agent_user.sales_agent_id", sales_agent_id)
           .select("cr_users.device_token");
         console.log("device_token", device_token_response);
-        let receiver_token = device_token_response[0].device_token;
+        let receiver_token =device_token_response ? device_token_response[0]?.device_token : '';
         console.log("device_token", device_token_response);
 
         await pushNotification(
@@ -682,18 +682,7 @@ exports.repayment = async (req, res) => {
           var paycharge = 0;
           var payintersetPaid = 0;
 
-          console.log("intersetPaidintersetPaidintersetPaid", intersetPaid);
-
-          console.log("sumofReimbursement", sumofReimbursement);
-          console.log("sumOFpenal_interest", sumOFpenal_interest);
-          console.log("sumOfoverdue_amount", sumOfoverdue_amount);
-          console.log("sumOfpenal_charge", sumOfpenal_charge);
-          console.log(
-            "sumOfdaily_principal_interest",
-            sumOfdaily_principal_interest
-          );
-          console.log("sumOfcharge", sumOfcharge);
-          console.log("sumOfother_charge", sumOfother_charge);
+          
 
           const sequenceData = await getSequenceData();
 
