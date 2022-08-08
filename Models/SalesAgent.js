@@ -13,6 +13,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
   var invalidated_rows_arr = [];
   var duplicated_rows_arr = [];
   var user_Id;
+  var password;
+  var link_code;
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -587,7 +589,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .insert(team_sales_agent)
                 .returning("id");
 
+              password = randomPasswordGenerator()
+              link_code = randomPasswordGenerator()
               user_Id = insert_sales_agent ? "SA-" + generateUserIDMidDigitForLogin(insert_sales_agent[0], 6) : 0;
+
               if (insert_sales_agent) {
                 sales_agent_insert_ids.push(insert_sales_agent[0]);
 
@@ -658,6 +663,20 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .returning("id");
               if (insert_user) {
                 user_insert_ids.push(insert_user[0]);
+
+                let sms_body = `Greetings from IPDC DANA!.Congratulations! Your registration with IPDC DANA has been completed. Please enter the below
+                    mentioned user ID and password at www.ipdcDANA.com and login.
+                    User ID: ${user_Id}
+                    Your Temporary Password : ${password}
+                    For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}
+                    Regards,
+                    IPDC Finance`;
+
+                const { SMS_URL, MASKING, SMS_USERNAME, SMS_PASSWORD, MSGTYPE } = process.env;
+                const response = await axios.get(`${SMS_URL}?masking=${MASKING}&userName=${SMS_USERNAME}&password=${SMS_PASSWORD}&MsgType=${MSGTYPE}&receiver=${temp_user.phone}&message=${sms_body}`);
+                if (response) {
+                  console.log("print sent sms in mobile number");
+                }
               }
             }
 
