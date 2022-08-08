@@ -51,7 +51,7 @@ exports.login = async (req, res) => {
   }
 
   const userData = await knex("APSISIPDC.cr_users")
-    .select("id", "name", "email", "phone", "password", "device_token", "password_changed_date", "account_locked")
+    .select("id", "name", "email", "phone", "password", "device_token", "password_changed_date", "account_locked", "created_at")
     .where({ user_id, status: "Active" })
     .first();
 
@@ -76,12 +76,12 @@ exports.login = async (req, res) => {
         login_hit[0].count
       );
 
-      if (login_hit_val < 3) {
+      if (login_hit_val < 5) {
 
         await knex("APSISIPDC.cr_login_failed_history")
           .insert({ user_id: user_id });
 
-      } else if (login_hit_val >= 3) {
+      } else if (login_hit_val >= 5) {
 
         await knex("APSISIPDC.cr_users")
           .update({ account_locked: "Y" })
@@ -90,7 +90,7 @@ exports.login = async (req, res) => {
       }
 
     } else {
-      res.send(sendApiResult(false, "Oops! Invalid email or Password."));
+      res.send(sendApiResult(false, "Oops! Invalid UserID or Password."));
     }
 
   } else {
@@ -105,6 +105,9 @@ exports.login = async (req, res) => {
     if (daysDiff > 30) {
       res.send(sendApiResult(false, "Oops! Password must be changed every 30 days interval"));
     } else {
+      const testDate = moment().add(2, "minutes").format("YYYY-MM-DDTHH:mm:ss");
+      console.log("test date", testDate);
+      console.log(userData.created_at);
       const userLevel = await knex("APSISIPDC.cr_user_wise_role")
         .innerJoin(
           "APSISIPDC.cr_user_roles",
@@ -147,7 +150,6 @@ exports.login = async (req, res) => {
 
         userData.supervisor_id = (supervisorUser?.supervisor_id != undefined) ? supervisorUser?.supervisor_id : null;
         userData.supervisor_code = (supervisorUserCode?.supervisor_employee_code != undefined) ? supervisorUserCode?.supervisor_employee_code : null;
-
       }
 
       await knex("APSISIPDC.cr_login_failed_history").del()
