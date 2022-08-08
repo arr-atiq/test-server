@@ -303,6 +303,7 @@ exports.disbursement = async (req, res) => {
         retailer_id: retailer_id,
         sales_agent_id: sales_agent_id,
         disbursement_amount: disbursement_amount,
+        onermn_acc:onermn_acc
         // 'transaction_fee' : disbursement_amount * (SchemeValue[0]?.processing_cost/100),
       };
 
@@ -850,7 +851,8 @@ exports.repayment = async (req, res) => {
             other_charge: parseFloat(payintersetPaid).toFixed(2),
           };
 
-          console.log("InterestCalculation", InterestCalculation);
+
+
 
           await knex("APSISIPDC.cr_retailer_loan_interest_calculation")
             .insert(InterestCalculation)
@@ -872,6 +874,96 @@ exports.repayment = async (req, res) => {
             }
           });
         }
+
+        var newRepayment = repayment
+        var getDisData = await getAllDisData(onermn_acc)
+        console.log('getDisData' , getDisData)
+        // while(newRepayment > 0){
+          getDisData.length > 0 && getDisData.map(async (value , index)=>{
+            console.log(index , newRepayment)
+            console.log('value' , value)
+            if(newRepayment > 0){
+              if((value?.disbursement_amount-value?.rep_rem_amount) == newRepayment){
+                console.log('ashik1')
+                let remAmount = newRepayment
+                let repSequence = {
+                  disbursement_id:value.id,
+                  repayment_amount:newRepayment,
+                  rest_of_principal_amount:0,
+                  one_rmn_account : onermn_acc
+                }
+                newRepayment = 0;
+                await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
+                .insert(repSequence)
+                .returning("id").then(async ()=>{
+                  await knex.transaction(async (trx) => {
+                    const limit_update = await trx(
+                      "APSISIPDC.cr_disbursement"
+                    )
+                      .where({ id: value.id })
+                      .update({dis_status : 1 , rep_rem_amount:value?.rep_rem_amount + remAmount});
+                    console.log("limit_update", limit_update);
+                    
+                  });
+                })    
+              }
+              else if((value?.disbursement_amount-value?.rep_rem_amount) < newRepayment){
+                console.log('ashik2')
+                let remAmount = newRepayment
+                let repSequence = {
+                  disbursement_id:value.id,
+                  // repayment_amount:newRepayment - value?.disbursement_amount + value?.rep_rem_amount,
+                  repayment_amount:newRepayment - (newRepayment - value?.disbursement_amount + value?.rep_rem_amount),
+                  rest_of_principal_amount: 0 ,
+                  one_rmn_account : onermn_acc
+                }
+                // newRepayment =(newRepayment - value?.disbursement_amount) >=0 ? newRepayment - value?.disbursement_amount + value?.rep_rem_amount : value?.disbursement_amount;
+                newRepayment =newRepayment - value?.disbursement_amount + value?.rep_rem_amount;
+
+                await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
+                .insert(repSequence).then(async ()=>{
+                  await knex.transaction(async (trx) => {
+                    const limit_update = await trx(
+                      "APSISIPDC.cr_disbursement"
+                    )
+                      .where({ id: value.id })
+                      .update({dis_status : 1 , rep_rem_amount:(newRepayment - value?.disbursement_amount) >=0 ? value?.rep_rem_amount + remAmount :value?.disbursement_amount });
+                    console.log("limit_update", limit_update);
+                  });
+                })
+               
+                console.log('newRepayment',newRepayment)
+              }
+              else if((value?.disbursement_amount-value?.rep_rem_amount) > newRepayment){
+                console.log('ashik3')
+                let remAmount = newRepayment
+                let repSequence = {
+                  disbursement_id:value.id,
+                  repayment_amount:newRepayment,
+                  rest_of_principal_amount:value?.disbursement_amount - newRepayment - value?.rep_rem_amount,
+                  one_rmn_account : onermn_acc
+                }
+                newRepayment = 0
+                await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
+                .insert(repSequence)
+                .returning("id").then(async()=>{
+                  await knex.transaction(async (trx) => {
+                    const limit_update = await trx(
+                      "APSISIPDC.cr_disbursement"
+                    )
+                      .where({ id: value.id })
+                      .update({ rep_rem_amount:remAmount + value?.rep_rem_amount});
+                    console.log("limit_update", limit_update);
+                    newRepayment = 0;
+                  });
+                })
+              }
+            }
+            
+          })
+        // }
+
+        
 
         // let sumOfother_charge= allRepayment.reduce(function (accumulator, curValue) {
         //   return parseFloat(accumulator) + parseFloat(curValue.other_charge:)
@@ -1587,4 +1679,13 @@ var getRetailerPhone = async (id) => {
     .from("APSISIPDC.cr_retailer")
     .select("phone", "retailer_status")
     .where("id", id);
+};
+
+var getAllDisData = async (onermn_acc) => {
+  return await knex
+    .from("APSISIPDC.cr_disbursement")
+    .select()
+    .where("onermn_acc", onermn_acc)
+    .where("dis_status", 0)
+    .orderBy("id", "asc");
 };
