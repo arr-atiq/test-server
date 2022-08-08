@@ -64,29 +64,35 @@ exports.login = async (req, res) => {
       res.send(sendApiResult(false, "Oops! Your Account is locked!."));
 
     } else if (!(md5(`++${password}--`) === userData.password)) {
+      const compareTime = moment().subtract(20, "minutes").format("YYYY-MM-DD HH:mm");
+      //const currentTime = moment().format("YYYY-MM-DD HH:mm");
+
       const login_hit = await knex
         .count("cr_login_failed_history.id as count")
         .from("APSISIPDC.cr_login_failed_history")
         .where(
-          "APSISIPDC.cr_login_failed_history.user_id",
+          "cr_login_failed_history.user_id",
           user_id.toString()
-        );
+        )
+        .whereRaw(`"cr_login_failed_history"."created_at" >= TO_DATE('${compareTime}', 'YYYY-MM-DD HH24:MI')`);
 
       const login_hit_val = parseInt(
         login_hit[0].count
       );
 
+      console.log(login_hit_val);
+
       if (login_hit_val < 5) {
 
         await knex("APSISIPDC.cr_login_failed_history")
           .insert({ user_id: user_id });
-
+        res.send(sendApiResult(false, "Oops! Invalid UserID or Password."));
       } else if (login_hit_val >= 5) {
 
         await knex("APSISIPDC.cr_users")
           .update({ account_locked: "Y" })
           .where("user_id", user_id);
-
+        res.send(sendApiResult(false, "Oops! Invalid UserID or Password."));
       }
 
     } else {
@@ -105,9 +111,6 @@ exports.login = async (req, res) => {
     if (daysDiff > 30) {
       res.send(sendApiResult(false, "Oops! Password must be changed every 30 days interval"));
     } else {
-      const testDate = moment().add(2, "minutes").format("YYYY-MM-DDTHH:mm:ss");
-      console.log("test date", testDate);
-      console.log(userData.created_at);
       const userLevel = await knex("APSISIPDC.cr_user_wise_role")
         .innerJoin(
           "APSISIPDC.cr_user_roles",
