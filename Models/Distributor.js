@@ -337,8 +337,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                           completed. Please enter the below
                           mentioned user ID and password
                           at www.ipdcDANA.com and login.</p>
-                          <p>User ID : ${email_official}</p>
-                          <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
                           <p>Regards, </p>
                           <p>IPDC Finance</p>
                           `
@@ -628,8 +626,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                         completed. Please enter the below
                         mentioned user ID and password
                         at www.ipdcDANA.com and login.</p>
-                        <p>User ID : ${official_email_insert_data}</p>
-                        <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
                         <p>Regards, </p>
                         <p>IPDC Finance</p>
                         `
@@ -818,9 +814,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 const insert_manufacturer_vs_distributor = await knex(
                   "APSISIPDC.cr_manufacturer_vs_distributor"
                 ).insert(temp_manufacturer_vs_distributor_map).returning("id");
-                mapping_rows_arr.push(insert_manufacturer_vs_distributor);
+                //mapping_rows_arr.push(insert_manufacturer_vs_distributor);
 
-                total_mapping_dis_manu.push(insert_manufacturer_vs_distributor[0]);
+                //total_mapping_dis_manu.push(insert_manufacturer_vs_distributor[0]);
 
 
                 const acc_num =
