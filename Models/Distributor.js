@@ -436,7 +436,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             msg = "File Uploaded successfully!";
             var response = {
               "insert_log": empty_insert_log,
-              "total_mapping_row": mapping_rows_arr.length,
+              "total_mapping": mapping_rows_arr,
               "total_invalidated_row": invalidated_rows_arr.length,
               "total_duplicated_row": duplicated_rows_arr.length
             }
@@ -856,7 +856,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 email: data_array[index].Official_Email,
                 phone: data_array[index].Official_Contact_Number,
                 // password: "5efd3b0647df9045c240729d31622c79",
-                password: password, 
+                password: password,
                 link_token: link_code,
                 cr_user_type: folder_name,
                 user_id: user_Id
@@ -964,7 +964,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               msg = "File Uploaded successfully!";
               var response = {
                 "insert_log": insert_log,
-                "total_mapping_row": mapping_rows_arr.length,
+                "total_mapping": mapping_rows_arr,
                 "total_invalidated": invalidated_rows_arr.length,
                 "total_duplicated": duplicated_rows_arr.length
               }
