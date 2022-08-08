@@ -379,8 +379,8 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
       // col_add++;
       row++;
     }
-    await workbook.write("public/unupload_report/supervisorUnuploadedDataDownload.xlsx");
-    const fileName = "./unupload_report/supervisorUnuploadedDataDownload.xlsx";
+    await workbook.write("public/unupload_report/supervisor_duplicated_report.xlsx");
+    const fileName = "./unupload_report/supervisor_duplicated_report.xlsx";
     await knex("APSISIPDC.cr_supervisor_unuploaded_data").del();
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));
