@@ -60,10 +60,10 @@ exports.login = async (req, res) => {
 
   if (!userData || !(md5(`++${password}--`) === userData.password) || userData.account_locked == "Y") {
 
-    if (userData.account_locked == "Y") {
+    if (userData?.account_locked == "Y") {
       res.send(sendApiResult(false, "Oops! Your Account is locked!."));
 
-    } else if (!(md5(`++${password}--`) === userData.password)) {
+    } else if (!(md5(`++${password}--`) === userData?.password)) {
       const compareTime = moment().subtract(20, "minutes").format("YYYY-MM-DD HH:mm");
       //const currentTime = moment().format("YYYY-MM-DD HH:mm");
 
