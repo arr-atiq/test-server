@@ -1,7 +1,7 @@
 const readXlsxFile = require("read-excel-file/node");
 const xlsx = require("xlsx");
 const moment = require("moment");
-const { sendApiResult, blockunblock } = require("./helperController");
+const { sendApiResult, blockunblock, retailerAvgByManufacturer } = require("./helperController");
 const model = require("../Models/Retailer");
 const { default: axios } = require("axios");
 const knex = require("../config/database");
@@ -466,10 +466,12 @@ exports.disbursement = async (req, res) => {
 };
 
 exports.repayment = async (req, res) => {
-  let { retailer_id, onermn_acc, sales_agent_id, repayment, transaction_cost } =
+  let { retailer_id, onermn_acc, sales_agent_id, repayment, transaction_cost , nid ,manuID  } =
     req.body;
   // let transaction_cost = transaction_cost_value;
-
+   const retailerAvg = await retailerAvgByManufacturer(nid , manuID)
+   console.log('retailerAvg',retailerAvg);
+   return
   const findSalesAgent = await findSalesrelation(sales_agent_id, retailer_id);
   const firstRepaymentID = await getfirstRepaymentID(onermn_acc);
 

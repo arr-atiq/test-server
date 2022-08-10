@@ -706,7 +706,7 @@ exports.timeout = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
-// @Ashik Start 
+// @Ashik Random Password Generator Start 
 
 exports.randomPasswordGenerator = function (array) {
   const alpha = "abcdefghijklmnopqrstuvwxyz";
@@ -725,7 +725,7 @@ exports.randomPasswordGenerator = function (array) {
   return pass;
 };
 
-// @Ashik End 
+// @Ashik Random Password Generator End 
 
 
 //@Arfin
@@ -733,3 +733,147 @@ exports.generateUserIDMidDigitForLogin = function(number, width) {
   return new Array(width + 1 - (number.toString()).length).join('0') + number;
 }
 //@Arfin
+
+
+// @Ashik Random Password Generator Start 
+
+exports.retailerAvgByManufacturer = async (nid , manuId)=> {
+  const ticketSizeArray = []
+  const repDiffDays = []
+  var propose_snaction_total_lift_amount ;
+   const retailerData =await getOneRmn (nid , manuId)
+   const manuByretailerData =await getManuByretailerData (nid)
+   const allDIsDataCount = await getAllDisDataCount (retailerData.ac_number_1rmn)
+   const allRepDataCount = await getAllRepDataCount (retailerData.ac_number_1rmn)
+   const totalClosedLoan = await getTotalClosedLoan (retailerData.ac_number_1rmn)
+
+   const allRepData = await getAllRepData (retailerData.ac_number_1rmn)
+   let sales_array = retailerData.sales_array
+   let totalSales = getTotal(JSON.parse(sales_array));
+   let avgSalarySales = totalSales/12
+   propose_snaction_total_lift_amount = retailerData.propose_limit / avgSalarySales
+   const now = moment.utc();
+   var end = moment(retailerData.crm_approve_date); 
+   var days = now.diff(end, "days"); 
+   var FirstDateDiff;
+
+   const p1 = new Promise((resolve, reject) => {
+    allRepDataCount && allRepDataCount.length > 0 && allRepDataCount.map(async(value , index)=>{
+      // console.log('value.created_at',value.created_at)
+      if(index==0){
+        console.log('indexindexindex',index)
+        FirstDateDiff = value.created_at
+        console.log('FirstDateDiff',FirstDateDiff)
+      }else{
+        console.log('FirstDateDifflast',FirstDateDiff)
+        const nowDate = moment.utc(FirstDateDiff);
+        var endDate = moment(value.created_at); 
+        console.log('index',index)
+        console.log('nowDate',nowDate)
+        console.log('endDate',endDate)
+
+        var diffDays = endDate.diff(nowDate, "days"); 
+        FirstDateDiff = value.created_at
+        repDiffDays.push(diffDays)
+        console.log('diffDays',diffDays)
+
+      }
+     
+     if(allRepData.length == index+1){
+       resolve(repDiffDays)
+     }
+    })
+   })
+  //  .then(() => {
+  //   console.log('repDiffDays',repDiffDays)
+  //  })
+   const p2 = new Promise((resolve, reject) => {
+   allRepData && allRepData.length > 0 && allRepData.map(async(value , index)=>{
+    const countTicketSize = await getCountTicketSize (value.disbursement_id)
+    ticketSizeArray.push(countTicketSize.count)
+    if(allRepData.length == index+1){
+      resolve(ticketSizeArray)
+    }
+   })
+  })
+
+  Promise.all([p1, p2])
+  .then((values) => {
+    console.log(values);
+  })
+  .catch((error) => {
+    console.error(error.message)
+  });
+
+  // .then(() => {
+  //   const highTicketSize = Math.max(...ticketSizeArray)
+  //   const lowTicketSize = Math.min(...ticketSizeArray)
+
+  //   console.log('highTicketSize',lowTicketSize)
+  // })
+  return manuByretailerData
+};
+
+
+const getOneRmn  =async (nid , manuId) =>{
+  return await knex
+  .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
+  .select()
+  .where("retailer_nid", nid) 
+  // AND "manufacturer_id", manuId;
+  .where("manufacturer_id", manuId).first();
+}
+
+const getManuByretailerData  =async (nid) =>{
+  return await knex
+  .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
+  .count("cr_retailer_manu_scheme_mapping.id as count")
+  .select(knex.raw('SUM("cr_retailer_manu_scheme_mapping"."propose_limit") AS total_amount') , )
+  .where("retailer_nid", nid) ;
+}
+
+const getAllDisDataCount  =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_retailer_loan_calculation")
+  .select()
+  .count("cr_retailer_loan_calculation.id as count")
+  .where("onermn_acc", oneRmn)
+  .where("transaction_type", 'DISBURSEMENT').first()
+}
+
+const getAllRepDataCount  =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_retailer_loan_calculation")
+  .select()
+  // .count("cr_retailer_loan_calculation.id as count")
+  .where("onermn_acc", oneRmn)
+  .where("transaction_type", 'REPAYMENT').orderBy("id", "asc");
+}
+
+const getAllRepData  =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
+  .select('disbursement_id')
+  .where("one_rmn_account", oneRmn).distinct()
+}
+
+const getCountTicketSize =async (dis_id) =>{
+  return  await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
+  .count("cr_loan_principal_repayment_sequence.disbursement_id as count")
+  .where("disbursement_id", dis_id).first()
+}
+
+const getTotal = (arr) => {
+  let total = 0
+  console.log('array',arr)
+  for (let i = 0; i < arr.length; i++) {
+  console.log('arr[i]',arr[i])
+      total += arr[i];
+  }
+  return total
+}
+
+const getTotalClosedLoan  =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
+  .count("cr_loan_principal_repayment_sequence.id as count")
+  .where("rest_of_principal_amount", 0)
+  .where("one_rmn_account", oneRmn).first()
+}
+// @Ashik Random Password Generator End 
