@@ -536,7 +536,7 @@ exports.repayment = async (req, res) => {
   // // }).then((value) => {
   // //   console.log('valueisvalue',value)
   // // })
-  //  return 
+   return 
   const findSalesAgent = await findSalesrelation(sales_agent_id, retailer_id);
   const firstRepaymentID = await getfirstRepaymentID(onermn_acc);
   var newInterestPaid = 0
