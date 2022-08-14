@@ -742,14 +742,23 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
   const repDiffDays = []
   var propose_snaction_total_lift_amount ;
    const retailerData =await getOneRmn (nid , manuId)
+
    const manuByretailerData =await getManuByretailerData (nid)
-   const allDIsDataCount = await getAllDisDataCount (retailerData.ac_number_1rmn)
-   const allRepDataCount = await getAllRepDataCount (retailerData.ac_number_1rmn)
-   const totalClosedLoan = await getTotalClosedLoan (retailerData.ac_number_1rmn)
+
+   const allDIsDataCount = await getAllDisDataCount (retailerData?.ac_number_1rmn) ?? []
+   const allRepDataCount = await getAllRepDataCount (retailerData?.ac_number_1rmn) ?? []
+   const totalClosedLoan = await getTotalClosedLoan (retailerData?.ac_number_1rmn) ?? []
+   const currOverDueAmount = await findCurrOverDueAmount(retailerData?.ac_number_1rmn) ?? []
+   const currMaxOverdue = await findCurrMaxOverDueAmount(retailerData?.ac_number_1rmn) ?? []
+   const currMaxHisOverdue = await findHisMaxOverDueAmount(retailerData?.ac_number_1rmn) ?? []
+  
+
+   
 
    const allRepData = await getAllRepData (retailerData.ac_number_1rmn)
    let sales_array = retailerData.sales_array
    let totalSales = getTotal(JSON.parse(sales_array));
+   let totalRepDays = 0
    let avgSalarySales = totalSales/12
    propose_snaction_total_lift_amount = retailerData.propose_limit / avgSalarySales
    const now = moment.utc();
@@ -758,51 +767,68 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
    var FirstDateDiff;
 
    const p1 = new Promise((resolve, reject) => {
-    allRepDataCount && allRepDataCount.length > 0 && allRepDataCount.map(async(value , index)=>{
-      // console.log('value.created_at',value.created_at)
-      if(index==0){
-        console.log('indexindexindex',index)
-        FirstDateDiff = value.created_at
-        console.log('FirstDateDiff',FirstDateDiff)
-      }else{
-        console.log('FirstDateDifflast',FirstDateDiff)
-        const nowDate = moment.utc(FirstDateDiff);
-        var endDate = moment(value.created_at); 
-        console.log('index',index)
-        console.log('nowDate',nowDate)
-        console.log('endDate',endDate)
-
-        var diffDays = endDate.diff(nowDate, "days"); 
-        FirstDateDiff = value.created_at
-        repDiffDays.push(diffDays)
-        console.log('diffDays',diffDays)
-
-      }
-     
-     if(allRepData.length == index+1){
-       resolve(repDiffDays)
-     }
-    })
-   })
-  //  .then(() => {
-  //   console.log('repDiffDays',repDiffDays)
-  //  })
-   const p2 = new Promise((resolve, reject) => {
-   allRepData && allRepData.length > 0 && allRepData.map(async(value , index)=>{
-    const countTicketSize = await getCountTicketSize (value.disbursement_id)
-    ticketSizeArray.push(countTicketSize.count)
-    if(allRepData.length == index+1){
-      resolve(ticketSizeArray)
+    if(allRepDataCount.length == 0){
+      resolve([])
+    }else{
+      allRepDataCount && allRepDataCount.length > 0 && allRepDataCount.map(async(value , index)=>{
+        if(index==0){
+          FirstDateDiff = value.created_at
+        }else{
+          const nowDate = moment.utc(FirstDateDiff);
+          var endDate = moment(value.created_at); 
+          var diffDays = endDate.diff(nowDate, "days"); 
+          FirstDateDiff = value.created_at
+          repDiffDays.push(diffDays)
+        }
+       if(allRepDataCount.length == index+1){
+         resolve(repDiffDays)
+       }
+      })
     }
+    
    })
+  
+   const p2 = new Promise((resolve, reject) => {
+    if(allRepData.length == 0){
+      resolve([])
+    }else{
+      allRepData && allRepData.length > 0 && allRepData.map(async(value , index)=>{
+        const countTicketSize = await getCountTicketSize (value.disbursement_id)
+        ticketSizeArray.push(countTicketSize.count)
+        if(allRepData.length == index+1){
+          resolve(ticketSizeArray)
+        }
+       })
+    }
   })
+  
+  var responseValue;
 
   Promise.all([p1, p2])
   .then((values) => {
-    console.log(values);
+    totalRepDays = getTotal(values[0]);
+     responseValue = {
+      pre_assigned_limit_manufacturer : retailerData.propose_limit ?? 0,
+      pre_assigned_limit_all_manufacturer : manuByretailerData.TOTAL_AMOUNT ?? 0,
+      avg_ticket_size : parseInt(allDIsDataCount.count)/parseInt(allRepDataCount.length),
+      highest_ticket_size : Math.max(...values[1]),
+      avg_payment_period : parseInt(totalRepDays) / parseInt(values[0].length),
+      lowest_ticket_size :  Math.min(...values[1]),
+      relationship_tenor : days,
+      no_revolving_time : totalClosedLoan.count ?? 0,
+      current_overdue_amount : currOverDueAmount.overdue_amount,
+      historical_maximum_overdue : currMaxHisOverdue.MAXAMOUNT,
+      current_maximum_overdue : currMaxOverdue.MAXAMOUNT,
+      max_sanction_amount_allowed : retailerData.crm_approve_limit ?? 0,
+      proposed_sanction_amount_total_lifting_amount : propose_snaction_total_lift_amount,
+    }
+    console.log('responseValue',responseValue);
+    // resolve(responseValue) ;
+
+    return responseValue
   })
   .catch((error) => {
-    console.error(error.message)
+    console.error('error.message' ,error.message)
   });
 
   // .then(() => {
@@ -811,7 +837,7 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
 
   //   console.log('highTicketSize',lowTicketSize)
   // })
-  return manuByretailerData
+  return 'responseValue'
 };
 
 
@@ -829,7 +855,7 @@ const getManuByretailerData  =async (nid) =>{
   .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
   .count("cr_retailer_manu_scheme_mapping.id as count")
   .select(knex.raw('SUM("cr_retailer_manu_scheme_mapping"."propose_limit") AS total_amount') , )
-  .where("retailer_nid", nid) ;
+  .where("retailer_nid", nid).first();
 }
 
 const getAllDisDataCount  =async (oneRmn) =>{
@@ -837,7 +863,7 @@ const getAllDisDataCount  =async (oneRmn) =>{
   .select()
   .count("cr_retailer_loan_calculation.id as count")
   .where("onermn_acc", oneRmn)
-  .where("transaction_type", 'DISBURSEMENT').first()
+  .where("transaction_type", 'DISBURSEMENT').first() ?? []
 }
 
 const getAllRepDataCount  =async (oneRmn) =>{
@@ -845,35 +871,53 @@ const getAllRepDataCount  =async (oneRmn) =>{
   .select()
   // .count("cr_retailer_loan_calculation.id as count")
   .where("onermn_acc", oneRmn)
-  .where("transaction_type", 'REPAYMENT').orderBy("id", "asc");
+  .where("transaction_type", 'REPAYMENT').orderBy("id", "asc") ?? [];
 }
 
 const getAllRepData  =async (oneRmn) =>{
   return  await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
   .select('disbursement_id')
-  .where("one_rmn_account", oneRmn).distinct()
+  .where("one_rmn_account", oneRmn).distinct() ?? []
 }
 
 const getCountTicketSize =async (dis_id) =>{
   return  await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
   .count("cr_loan_principal_repayment_sequence.disbursement_id as count")
-  .where("disbursement_id", dis_id).first()
-}
+  .where("disbursement_id", dis_id).first() ?? []
+} 
 
 const getTotal = (arr) => {
   let total = 0
-  console.log('array',arr)
   for (let i = 0; i < arr.length; i++) {
-  console.log('arr[i]',arr[i])
       total += arr[i];
   }
-  return total
+  return total ?? 0
 }
 
 const getTotalClosedLoan  =async (oneRmn) =>{
   return  await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
   .count("cr_loan_principal_repayment_sequence.id as count")
   .where("rest_of_principal_amount", 0)
-  .where("one_rmn_account", oneRmn).first()
+  .where("one_rmn_account", oneRmn).first() ?? []
+}
+
+var findCurrOverDueAmount =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_disbursement")
+  .where("dis_status", 0).orderBy("id", "asc")
+  .where("onermn_acc", oneRmn).first() ?? []
+
+}
+
+var findCurrMaxOverDueAmount =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_disbursement")
+  .select(knex.raw('MAX("cr_disbursement"."overdue_amount") AS maxAmount') , )
+  .where("dis_status", 0).orderBy("id", "asc")
+  .where("onermn_acc", oneRmn).first() ?? []
+}
+
+var findHisMaxOverDueAmount =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_overdue_amount")
+  .select(knex.raw('MAX("cr_overdue_amount"."overdue_amount") AS maxAmount') , )
+  .where("onermn", oneRmn).first() ?? []
 }
 // @Ashik Random Password Generator End 

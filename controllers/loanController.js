@@ -27,232 +27,286 @@ exports.insertLoanCalculation = async (req, res) => {
     },
   };
   var responseValue = [];
-  const allRMNAccount = await getAllRmnAccount();
+  try{
+    const allRMNAccount = await getAllRmnAccount();
 
-  var allValueResponse = [];
-  const myPromise = new Promise((resolve, reject) => {
-    allRMNAccount &&
-      allRMNAccount?.length > 0 &&
-      allRMNAccount?.map(async (rmnAccount) => {
-        var loanTableData = await getDataLoanTable(rmnAccount.ac_number_1rmn);
-        if (loanTableData?.onermn_acc) {
-          const getSchemeId = await getSchemeID(rmnAccount.ac_number_1rmn);
-
-          const principalAmount = await getPrincipalAmount(
-            rmnAccount.ac_number_1rmn
-          );
-          const schemaGetvalue = await axios.get(
-            `${HOSTIP}/scheme/${getSchemeId[0].scheme_id}`,
-            config
-          );
-          const schemavalue = schemaGetvalue.data.data[0];
-          var LoanTenorIndays = await findLoanTenorIndays(
-            rmnAccount.ac_number_1rmn,
-            schemavalue
-          );
-          var dailyInterestValue;
-
-          var date = moment(
-            moment(rmnAccount?.crm_approve_date),
-            "YYYY-MM-DD"
-          ).add(schemavalue.expiry_date * 30, "days");
-          var now = moment();
-
-          // console.log('new_date---------------------------------',date)
-          // console.log('now---------------------------------- ',now)
-          // return
-
-          var checkExpiry = false;
-          if (now > date) {
-            checkExpiry = true;
-          } else {
-            checkExpiry = false;
-          }
-          var graceValue =
-            parseInt(schemavalue.loan_tenor_in_days) +
-            parseInt(schemavalue.grace_periods_in_days);
-
-          if (checkExpiry) {
-            const interestAfterExpiryOverdue = calculateInterest(
-              principalAmount.total_outstanding,
-              1,
-              schemavalue.overdue_amount,
-              2
+    var allValueResponse = [];
+    const myPromise = new Promise((resolve, reject) => {
+      allRMNAccount &&
+        allRMNAccount?.length > 0 &&
+        allRMNAccount?.map(async (rmnAccount) => {
+          var loanTableData = await getDataLoanTable(rmnAccount.ac_number_1rmn);
+          if (loanTableData?.onermn_acc) {
+            const getSchemeId = await getSchemeID(rmnAccount.ac_number_1rmn);
+  
+            const principalAmount = await getPrincipalAmount(
+              rmnAccount.ac_number_1rmn
             );
-            const interestAfterExpiryPenal = calculateInterest(
-              principalAmount.total_outstanding,
-              1,
-              schemavalue.penal_charge,
-              2
+            const schemaGetvalue = await axios.get(
+              `${HOSTIP}/scheme/${getSchemeId[0].scheme_id}`,
+              config
             );
-
-            var expiryInterestValue;
-            totalInterest =
-              parseFloat(interestAfterExpiryOverdue) +
-              parseFloat(interestAfterExpiryPenal);
-            totalLoan =
-              parseFloat(principalAmount.total_outstanding) +
-              parseFloat(totalInterest);
-            if (graceValue <= LoanTenorIndays?.days) {
-              const interestAfterGracePenal =
-                calculateInterest(
-                  principalAmount.principal_outstanding,
-                  1,
-                  schemavalue.penal_charge,
-                  2
-                ) ?? 0;
-              expiryInterestValue = {
-                overdue_amount: interestAfterExpiryOverdue,
-                penal_interest: interestAfterExpiryPenal,
-                penal_charge: interestAfterGracePenal,
-                principal_outstanding: parseFloat(
-                  principalAmount.principal_outstanding
-                ),
-                retailer_id: principalAmount.retailer_id,
-                onermn_acc: principalAmount.onermn_acc,
-                // 'disbursement_id': principalAmount.disbursement_id,
-                total_outstanding:
-                  totalLoan + parseFloat(interestAfterGracePenal),
-                manu_scheme_mapping_id: getSchemeId[0]?.id,
-                // 'transaction_cost_type':principalAmount.transaction_cost_type,
-                transaction_type: "EXPIRYINTEREST",
-              };
-            } else {
-              expiryInterestValue = {
-                overdue_amount: interestAfterExpiryOverdue,
-                penal_interest: interestAfterExpiryPenal,
-                principal_outstanding: parseFloat(
-                  principalAmount.principal_outstanding
-                ),
-                retailer_id: principalAmount.retailer_id,
-                manu_scheme_mapping_id: getSchemeId[0]?.id,
-                onermn_acc: principalAmount.onermn_acc,
-                // 'disbursement_id': principalAmount.disbursement_id,
-                total_outstanding: totalLoan,
-                // 'transaction_cost_type':principalAmount.transaction_cost_type,
-                transaction_type: "EXPIRYINTEREST",
-              };
+            const schemavalue = schemaGetvalue.data.data[0];
+            var LoanTenorIndays = await findLoanTenorIndays(
+              rmnAccount.ac_number_1rmn,
+              schemavalue
+            );
+            var dailyInterestValue;
+  
+            let overdue_amount_value = {
+              onermn : rmnAccount.ac_number_1rmn,
+              disbursement_id:LoanTenorIndays.disID,
+              overdue_amount:parseFloat(LoanTenorIndays?.minimum_amount) + (parseFloat(principalAmount.total_outstanding) - parseFloat(principalAmount.principal_outstanding))
             }
-
-            const createInterestExpiry = await knex(
-              "APSISIPDC.cr_retailer_loan_calculation"
-            ).insert(expiryInterestValue);
-            responseValue.push(expiryInterestValue);
-            // return res.send(
-            //   sendApiResult(true, "You have Successfully Add Credit.", createInterestExpiry)
-            // );
-          } else {
-            const dailyInterest = calculateInterest(
-              principalAmount.principal_outstanding,
-              1,
-              schemavalue.rate_of_interest,
-              2
-            );
-            const interestOfCharge = calculateInterest(
-              principalAmount.principal_outstanding,
-              1,
-              schemavalue.charge,
-              2
-            );
-            const interestOftherCharge = calculateInterest(
-              principalAmount.principal_outstanding,
-              1,
-              schemavalue.other_charge,
-              2
-            );
-            const interestOfreimbursment = calculateInterest(
-              principalAmount.principal_outstanding,
-              1,
-              schemavalue.reimbursment_cost,
-              2
-            );
-
-            totalInterest =
-              parseFloat(dailyInterest) +
-              parseFloat(interestOfCharge) +
-              parseFloat(interestOftherCharge) +
-              parseFloat(interestOfreimbursment);
-            totalLoan =
-              parseFloat(principalAmount.total_outstanding) +
-              parseFloat(totalInterest);
-
-            console.log("graceValue", graceValue);
-            console.log("LoanTenorIndays", LoanTenorIndays?.days);
-
-            if (graceValue <= LoanTenorIndays?.days) {
-              const interestAfterGracePenal =
-                calculateInterest(
-                  principalAmount.principal_outstanding,
-                  1,
-                  schemavalue.penal_charge,
-                  2
-                ) ?? 0;
-
-              console.log("interestAfterGracePenal", interestAfterGracePenal);
-              dailyInterestValue = {
-                retailer_id: principalAmount.retailer_id,
-                onermn_acc: principalAmount.onermn_acc,
-                // 'penal_charge':parseFloat(interestAfterGracePenal),
-                // 'retailer_id':principalAmount.retailer_id,
-                // 'retailer_id':principalAmount.retailer_id,
-                principal_outstanding: principalAmount.principal_outstanding,
-                daily_principal_interest: dailyInterest,
-                interest_reimbursment: interestOfreimbursment,
-                other_charge: interestOftherCharge,
-                charge: interestOfCharge,
-                total_outstanding:
-                  totalLoan + parseFloat(interestAfterGracePenal),
-                penal_charge: interestAfterGracePenal,
-                //  'transaction_cost_type':principalAmount.transaction_cost_type,
-                processing_fee: 0,
-                manu_scheme_mapping_id: getSchemeId[0]?.id,
-                transaction_type: "INTERESTANDOTHERS",
-              };
+  
+            var date = moment(
+              moment(rmnAccount?.crm_approve_date),
+              "YYYY-MM-DD"
+            ).add(schemavalue.expiry_date * 30, "days");
+            var now = moment();
+  
+           
+  
+            var checkExpiry = false;
+            if (now > date) {
+              checkExpiry = true;
             } else {
-              dailyInterestValue = {
-                retailer_id: principalAmount.retailer_id,
-                onermn_acc: principalAmount.onermn_acc,
-                // 'retailer_id':principalAmount.retailer_id,
-                // 'retailer_id':principalAmount.retailer_id,
-                principal_outstanding: principalAmount.principal_outstanding,
-                daily_principal_interest: dailyInterest,
-                interest_reimbursment: interestOfreimbursment,
-                other_charge: interestOftherCharge,
-                charge: interestOfCharge,
-                total_outstanding: totalLoan,
-                //  'transaction_cost_type':principalAmount.transaction_cost_type,
-                processing_fee: 0,
-                manu_scheme_mapping_id: getSchemeId[0]?.id,
-                transaction_type: "INTERESTANDOTHERS",
-              };
+              checkExpiry = false;
             }
+            var graceValue =
+              parseInt(schemavalue.loan_tenor_in_days) +
+              parseInt(schemavalue.grace_periods_in_days);
+              console.log('checkExpirycheckExpiry',checkExpiry)
+  
+            if (checkExpiry) {
+              const interestAfterExpiryOverdue = calculateInterest(
+                principalAmount.total_outstanding,
+                1,
+                schemavalue.overdue_amount,
+                2
+              );
+              const interestAfterExpiryPenal = calculateInterest(
+                principalAmount.total_outstanding,
+                1,
+                schemavalue.penal_charge,
+                2
+              );
+  
+              var expiryInterestValue;
+              totalInterest =
+                parseFloat(interestAfterExpiryOverdue) +
+                parseFloat(interestAfterExpiryPenal);
+              totalLoan =
+                parseFloat(principalAmount.total_outstanding) +
+                parseFloat(totalInterest);
+  
+                console.log('graceValue',graceValue)
+                console.log('LoanTenorIndays?.days',LoanTenorIndays?.days)
+  
+                overdue_amount_value = {
+                  onermn : rmnAccount.ac_number_1rmn,
+                  disbursement_id:LoanTenorIndays.disID,
+                  overdue_amount:parseFloat(LoanTenorIndays?.minimum_amount) + (parseFloat(principalAmount.total_outstanding) - parseFloat(principalAmount.principal_outstanding)) + parseFloat(totalInterest)
+                }
+  
+              if (graceValue <= LoanTenorIndays?.days) {
+                const interestAfterGracePenal =
+                  calculateInterest(
+                    principalAmount.principal_outstanding,
+                    1,
+                    schemavalue.penal_charge,
+                    2
+                  ) ?? 0;
+                expiryInterestValue = {
+                  overdue_amount: interestAfterExpiryOverdue,
+                  penal_interest: interestAfterExpiryPenal,
+                  penal_charge: interestAfterGracePenal,
+                  principal_outstanding: parseFloat(
+                    principalAmount.principal_outstanding
+                  ),
+                  retailer_id: principalAmount.retailer_id,
+                  onermn_acc: principalAmount.onermn_acc,
+                  // 'disbursement_id': principalAmount.disbursement_id,
+                  total_outstanding:
+                    totalLoan + parseFloat(interestAfterGracePenal),
+                  manu_scheme_mapping_id: getSchemeId[0]?.id,
+                  // 'transaction_cost_type':principalAmount.transaction_cost_type,
+                  transaction_type: "EXPIRYINTEREST",
+                };
+              } else {
+                expiryInterestValue = {
+                  overdue_amount: interestAfterExpiryOverdue,
+                  penal_interest: interestAfterExpiryPenal,
+                  principal_outstanding: parseFloat(
+                    principalAmount.principal_outstanding
+                  ),
+                  retailer_id: principalAmount.retailer_id,
+                  manu_scheme_mapping_id: getSchemeId[0]?.id,
+                  onermn_acc: principalAmount.onermn_acc,
+                  // 'disbursement_id': principalAmount.disbursement_id,
+                  total_outstanding: totalLoan,
+                  // 'transaction_cost_type':principalAmount.transaction_cost_type,
+                  transaction_type: "EXPIRYINTEREST",
+                };
+  
+              }
+  
+              const createInterestExpiry = await knex(
+                "APSISIPDC.cr_retailer_loan_calculation"
+              ).insert(expiryInterestValue);
+  
+  
+              const limit_update_overdue_amount = await knex(
+                "APSISIPDC.cr_overdue_amount"
+              ).insert(overdue_amount_value);
+  
+              await knex.transaction(async (trx) => {
+                const limit_update_overdue_amount = await trx(
+                  "APSISIPDC.cr_disbursement"
+                )
+                  .where({ id: LoanTenorIndays.disID })
+                  .update({overdue_amount:parseFloat(LoanTenorIndays?.minimum_amount) + (parseFloat(expiryInterestValue.total_outstanding) - parseFloat(expiryInterestValue.principal_outstanding))});              
+              });
+  
+              responseValue.push(expiryInterestValue);
+              // return res.send(
+              //   sendApiResult(true, "You have Successfully Add Credit.", createInterestExpiry)
+              // );
+            } else {
+              const dailyInterest = calculateInterest(
+                principalAmount.principal_outstanding,
+                1,
+                schemavalue.rate_of_interest,
+                2
+              );
+              const interestOfCharge = calculateInterest(
+                principalAmount.principal_outstanding,
+                1,
+                schemavalue.charge,
+                2
+              );
+              const interestOftherCharge = calculateInterest(
+                principalAmount.principal_outstanding,
+                1,
+                schemavalue.other_charge,
+                2
+              );
+              const interestOfreimbursment = calculateInterest(
+                principalAmount.principal_outstanding,
+                1,
+                schemavalue.reimbursment_cost,
+                2
+              );
+  
+              totalInterest =
+                parseFloat(dailyInterest) +
+                parseFloat(interestOfCharge) +
+                parseFloat(interestOftherCharge) +
+                parseFloat(interestOfreimbursment);
+              totalLoan =
+                parseFloat(principalAmount.total_outstanding) +
+                parseFloat(totalInterest);
+  
+              console.log("graceValue", graceValue);
+              console.log("LoanTenorIndays", LoanTenorIndays?.days);
+  
+              if (graceValue <= LoanTenorIndays?.days) {
+                const interestAfterGracePenal =
+                  calculateInterest(
+                    principalAmount.principal_outstanding,
+                    1,
+                    schemavalue.penal_charge,
+                    2
+                  ) ?? 0;
+  
+                console.log("interestAfterGracePenal", interestAfterGracePenal);
+                dailyInterestValue = {
+                  retailer_id: principalAmount.retailer_id,
+                  onermn_acc: principalAmount.onermn_acc,
+                  // 'penal_charge':parseFloat(interestAfterGracePenal),
+                  // 'retailer_id':principalAmount.retailer_id,
+                  // 'retailer_id':principalAmount.retailer_id,
+                  principal_outstanding: principalAmount.principal_outstanding,
+                  daily_principal_interest: dailyInterest,
+                  interest_reimbursment: interestOfreimbursment,
+                  other_charge: interestOftherCharge,
+                  charge: interestOfCharge,
+                  total_outstanding:
+                    totalLoan + parseFloat(interestAfterGracePenal),
+                  penal_charge: interestAfterGracePenal,
+                  //  'transaction_cost_type':principalAmount.transaction_cost_type,
+                  processing_fee: 0,
+                  manu_scheme_mapping_id: getSchemeId[0]?.id,
+                  transaction_type: "INTERESTANDOTHERS",
+                };
 
-            //  delete dailyInterestValue.id
-            //  delete dailyInterestValue.overdue_amount
-            //  delete dailyInterestValue.penal_charge
-            console.log("dailyInterestValue", dailyInterestValue);
-
-            const createInterest = await knex(
-              "APSISIPDC.cr_retailer_loan_calculation"
-            ).insert(dailyInterestValue);
-            responseValue.push(dailyInterestValue);
-
-            // return res.send(
-            //   sendApiResult(true, "You have Successfully Add Credit.", createInterest)
-            // );
+                overdue_amount_value = {
+                  onermn : rmnAccount.ac_number_1rmn,
+                  disbursement_id:LoanTenorIndays.disID,
+                  overdue_amount:parseFloat(LoanTenorIndays?.minimum_amount) + (parseFloat(dailyInterestValue.total_outstanding) - parseFloat(dailyInterestValue.principal_outstanding))
+                }
+                const limit_update_overdue_amount = await knex(
+                  "APSISIPDC.cr_overdue_amount"
+                ).insert(overdue_amount_value);
+    
+                await knex.transaction(async (trx) => {
+                  const limit_update_overdue_amount = await trx(
+                    "APSISIPDC.cr_disbursement"
+                  )
+                    .where({ id: LoanTenorIndays.disID })
+                    .update({overdue_amount: ((parseFloat(dailyInterestValue.total_outstanding) - parseFloat(dailyInterestValue.total_outstanding)) + overdue_amount_value.overdue_amount).toFixed(2)});              
+                });
+              } else {
+                dailyInterestValue = {
+                  retailer_id: principalAmount.retailer_id,
+                  onermn_acc: principalAmount.onermn_acc,
+                  // 'retailer_id':principalAmount.retailer_id,
+                  // 'retailer_id':principalAmount.retailer_id,
+                  principal_outstanding: principalAmount.principal_outstanding,
+                  daily_principal_interest: dailyInterest,
+                  interest_reimbursment: interestOfreimbursment,
+                  other_charge: interestOftherCharge,
+                  charge: interestOfCharge,
+                  total_outstanding: totalLoan,
+                  //  'transaction_cost_type':principalAmount.transaction_cost_type,
+                  processing_fee: 0,
+                  manu_scheme_mapping_id: getSchemeId[0]?.id,
+                  transaction_type: "INTERESTANDOTHERS",
+                };
+              }
+  
+              //  delete dailyInterestValue.id
+              //  delete dailyInterestValue.overdue_amount
+              //  delete dailyInterestValue.penal_charge
+              console.log("dailyInterestValue", dailyInterestValue);
+  
+              const createInterest = await knex(
+                "APSISIPDC.cr_retailer_loan_calculation"
+              ).insert(dailyInterestValue);
+              responseValue.push(dailyInterestValue);
+  
+             
+              // return res.send(
+              //   sendApiResult(true, "You have Successfully Add Credit.", createInterest)
+              // );
+            }
+            if (allRMNAccount.length == responseValue.length) {
+              resolve(true);
+            }
+          } else {
+            responseValue.push("This Retailer have no loan");
           }
-          if (allRMNAccount.length == responseValue.length) {
-            resolve(true);
-          }
-        } else {
-          responseValue.push("This Retailer have no loan");
-        }
-      });
-  }).then(() => {
-    return res.send(
-      sendApiResult(true, "You have Successfully Add Credit.", responseValue)
-    );
-  });
+        });
+    }).then(() => {
+      return res.send(
+        sendApiResult(true, "You have Successfully Add Credit.", responseValue)
+      );
+    });
+  }
+  catch (error) {
+    console.log('error',error)
+  }
+  
 };
 
 exports.addCredit = async (req, res) => {
@@ -469,18 +523,30 @@ exports.repayment = async (req, res) => {
   let { retailer_id, onermn_acc, sales_agent_id, repayment, transaction_cost , nid ,manuID  } =
     req.body;
   // let transaction_cost = transaction_cost_value;
-   const retailerAvg = await retailerAvgByManufacturer(nid , manuID)
-   console.log('retailerAvg',retailerAvg);
-   return
+
+  // const retailerAvg = await retailerAvgByManufacturer(nid , manuID)
+  // console.log('retailerAvg',retailerAvg)
+  // // const p2 = new Promise(async(resolve, reject) => {
+  // //  const retailerAvg = await retailerAvgByManufacturer(nid , manuID)
+  // //  console.log('retailerAvg',retailerAvg)
+
+  // //  if(retailerAvg){
+  // //   resolve(true)
+  // //  }
+  // // }).then((value) => {
+  // //   console.log('valueisvalue',value)
+  // // })
+  //  return 
   const findSalesAgent = await findSalesrelation(sales_agent_id, retailer_id);
   const firstRepaymentID = await getfirstRepaymentID(onermn_acc);
-
+  var newInterestPaid = 0
   const principalAmount = await getPrincipalAmount(onermn_acc);
   const getLimitAmountValue = await getLimitAmount(onermn_acc);
   const getSlabDateValue = await getSlabDate(onermn_acc);
   const dateSlab = getSlabDateValue?.created_at;
   var getSchemeId = await getSchemeID(onermn_acc);
   var distributor_Email;
+  var interestValueAll;
   var SchemeValue;
   if (getSchemeId) {
     distributor_Email = await getDistributorEmail(
@@ -504,7 +570,7 @@ exports.repayment = async (req, res) => {
     let calculateRepaymentInterest =
       parseFloat(principalAmount.total_outstanding) -
         parseFloat(principalAmount.principal_outstanding) ?? 0;
-
+    interestValueAll = calculateRepaymentInterest
     // const createRepayment = await knex("APSISIPDC.cr_disbursement")
     //   .insert(repaymentType)
     //   .returning("id");
@@ -532,7 +598,7 @@ exports.repayment = async (req, res) => {
       // intersetPaid = parseFloat(repayment) - parseFloat(calculateRepaymentInterest)
       intersetPaid = parseFloat(calculateRepaymentInterest);
     }
-
+    newInterestPaid = intersetPaid
     console.log("intersetPaidintersetPaid", intersetPaid);
     // let dailyInterestValue = {...principalAmount,
     let repaymentValueAll = {
@@ -851,10 +917,19 @@ exports.repayment = async (req, res) => {
             ).toFixed(2),
             charge: parseFloat(paycharge).toFixed(2),
             other_charge: parseFloat(payintersetPaid).toFixed(2),
+            cr_retailer_loan_interest_calculation_id:response[0],
+            principal_amount_cut:(parseFloat(repayment) -
+            parseFloat(newInterestPaid)).toFixed(2),
           };
 
 
+           console.log('response',response);
+           console.log('parseFloat(repayment)',parseFloat(repayment));
+           console.log('parseFloat(intersetPaid)',parseFloat(newInterestPaid).toFixed(2));
+           console.log('parseFloat(repayment) +parseFloat(intersetPaid)',(parseFloat(repayment) -
+           parseFloat(newInterestPaid).toFixed(2)));
 
+           
 
           await knex("APSISIPDC.cr_retailer_loan_interest_calculation")
             .insert(InterestCalculation)
@@ -877,7 +952,7 @@ exports.repayment = async (req, res) => {
           });
         }
 
-        var newRepayment = repayment
+        var newRepayment = parseFloat(repayment) - parseFloat(interestValueAll)
         var getDisData = await getAllDisData(onermn_acc)
         console.log('getDisData' , getDisData)
         // while(newRepayment > 0){
@@ -903,7 +978,7 @@ exports.repayment = async (req, res) => {
                       "APSISIPDC.cr_disbursement"
                     )
                       .where({ id: value.id })
-                      .update({dis_status : 1 , rep_rem_amount:value?.rep_rem_amount + remAmount});
+                      .update({dis_status : 1 , rep_rem_amount:((value?.rep_rem_amount + remAmount))});
                     console.log("limit_update", limit_update);
                     
                   });
@@ -946,6 +1021,9 @@ exports.repayment = async (req, res) => {
                   one_rmn_account : onermn_acc
                 }
                 newRepayment = 0
+                console.log('interestValueAll',interestValueAll)
+                console.log('remAmount + value?.rep_rem_amount)-interestValueAll',(remAmount + value?.rep_rem_amount)-newInterestPaid)
+
                 await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
                 .insert(repSequence)
                 .returning("id").then(async()=>{
@@ -954,7 +1032,9 @@ exports.repayment = async (req, res) => {
                       "APSISIPDC.cr_disbursement"
                     )
                       .where({ id: value.id })
-                      .update({ rep_rem_amount:remAmount + value?.rep_rem_amount});
+                      .update({ rep_rem_amount:(((parseFloat(remAmount) + parseFloat(value?.rep_rem_amount)))).toFixed(2)
+                        // , overdue_amount:value.overdue_amount-remAmount
+                       });
                     console.log("limit_update", limit_update);
                     newRepayment = 0;
                   });
@@ -1575,50 +1655,54 @@ var getAllRepayment = async (onermn_acc) => {
 };
 
 var findLoanTenorIndays = async (oneRMn, schemeValue) => {
-  var allDisbursements = await getAllDisbursement(oneRMn);
-  var allRepayment = await getAllRepayment(oneRMn);
-  var response = {};
-  var days;
-  let sumRepayment =
-    allRepayment.reduce(function (accumulator, curValue) {
-      return accumulator + curValue.repayment;
-    }, 0) ?? 0;
-  var tenorValue;
-  let disbursementAdd = 0;
-  for (var i = 0; i < allDisbursements.length; i++) {
-    disbursementAdd = allDisbursements[i].disburshment + disbursementAdd;
-    if (disbursementAdd > sumRepayment) {
-      tenorValue = allDisbursements[i];
-      break;
-    }
-  }
 
-  // const todayDate = new Date(tenorValue?.created_at.toString().replaceAll(/\s/g, ''))
-  const todayDate = new Date(tenorValue?.created_at);
-  // console.log("parseFloat(disbursementAdd)", parseFloat(disbursementAdd));
-  // console.log("parseFloat(sumRepayment)", parseFloat(sumRepayment));
+  // Tenor Ber korar jnno eita lagbe kew jano delete kore nah @Ashik Mahmud 
 
+
+  // var allDisbursements = await getAllDisbursement(oneRMn);
+  // var allRepayment = await getAllRepayment(oneRMn);
+  // var response = {};
+  // var days;
+  // let sumRepayment =
+  //   allRepayment.reduce(function (accumulator, curValue) {
+  //     return accumulator + curValue.repayment;
+  //   }, 0) ?? 0;
+  // var tenorValue;
+  // let disbursementAdd = 0;
+  // for (var i = 0; i < allDisbursements.length; i++) {
+  //   disbursementAdd = allDisbursements[i].disburshment + disbursementAdd;
+  //   if (disbursementAdd > sumRepayment) {
+  //     tenorValue = allDisbursements[i];
+  //     break;
+  //   }
+  // }
+
+
+// Tenor Ber korar jnno eita lagbe kew jano delete kore nah @Ashik Mahmud
+
+ const tenorValue = await findDisFinalValue(oneRMn)
+
+ const todayDate = new Date(tenorValue?.created_at);
+ 
   const now = moment.utc();
   var end = moment(todayDate);
   days = now.diff(end, "days");
-  // console.log("days", days);
-  // console.log(
-  //   "schemeValue?.loan_tenor_in_days",
-  //   schemeValue?.loan_tenor_in_days
-  // );
+  
 
   if (days >= schemeValue?.loan_tenor_in_days) {
     response = {
       nextDisbursement: false,
       days: days,
-      minimum_amount: parseFloat(disbursementAdd) - parseFloat(sumRepayment),
+      disID:tenorValue.id,
+      minimum_amount: parseFloat(tenorValue.disbursement_amount) - parseFloat(tenorValue.rep_rem_amount),
     };
     return response;
   } else {
     response = {
       nextDisbursement: true,
       days: days,
-      minimum_amount: parseFloat(disbursementAdd) - parseFloat(sumRepayment),
+      disID:tenorValue.id,
+      minimum_amount: parseFloat(tenorValue.disbursement_amount) - parseFloat(tenorValue.rep_rem_amount),
     };
     return response;
   }
@@ -1691,3 +1775,10 @@ var getAllDisData = async (onermn_acc) => {
     .where("dis_status", 0)
     .orderBy("id", "asc");
 };
+
+var findDisFinalValue =async (oneRmn) =>{
+    return  await knex("APSISIPDC.cr_disbursement")
+    .where("dis_status", 0).orderBy("id", "asc")
+    .where("onermn_acc", oneRmn).first()
+  
+}
