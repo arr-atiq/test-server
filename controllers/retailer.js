@@ -243,6 +243,27 @@ exports.generateRetailerOutstandingReport = async (req, res) => {
   }
 
 };
+
+//Monthly Retailer Performance report for Distributor (Supervisor)
+exports.generateRetailersMonthlyPerformanceDistributor = async (req, res) => {
+  try {
+    const result = await model.generateRetailersMonthlyPerformanceDistributor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.retailersMonthlyPerformanceDistributor = async (req, res) => {
+  try {
+    const result = await model.retailersMonthlyPerformanceDistributor(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+//Monthly Retailer Performance report for Distributor (Supervisor)
+
 exports.generateRetailersIndividualReport = async (req, res) => {
   const previousMonthStartDate = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD');
   const previousMonthEndDate = moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD');
