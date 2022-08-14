@@ -742,20 +742,16 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
   const repDiffDays = []
   var propose_snaction_total_lift_amount ;
    const retailerData =await getOneRmn (nid , manuId)
-
    const manuByretailerData =await getManuByretailerData (nid)
-
    const allDIsDataCount = await getAllDisDataCount (retailerData?.ac_number_1rmn) ?? []
    const allRepDataCount = await getAllRepDataCount (retailerData?.ac_number_1rmn) ?? []
    const totalClosedLoan = await getTotalClosedLoan (retailerData?.ac_number_1rmn) ?? []
    const currOverDueAmount = await findCurrOverDueAmount(retailerData?.ac_number_1rmn) ?? []
    const currMaxOverdue = await findCurrMaxOverDueAmount(retailerData?.ac_number_1rmn) ?? []
    const currMaxHisOverdue = await findHisMaxOverDueAmount(retailerData?.ac_number_1rmn) ?? []
-  
-
-   
-
    const allRepData = await getAllRepData (retailerData.ac_number_1rmn)
+
+
    let sales_array = retailerData.sales_array
    let totalSales = getTotal(JSON.parse(sales_array));
    let totalRepDays = 0
@@ -804,7 +800,7 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
   
   var responseValue;
 
-  Promise.all([p1, p2])
+  const data = Promise.all([p1, p2])
   .then((values) => {
     totalRepDays = getTotal(values[0]);
      responseValue = {
@@ -837,7 +833,7 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
 
   //   console.log('highTicketSize',lowTicketSize)
   // })
-  return 'responseValue'
+  return data
 };
 
 
