@@ -337,8 +337,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                           completed. Please enter the below
                           mentioned user ID and password
                           at www.ipdcDANA.com and login.</p>
-                          <p>User ID : ${email_official}</p>
-                          <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
                           <p>Regards, </p>
                           <p>IPDC Finance</p>
                           `
@@ -436,7 +434,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             msg = "File Uploaded successfully!";
             var response = {
               "insert_log": empty_insert_log,
-              "total_mapping_row": mapping_rows_arr.length,
+              "total_mapping": mapping_rows_arr,
               "total_invalidated_row": invalidated_rows_arr.length,
               "total_duplicated_row": duplicated_rows_arr.length
             }
@@ -628,8 +626,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                         completed. Please enter the below
                         mentioned user ID and password
                         at www.ipdcDANA.com and login.</p>
-                        <p>User ID : ${official_email_insert_data}</p>
-                        <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
                         <p>Regards, </p>
                         <p>IPDC Finance</p>
                         `
@@ -818,9 +814,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 const insert_manufacturer_vs_distributor = await knex(
                   "APSISIPDC.cr_manufacturer_vs_distributor"
                 ).insert(temp_manufacturer_vs_distributor_map).returning("id");
-                mapping_rows_arr.push(insert_manufacturer_vs_distributor);
+                //mapping_rows_arr.push(insert_manufacturer_vs_distributor);
 
-                total_mapping_dis_manu.push(insert_manufacturer_vs_distributor[0]);
+                //total_mapping_dis_manu.push(insert_manufacturer_vs_distributor[0]);
 
 
                 const acc_num =
@@ -856,7 +852,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 email: data_array[index].Official_Email,
                 phone: data_array[index].Official_Contact_Number,
                 // password: "5efd3b0647df9045c240729d31622c79",
-                password: password, 
+                password: password,
                 link_token: link_code,
                 cr_user_type: folder_name,
                 user_id: user_Id
@@ -964,7 +960,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               msg = "File Uploaded successfully!";
               var response = {
                 "insert_log": insert_log,
-                "total_mapping_row": mapping_rows_arr.length,
+                "total_mapping": mapping_rows_arr,
                 "total_invalidated": invalidated_rows_arr.length,
                 "total_duplicated": duplicated_rows_arr.length
               }

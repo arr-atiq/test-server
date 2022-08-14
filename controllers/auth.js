@@ -51,7 +51,7 @@ exports.login = async (req, res) => {
   }
 
   const userData = await knex("APSISIPDC.cr_users")
-    .select("id", "name", "email", "phone", "password", "device_token", "password_changed_date", "account_locked")
+    .select("id", "name", "email", "phone", "password", "device_token", "password_changed_date", "account_locked", "created_at")
     .where({ user_id, status: "Active" })
     .first();
 
@@ -60,37 +60,43 @@ exports.login = async (req, res) => {
 
   if (!userData || !(md5(`++${password}--`) === userData.password) || userData.account_locked == "Y") {
 
-    if (userData.account_locked == "Y") {
+    if (userData?.account_locked == "Y") {
       res.send(sendApiResult(false, "Oops! Your Account is locked!."));
 
-    } else if (!(md5(`++${password}--`) === userData.password)) {
+    } else if (!(md5(`++${password}--`) === userData?.password)) {
+      const compareTime = moment().subtract(20, "minutes").format("YYYY-MM-DD HH:mm");
+      //const currentTime = moment().format("YYYY-MM-DD HH:mm");
+
       const login_hit = await knex
         .count("cr_login_failed_history.id as count")
         .from("APSISIPDC.cr_login_failed_history")
         .where(
-          "APSISIPDC.cr_login_failed_history.user_id",
+          "cr_login_failed_history.user_id",
           user_id.toString()
-        );
+        )
+        .whereRaw(`"cr_login_failed_history"."created_at" >= TO_DATE('${compareTime}', 'YYYY-MM-DD HH24:MI')`);
 
       const login_hit_val = parseInt(
         login_hit[0].count
       );
 
-      if (login_hit_val < 3) {
+      console.log(login_hit_val);
+
+      if (login_hit_val < 5) {
 
         await knex("APSISIPDC.cr_login_failed_history")
           .insert({ user_id: user_id });
-
-      } else if (login_hit_val >= 3) {
+        res.send(sendApiResult(false, "Oops! Invalid UserID or Password."));
+      } else if (login_hit_val >= 5) {
 
         await knex("APSISIPDC.cr_users")
           .update({ account_locked: "Y" })
           .where("user_id", user_id);
-
+        res.send(sendApiResult(false, "Oops! Invalid UserID or Password."));
       }
 
     } else {
-      res.send(sendApiResult(false, "Oops! Invalid email or Password."));
+      res.send(sendApiResult(false, "Oops! Invalid UserID or Password."));
     }
 
   } else {
@@ -147,7 +153,6 @@ exports.login = async (req, res) => {
 
         userData.supervisor_id = (supervisorUser?.supervisor_id != undefined) ? supervisorUser?.supervisor_id : null;
         userData.supervisor_code = (supervisorUserCode?.supervisor_employee_code != undefined) ? supervisorUserCode?.supervisor_employee_code : null;
-
       }
 
       await knex("APSISIPDC.cr_login_failed_history").del()
