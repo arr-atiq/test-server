@@ -1,7 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, generateUserIDMidDigitForLogin, randomPasswordGenerator, r } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
@@ -9,6 +9,12 @@ const FileUpload = function () { };
 
 FileUpload.insertExcelData = function (rows, filename, req) {
   var mapped_data_array = [];
+  var invalidated_rows_arr = [];
+  var duplicated_rows_arr = [];
+  var user_Id;
+  var password;
+  var link_code;
+
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -106,6 +112,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Remarks_Invalidated: invalidStr,
                 };
 
+                invalidated_rows_arr.push(temp_data);
                 invalidate_data_array.push(temp_data);
                 continue;
               }
@@ -252,7 +259,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     duplicateStr = duplicateStr + "Supervisor_Employee_Code " + ", ";
                   }
                   if (duplication_check_val_empCode_user_table != 0) {
-                    duplicateStr = duplicateStr + "Code is existed in system " + ", ";
+                    duplicateStr = duplicateStr + "Supervisor_Employee_Code already used by another user " + ", ";
                   }
 
                   const temp_data = {
@@ -266,6 +273,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     Distributor: rows[index].Distributor,
                     Remarks_Duplicated: duplicateStr
                   };
+                  duplicated_rows_arr.push(temp_data);
                   unuploaded_data_array.push(temp_data);
                 }
               }
@@ -290,7 +298,12 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               empty_insert_log
             );
             msg = "File Uploaded successfully!";
-            var response = {"insert_log" : empty_insert_log , "total_mapped" : mapped_data_array}
+            var response = {
+              "insert_log": empty_insert_log,
+              "total_mapped": mapped_data_array,
+              "total_invalidated_row": invalidated_rows_arr.length,
+              "total_duplicated_row": duplicated_rows_arr.length
+            }
             resolve(sendApiResult(true, msg, response));
           }
 
@@ -471,6 +484,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   remarks_duplications: duplicateStr,
                   created_by: req.user_id,
                 };
+                duplicated_rows_arr.push(duplicate_data_array);
                 await knex("APSISIPDC.cr_supervisor_unuploaded_data")
                   .insert(duplicate_data_array);
                 continue;
@@ -491,6 +505,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               const insert_supervisor = await knex("APSISIPDC.cr_supervisor")
                 .insert(team_supervisor)
                 .returning("id");
+
+              password = randomPasswordGenerator()
+              link_code = randomPasswordGenerator()
+
+              user_Id = insert_supervisor ? "SUP-" + generateUserIDMidDigitForLogin(insert_supervisor[0], 6) : 0;
 
 
               if (insert_supervisor) {
@@ -514,14 +533,30 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 name: data_array[index].Supervisor_Name,
                 email: data_array[index].Supervisor_Employee_Code,
                 phone: data_array[index].Phone,
-                password: "5efd3b0647df9045c240729d31622c79",
+                password: password,
+                link_token: link_code,
                 cr_user_type: folder_name,
+                user_id: user_Id
               };
               const insert_user = await knex("APSISIPDC.cr_users")
                 .insert(temp_user)
                 .returning("id");
               if (insert_user) {
                 user_insert_ids.push(insert_user[0]);
+
+                let sms_body = `Greetings from IPDC DANA!.Congratulations! Your registration with IPDC DANA has been completed. Please enter the below
+                    mentioned user ID and password at www.ipdcDANA.com and login.
+                    User ID: ${user_Id}
+                    Your Temporary Password : ${password}
+                    For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}
+                    Regards,
+                    IPDC Finance`;
+                    
+                const { SMS_URL, MASKING, SMS_USERNAME, SMS_PASSWORD, MSGTYPE } = process.env;
+                const response = await axios.get(`${SMS_URL}?masking=${MASKING}&userName=${SMS_USERNAME}&password=${SMS_PASSWORD}&MsgType=${MSGTYPE}&receiver=${temp_user.phone}&message=${sms_body}`);
+                if (response) {
+                  console.log("print sent sms in mobile number");
+                }
               }
 
 
@@ -598,7 +633,12 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 insert_log
               );
               msg = "File Uploaded successfully!";
-              var response = {"insert_log" : insert_log , "total_mapped" : mapped_data_array}
+              var response = {
+                "insert_log": insert_log,
+                "total_mapped": mapped_data_array,
+                "total_invalidated_row": invalidated_rows_arr.length,
+                "total_duplicated_row": duplicated_rows_arr.length
+              }
               resolve(sendApiResult(true, msg, response));
             }
           } else {

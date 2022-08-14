@@ -17,6 +17,15 @@ exports.sendApiResult = function (success, message, data = {}) {
   return data;
 };
 
+exports.sendReportApiResult = function (success, message, data = []) {
+  var data = {
+    success,
+    message,
+    data,
+  };
+  return data;
+};
+
 exports.blockunblock = function (success, paginate, data = {}) {
   var data = {
     success,
@@ -467,11 +476,11 @@ exports.OutletCreditInfo = async function (retailer_id) {
       Number(e.due_amount) +
       Number(e.total_sys_interest_amount) +
       (Number(e.due_amount) + Number(e.total_sys_interest_amount)) *
-        howManyDays *
-        ((Number(e.interest_rate_percentage) +
-          Number(e.service_charge_rate_percentage) +
-          Number(e.penalty_rate_percentage) * Number(e.is_penalty_interest)) /
-          100);
+      howManyDays *
+      ((Number(e.interest_rate_percentage) +
+        Number(e.service_charge_rate_percentage) +
+        Number(e.penalty_rate_percentage) * Number(e.is_penalty_interest)) /
+        100);
   }
 
   let outlet_credit = {};
@@ -697,7 +706,7 @@ exports.timeout = (ms) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
-// @Ashik Start 
+// @Ashik Random Password Generator Start 
 
 exports.randomPasswordGenerator = function (array) {
   const alpha = "abcdefghijklmnopqrstuvwxyz";
@@ -716,4 +725,195 @@ exports.randomPasswordGenerator = function (array) {
   return pass;
 };
 
-// @Ashik End 
+// @Ashik Random Password Generator End 
+
+
+//@Arfin
+exports.generateUserIDMidDigitForLogin = function(number, width) {
+  return new Array(width + 1 - (number.toString()).length).join('0') + number;
+}
+//@Arfin
+
+
+// @Ashik Random Password Generator Start 
+
+exports.retailerAvgByManufacturer = async (nid , manuId)=> {
+  const ticketSizeArray = []
+  const repDiffDays = []
+  var propose_snaction_total_lift_amount ;
+   const retailerData =await getOneRmn (nid , manuId)
+   const manuByretailerData =await getManuByretailerData (nid)
+   const allDIsDataCount = await getAllDisDataCount (retailerData?.ac_number_1rmn) ?? []
+   const allRepDataCount = await getAllRepDataCount (retailerData?.ac_number_1rmn) ?? []
+   const totalClosedLoan = await getTotalClosedLoan (retailerData?.ac_number_1rmn) ?? []
+   const currOverDueAmount = await findCurrOverDueAmount(retailerData?.ac_number_1rmn) ?? []
+   const currMaxOverdue = await findCurrMaxOverDueAmount(retailerData?.ac_number_1rmn) ?? []
+   const currMaxHisOverdue = await findHisMaxOverDueAmount(retailerData?.ac_number_1rmn) ?? []
+   const allRepData = await getAllRepData (retailerData.ac_number_1rmn)
+
+
+   let sales_array = retailerData.sales_array
+   let totalSales = getTotal(JSON.parse(sales_array));
+   let totalRepDays = 0
+   let avgSalarySales = totalSales/12
+   propose_snaction_total_lift_amount = retailerData.propose_limit / avgSalarySales
+   const now = moment.utc();
+   var end = moment(retailerData.crm_approve_date); 
+   var days = now.diff(end, "days"); 
+   var FirstDateDiff;
+
+   const p1 = new Promise((resolve, reject) => {
+    if(allRepDataCount.length == 0){
+      resolve([])
+    }else{
+      allRepDataCount && allRepDataCount.length > 0 && allRepDataCount.map(async(value , index)=>{
+        if(index==0){
+          FirstDateDiff = value.created_at
+        }else{
+          const nowDate = moment.utc(FirstDateDiff);
+          var endDate = moment(value.created_at); 
+          var diffDays = endDate.diff(nowDate, "days"); 
+          FirstDateDiff = value.created_at
+          repDiffDays.push(diffDays)
+        }
+       if(allRepDataCount.length == index+1){
+         resolve(repDiffDays)
+       }
+      })
+    }
+    
+   })
+  
+   const p2 = new Promise((resolve, reject) => {
+    if(allRepData.length == 0){
+      resolve([])
+    }else{
+      allRepData && allRepData.length > 0 && allRepData.map(async(value , index)=>{
+        const countTicketSize = await getCountTicketSize (value.disbursement_id)
+        ticketSizeArray.push(countTicketSize.count)
+        if(allRepData.length == index+1){
+          resolve(ticketSizeArray)
+        }
+       })
+    }
+  })
+  
+  var responseValue;
+
+  const data = Promise.all([p1, p2])
+  .then((values) => {
+    totalRepDays = getTotal(values[0]);
+     responseValue = {
+      pre_assigned_limit_manufacturer : retailerData.propose_limit ?? 0,
+      pre_assigned_limit_all_manufacturer : manuByretailerData.TOTAL_AMOUNT ?? 0,
+      avg_ticket_size : parseInt(allDIsDataCount.count)/parseInt(allRepDataCount.length),
+      highest_ticket_size : Math.max(...values[1]),
+      avg_payment_period : parseInt(totalRepDays) / parseInt(values[0].length),
+      lowest_ticket_size :  Math.min(...values[1]),
+      relationship_tenor : days,
+      no_revolving_time : totalClosedLoan.count ?? 0,
+      current_overdue_amount : currOverDueAmount.overdue_amount,
+      historical_maximum_overdue : currMaxHisOverdue.MAXAMOUNT,
+      current_maximum_overdue : currMaxOverdue.MAXAMOUNT,
+      max_sanction_amount_allowed : retailerData.crm_approve_limit ?? 0,
+      proposed_sanction_amount_total_lifting_amount : propose_snaction_total_lift_amount,
+    }
+    console.log('responseValue',responseValue);
+    // resolve(responseValue) ;
+
+    return responseValue
+  })
+  .catch((error) => {
+    console.error('error.message' ,error.message)
+  });
+
+  // .then(() => {
+  //   const highTicketSize = Math.max(...ticketSizeArray)
+  //   const lowTicketSize = Math.min(...ticketSizeArray)
+
+  //   console.log('highTicketSize',lowTicketSize)
+  // })
+  return data
+};
+
+
+const getOneRmn  =async (nid , manuId) =>{
+  return await knex
+  .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
+  .select()
+  .where("retailer_nid", nid) 
+  // AND "manufacturer_id", manuId;
+  .where("manufacturer_id", manuId).first();
+}
+
+const getManuByretailerData  =async (nid) =>{
+  return await knex
+  .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
+  .count("cr_retailer_manu_scheme_mapping.id as count")
+  .select(knex.raw('SUM("cr_retailer_manu_scheme_mapping"."propose_limit") AS total_amount') , )
+  .where("retailer_nid", nid).first();
+}
+
+const getAllDisDataCount  =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_retailer_loan_calculation")
+  .select()
+  .count("cr_retailer_loan_calculation.id as count")
+  .where("onermn_acc", oneRmn)
+  .where("transaction_type", 'DISBURSEMENT').first() ?? []
+}
+
+const getAllRepDataCount  =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_retailer_loan_calculation")
+  .select()
+  // .count("cr_retailer_loan_calculation.id as count")
+  .where("onermn_acc", oneRmn)
+  .where("transaction_type", 'REPAYMENT').orderBy("id", "asc") ?? [];
+}
+
+const getAllRepData  =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
+  .select('disbursement_id')
+  .where("one_rmn_account", oneRmn).distinct() ?? []
+}
+
+const getCountTicketSize =async (dis_id) =>{
+  return  await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
+  .count("cr_loan_principal_repayment_sequence.disbursement_id as count")
+  .where("disbursement_id", dis_id).first() ?? []
+} 
+
+const getTotal = (arr) => {
+  let total = 0
+  for (let i = 0; i < arr.length; i++) {
+      total += arr[i];
+  }
+  return total ?? 0
+}
+
+const getTotalClosedLoan  =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_loan_principal_repayment_sequence")
+  .count("cr_loan_principal_repayment_sequence.id as count")
+  .where("rest_of_principal_amount", 0)
+  .where("one_rmn_account", oneRmn).first() ?? []
+}
+
+var findCurrOverDueAmount =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_disbursement")
+  .where("dis_status", 0).orderBy("id", "asc")
+  .where("onermn_acc", oneRmn).first() ?? []
+
+}
+
+var findCurrMaxOverDueAmount =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_disbursement")
+  .select(knex.raw('MAX("cr_disbursement"."overdue_amount") AS maxAmount') , )
+  .where("dis_status", 0).orderBy("id", "asc")
+  .where("onermn_acc", oneRmn).first() ?? []
+}
+
+var findHisMaxOverDueAmount =async (oneRmn) =>{
+  return  await knex("APSISIPDC.cr_overdue_amount")
+  .select(knex.raw('MAX("cr_overdue_amount"."overdue_amount") AS maxAmount') , )
+  .where("onermn", oneRmn).first() ?? []
+}
+// @Ashik Random Password Generator End 

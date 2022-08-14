@@ -477,17 +477,17 @@ User.userDetails = function (req) {
           "role_id"
         );
 
-      console.log(role[0].role_id);
+      const role_id = role[0]?.role_id ?? 0;
 
       const role_type = await knex("APSISIPDC.cr_user_roles")
-        .where("id", role[0].role_id)
+        .where("id", role_id)
         .select(
           "role_type_id"
         );
 
-      console.log(role_type[0].role_type_id);
+      const role_type_id = role_type[0]?.role_type_id ?? 0;
 
-      if (role_type[0].role_type_id == 3) {
+      if (role_type_id == 3) {
 
         const manufacture = await knex("APSISIPDC.cr_manufacturer_user")
           .where("user_id", user_id)
@@ -506,7 +506,7 @@ User.userDetails = function (req) {
         resolve(sendApiResult(true, "Data fetched successfully", data));
 
       }
-      if (role_type[0].role_type_id == 4) {
+      if (role_type_id == 4) {
 
         const distributor = await knex("APSISIPDC.cr_distributor_user")
           .where("user_id", user_id)
@@ -523,7 +523,7 @@ User.userDetails = function (req) {
         resolve(sendApiResult(true, "Data fetched successfully", data));
 
       }
-      if (role_type[0].role_type_id == 5) {
+      if (role_type_id == 5) {
 
         const supervisor = await knex("APSISIPDC.cr_supervisor_user")
           .where("user_id", user_id)
@@ -532,15 +532,30 @@ User.userDetails = function (req) {
           );
 
         const data = await knex("APSISIPDC.cr_supervisor")
-          .select()
-          .where("id", supervisor[0].supervisor_id);
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_supervisor.distributor_id"
+          )
+          .select(
+            "cr_supervisor.*",
+            "cr_distributor.distributor_name",
+            "cr_distributor.official_email",
+            "cr_distributor.official_contact_number",
+            "cr_distributor.registered_office_bangladesh",
+            "cr_distributor.ofc_postal_code",
+            "cr_distributor.ofc_post_office",
+            "cr_distributor.ofc_thana",
+            "cr_distributor.ofc_district"
+          )
+          .where("cr_supervisor.id", supervisor[0].supervisor_id);
 
         if (data == 0) reject(sendApiResult(false, "Not found."));
 
         resolve(sendApiResult(true, "Data fetched successfully", data));
 
       }
-      if (role_type[0].role_type_id == 6) {
+      if (role_type_id == 6) {
 
         const salesagent = await knex("APSISIPDC.cr_sales_agent_user")
           .where("user_id", user_id)
@@ -549,15 +564,44 @@ User.userDetails = function (req) {
           );
 
         const data = await knex("APSISIPDC.cr_sales_agent")
-          .select()
-          .where("id", salesagent[0].sales_agent_id);
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_sales_agent.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_sales_agent.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_supervisor",
+            "cr_supervisor.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id"
+          )
+          .select(
+            "cr_sales_agent.*",
+            "cr_distributor.distributor_name",
+            "cr_distributor.official_email",
+            "cr_distributor.official_contact_number",
+            "cr_distributor.registered_office_bangladesh",
+            "cr_distributor.ofc_postal_code",
+            "cr_distributor.ofc_post_office",
+            "cr_distributor.ofc_thana",
+            "cr_distributor.ofc_district",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
+            "cr_supervisor.supervisor_name",
+            "cr_supervisor.phone",
+            "cr_supervisor.region_of_operation"
+          )
+          .where("cr_sales_agent.id", salesagent[0].sales_agent_id);
 
         if (data == 0) reject(sendApiResult(false, "Not found."));
 
         resolve(sendApiResult(true, "Data fetched successfully", data));
 
       }
-      if (role_type[0].role_type_id == 7) {
+      if (role_type_id == 7) {
 
         const retailer = await knex("APSISIPDC.cr_retailer_user")
           .where("user_id", user_id)
@@ -586,4 +630,646 @@ User.userDetails = function (req) {
   });
 };
 
+User.getManufacturersForUser = function (req) {
+
+  const { user_id, page, per_page } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const role = await knex("APSISIPDC.cr_user_wise_role")
+        .where("user_id", user_id)
+        .select(
+          "role_id"
+        );
+
+      const role_id = role[0]?.role_id ?? 0;
+
+      const role_type = await knex("APSISIPDC.cr_user_roles")
+        .where("id", role_id)
+        .select(
+          "role_type_id"
+        );
+
+      const role_type_id = role_type[0]?.role_type_id ?? 0;
+
+      if (role_type_id == 4) {
+
+        const distributor = await knex("APSISIPDC.cr_distributor_user")
+          .where("user_id", user_id)
+          .select(
+            "distributor_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_manufacturer_vs_distributor")
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_manufacturer_vs_distributor.manufacturer_id"
+          )
+          .where("cr_manufacturer_vs_distributor.distributor_id", distributor[0].distributor_id)
+          .select(
+            "cr_manufacturer.*"
+          )
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type_id == 5) {
+
+        const supervisor = await knex("APSISIPDC.cr_supervisor_user")
+          .where("user_id", user_id)
+          .select(
+            "supervisor_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_supervisor_distributor_manufacturer_map")
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_supervisor_distributor_manufacturer_map.manufacturer_id"
+          )
+          .where("cr_supervisor_distributor_manufacturer_map.supervisor_id", supervisor[0].supervisor_id)
+          .select(
+            "cr_manufacturer.*"
+          )
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type_id == 6) {
+
+        const salesagent = await knex("APSISIPDC.cr_sales_agent_user")
+          .where("user_id", user_id)
+          .select(
+            "sales_agent_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id"
+          )
+          .where("cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id", salesagent[0].sales_agent_id)
+          .select(
+            "cr_manufacturer.*"
+          )
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type_id == 7) {
+
+        const retailer = await knex("APSISIPDC.cr_retailer_user")
+          .where("user_id", user_id)
+          .select(
+            "retailer_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .where("cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id", retailer[0].retailer_id)
+          .select(
+            "cr_manufacturer.*"
+          )
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+
+      else {
+        reject(sendApiResult(false, "Not found."));
+
+      }
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+User.getSupervisorsForUser = function (req) {
+
+  const { user_id, page, per_page } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const role = await knex("APSISIPDC.cr_user_wise_role")
+        .where("user_id", user_id)
+        .select(
+          "role_id"
+        );
+
+      const role_id = role[0]?.role_id ?? 0;
+
+      const role_type = await knex("APSISIPDC.cr_user_roles")
+        .where("id", role_id)
+        .select(
+          "role_type_id"
+        );
+
+      const role_type_id = role_type[0]?.role_type_id ?? 0;
+
+      if (role_type_id == 3) {
+
+        const manufacture = await knex("APSISIPDC.cr_manufacturer_user")
+          .where("user_id", user_id)
+          .select(
+            "manufacturer_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_supervisor_distributor_manufacturer_map")
+          .leftJoin(
+            "APSISIPDC.cr_supervisor",
+            "cr_supervisor.id",
+            "cr_supervisor_distributor_manufacturer_map.supervisor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_supervisor.distributor_id"
+          )
+          .where("cr_supervisor_distributor_manufacturer_map.manufacturer_id", manufacture[0].manufacturer_id)
+          .select(
+            "cr_supervisor.*",
+            "cr_distributor.distributor_name"
+          )
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type_id == 4) {
+
+        const distributor = await knex("APSISIPDC.cr_distributor_user")
+          .where("user_id", user_id)
+          .select(
+            "distributor_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_supervisor_distributor_manufacturer_map")
+          .leftJoin(
+            "APSISIPDC.cr_supervisor",
+            "cr_supervisor.id",
+            "cr_supervisor_distributor_manufacturer_map.supervisor_id"
+          )
+          .where("cr_supervisor_distributor_manufacturer_map.distributor_id", distributor[0].distributor_id)
+          .select(
+            "cr_supervisor.*"
+          )
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type_id == 6) {
+
+        const salesagent = await knex("APSISIPDC.cr_sales_agent_user")
+          .where("user_id", user_id)
+          .select(
+            "sales_agent_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
+          .leftJoin(
+            "APSISIPDC.cr_supervisor",
+            "cr_supervisor.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id"
+          )
+          .where("cr_supervisor_distributor_manufacturer_map.distributor_id", salesagent[0].sales_agent_id)
+          .select(
+            "cr_supervisor.*",
+          )
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      // if (role_type_id == 7) {
+
+      //   const retailer = await knex("APSISIPDC.cr_retailer_user")
+      //     .where("user_id", user_id)
+      //     .select(
+      //       "retailer_id"
+      //     );
+
+      //   const data = await knex("APSISIPDC.cr_retailer")
+      //     .select()
+      //     .where("id", retailer[0].retailer_id);
+
+      //   if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      //   resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      // }
+
+      else {
+        reject(sendApiResult(false, "Not found."));
+
+      }
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+User.getSalesagentsForUser = function (req) {
+
+  const { user_id, page, per_page } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const role = await knex("APSISIPDC.cr_user_wise_role")
+        .where("user_id", user_id)
+        .select(
+          "role_id"
+        );
+
+      const role_id = role[0]?.role_id ?? 0;
+
+      const role_type = await knex("APSISIPDC.cr_user_roles")
+        .where("id", role_id)
+        .select(
+          "role_type_id"
+        );
+
+      const role_type_id = role_type[0]?.role_type_id ?? 0;
+
+      if (role_type_id == 3) {
+        const manufacture = await knex("APSISIPDC.cr_manufacturer_user")
+          .where("user_id", user_id)
+          .select(
+            "manufacturer_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
+          .leftJoin(
+            "APSISIPDC.cr_sales_agent",
+            "cr_sales_agent.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_sales_agent.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_supervisor",
+            "cr_supervisor.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id"
+          )
+          .where("cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id", manufacture[0].manufacturer_id)
+          .select(
+            "cr_sales_agent.*",
+            "cr_distributor.distributor_name",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
+            "cr_supervisor.supervisor_name"
+          )
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type_id == 4) {
+
+        const distributor = await knex("APSISIPDC.cr_distributor_user")
+          .where("user_id", user_id)
+          .select(
+            "distributor_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
+          .leftJoin(
+            "APSISIPDC.cr_sales_agent",
+            "cr_sales_agent.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_supervisor",
+            "cr_supervisor.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id"
+          )
+          .where("cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id", distributor[0].distributor_id)
+          .select(
+            "cr_sales_agent.*",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
+            "cr_supervisor.supervisor_name"
+          )
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type_id == 5) {
+
+        const supervisor = await knex("APSISIPDC.cr_supervisor_user")
+          .where("user_id", user_id)
+          .select(
+            "supervisor_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
+          .leftJoin(
+            "APSISIPDC.cr_sales_agent",
+            "cr_sales_agent.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_sales_agent.distributor_id"
+          )
+          .where("cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id", supervisor[0].supervisor_id)
+          .select(
+            "cr_sales_agent.*",
+            "cr_distributor.distributor_name",
+          )
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      // if (role_type_id == 7) {
+
+      //   const retailer = await knex("APSISIPDC.cr_retailer_user")
+      //     .where("user_id", user_id)
+      //     .select(
+      //       "retailer_id"
+      //     );
+
+      //   const data = await knex("APSISIPDC.cr_retailer")
+      //     .select()
+      //     .where("id", retailer[0].retailer_id);
+
+      //   if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      //   resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      // }
+
+      else {
+        reject(sendApiResult(false, "Not found."));
+
+      }
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+User.getRetailersForUser = function (req) {
+
+  const { user_id, page, per_page } = req.query;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+
+      const role = await knex("APSISIPDC.cr_user_wise_role")
+        .where("user_id", user_id)
+        .select(
+          "role_id"
+        );
+
+      const role_id = role[0]?.role_id ?? 0;
+
+      const role_type = await knex("APSISIPDC.cr_user_roles")
+        .where("id", role_id)
+        .select(
+          "role_type_id"
+        );
+
+      const role_type_id = role_type[0]?.role_type_id ?? 0;
+
+      if (role_type_id == 3) {
+        const manufacture = await knex("APSISIPDC.cr_manufacturer_user")
+          .where("user_id", user_id)
+          .select(
+            "manufacturer_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .leftJoin(
+            "APSISIPDC.cr_retailer",
+            "cr_retailer.id",
+            "cr_retailer_manu_scheme_mapping.retailer_id"
+          )
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacture[0].manufacturer_id)
+          .select(
+            "cr_retailer.*"
+          )
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type_id == 4) {
+
+        const distributor = await knex("APSISIPDC.cr_distributor_user")
+          .where("user_id", user_id)
+          .select(
+            "distributor_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .leftJoin(
+            "APSISIPDC.cr_retailer",
+            "cr_retailer.id",
+            "cr_retailer_manu_scheme_mapping.retailer_id"
+          )
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", distributor[0].distributor_id)
+          .select(
+            "cr_retailer.*"
+          )
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      if (role_type_id == 5) {
+
+        const supervisor = await knex("APSISIPDC.cr_supervisor_user")
+          .where("user_id", user_id)
+          .select(
+            "supervisor_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_retailer_vs_sales_agent.sales_agent_id"
+          )
+          .where("cr_retailer_vs_sales_agent.sales_agent_id", supervisor[0].supervisor_id)
+          .select(
+            "cr_retailer.*"
+          )
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+
+      if (role_type_id == 6) {
+
+        const salesagent = await knex("APSISIPDC.cr_sales_agent_user")
+          .where("user_id", user_id)
+          .select(
+            "sales_agent_id"
+          );
+
+        const data = await knex("APSISIPDC.cr_retailer_vs_sales_agent")
+          .leftJoin(
+            "APSISIPDC.cr_retailer",
+            "cr_retailer.id",
+            "cr_retailer_vs_sales_agent.retailer_id"
+          )
+          .where("cr_retailer_vs_sales_agent.sales_agent_id", salesagent[0].sales_agent_id)
+          .select(
+            "cr_retailer.*"
+          )
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+      // if (role_type_id == 7) {
+
+      //   const retailer = await knex("APSISIPDC.cr_retailer_user")
+      //     .where("user_id", user_id)
+      //     .select(
+      //       "retailer_id"
+      //     );
+
+      //   const data = await knex("APSISIPDC.cr_retailer")
+      //     .select()
+      //     .where("id", retailer[0].retailer_id);
+
+      //   if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      //   resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      // }
+
+      else {
+        reject(sendApiResult(false, "Not found."));
+
+      }
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 module.exports = User;

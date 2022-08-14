@@ -1,7 +1,9 @@
 const moment = require("moment");
 const express = require("express");
+const fs = require('fs');
+const excel = require("excel4node");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail, duplication_manufacturer, randomPasswordGenerator } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, duplication_manufacturer, randomPasswordGenerator, sendReportApiResult, generateUserIDMidDigitForLogin } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 
@@ -9,8 +11,11 @@ const FileUpload = function () { };
 require("dotenv").config();
 
 FileUpload.insertExcelData = function (rows, filename, req) {
-  var password ;
-  var link_code; 
+  var password;
+  var link_code;
+  var user_Id;
+  var invalidated_rows_arr = [];
+  var duplicated_rows_arr = [];
   return new Promise(async (resolve, reject) => {
     try {
       await knex
@@ -165,6 +170,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     rows[index].Authorized_Representative_Official_Email_ID,
                   Remarks_Invalidated: invalidStr,
                 };
+                invalidated_rows_arr.push(temp_data);
                 invalidate_data_array.push(temp_data);
                 continue;
               }
@@ -330,7 +336,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   duplicateStr = duplicateStr + "Official_Email_ID " + ", ";
                 }
                 if (duplication_check_val_email_user_table != 0) {
-                  duplicateStr = duplicateStr + "Email is existed in system " + ", ";
+                  duplicateStr = duplicateStr + "Official_Email_ID is existed in system " + ", ";
                 }
                 if (duplication_check_val_phone != 0) {
                   duplicateStr = duplicateStr + "Official_Phone_Number " + ", ";
@@ -391,6 +397,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     rows[index].Authorized_Representative_Official_Email_ID,
                   Remarks_Duplicated: duplicateStr,
                 };
+                duplicated_rows_arr.push(temp_data);
                 unuploaded_data_array.push(temp_data);
               }
             }
@@ -414,7 +421,12 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               empty_insert_log
             );
             msg = "File Uploaded successfully!";
-            resolve(sendApiResult(true, msg, empty_insert_log));
+            var response = {
+              "insert_log": empty_insert_log,
+              "total_invalidated": invalidated_rows_arr.length,
+              "total_duplicated": duplicated_rows_arr.length
+            }
+            resolve(sendApiResult(true, msg, response));
           }
 
           if (Object.keys(invalidate_data_array).length != 0) {
@@ -669,6 +681,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   remarks_duplications: duplicateStr,
                   created_by: req.user_id,
                 };
+                duplicated_rows_arr.push(duplicate_data_array);
                 await knex("APSISIPDC.cr_manufacturer_unuploaded_data")
                   .insert(duplicate_data_array);
 
@@ -730,11 +743,14 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 created_by: req.user_id,
               };
               console.log(team_manufacture);
-               password = randomPasswordGenerator()
-               link_code = randomPasswordGenerator()
+              password = randomPasswordGenerator()
+              link_code = randomPasswordGenerator()
               const insert_manufacture = await knex("APSISIPDC.cr_manufacturer")
                 .insert(team_manufacture)
                 .returning("id");
+
+              user_Id = insert_manufacture ? "MAN-" + generateUserIDMidDigitForLogin(insert_manufacture[0], 6) : 0;
+
               if (insert_manufacture) {
                 manufacture_insert_ids.push(insert_manufacture[0]);
                 try {
@@ -748,7 +764,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     completed. Please enter the below
                     mentioned user ID and password
                     at www.ipdcDANA.com and login.</p>
-                    <p>User ID : ${data_array[index].Official_Email_ID}</p>
+                    <p>User ID : ${user_Id}</p>
                     <p>Your Temporary Password : ${password}</p>
                     <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
                     <p>Regards, </p>
@@ -761,8 +777,8 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   console.log('errorerrorerrorerrorerror', err)
                 }
               }
-              
-              
+
+
               const temp_user = {
                 name: data_array[index].Manufacturer_Name,
                 email: data_array[index].Official_Email_ID,
@@ -771,6 +787,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 password: password,
                 link_token: link_code,
                 cr_user_type: folder_name,
+                user_id: user_Id
               };
               const insert_user = await knex("APSISIPDC.cr_users")
                 .insert(temp_user)
@@ -839,7 +856,12 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 insert_log
               );
               msg = "File Uploaded successfully!";
-              resolve(sendApiResult(true, msg, insert_log));
+              var response = {
+                "insert_log": insert_log,
+                "total_invalidated": invalidated_rows_arr.length,
+                "total_duplicated": duplicated_rows_arr.length
+              }
+              resolve(sendApiResult(true, msg, response));
             }
           } else {
             msg = "No Data Founds to Update";
@@ -860,14 +882,26 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 };
 
 FileUpload.getManufacturerListDropDown = function (req) {
+  const { distributor_id } = req.query;
   return new Promise(async (resolve, reject) => {
     try {
       const data = await knex("APSISIPDC.cr_manufacturer")
-        .select(
-          "id",
-          "manufacturer_name"
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer_vs_distributor",
+          "cr_manufacturer_vs_distributor.manufacturer_id",
+          "cr_manufacturer.id"
         )
-        .orderBy("cr_manufacturer.id", "desc");
+        .select(
+          "cr_manufacturer.id",
+          "cr_manufacturer.manufacturer_name"
+        )
+        .where(function () {
+          if (distributor_id) {
+            this.where("cr_manufacturer_vs_distributor.distributor_id", distributor_id)
+          }
+        })
+        .orderBy("cr_manufacturer.id", "desc")
+        .distinct();
       if (data == 0) reject(sendApiResult(false, "Not found."));
 
       resolve(sendApiResult(true, "Data fetched successfully", data));
@@ -995,17 +1029,17 @@ FileUpload.editManufacturer = function (req) {
 
   return new Promise(async (resolve, reject) => {
     try {
-      const type_entity_manufacturer = await knex(
-        "APSISIPDC.cr_manufacturer_type_entity"
-      )
-        .where("name", type_of_entity)
-        .select("id");
+      // const type_entity_manufacturer = await knex(
+      //   "APSISIPDC.cr_manufacturer_type_entity"
+      // )
+      //   .where("name", type_of_entity)
+      //   .select("id");
       await knex.transaction(async (trx) => {
         const manufacturer_update = await trx("APSISIPDC.cr_manufacturer")
           .where({ id: req.params.id })
           .update({
             manufacturer_name,
-            type_of_entity: type_entity_manufacturer[0].id,
+            // type_of_entity: type_entity_manufacturer[0]?.id,
             name_of_scheme,
             registration_no,
             manufacturer_tin,
@@ -1134,4 +1168,567 @@ FileUpload.retailersByManufacturer = function (req) {
   });
 };
 
+FileUpload.generateManufacturerAnnualReport = async (req, res) => {
+  const { manufacturer_id, distributor_id, select_date } = req.query;
+  const selectDate = moment(select_date).startOf('date').format('YYYY-MM-DD');
+  const selectDatePreviousDay = moment(select_date).subtract(1, 'days').format('YYYY-MM-DD');
+  const currentYearJuly = moment(select_date).startOf('year').add(6, 'months').format('YYYY-MM-DD');
+  const previousYearJuly = moment(select_date).startOf('year').add(6, 'months').subtract(1, 'years').format('YYYY-MM-DD');
+  const currentMonth = 1 + moment(selectDate, 'YYYY-MM-DD').month();
+  const comparison_financial_year = currentMonth > 6 ? currentYearJuly : previousYearJuly;
+  console.log(comparison_financial_year);
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const manufacturer_info = await knex("APSISIPDC.cr_manufacturer")
+        .where(function () {
+          if (manufacturer_id) {
+            this.where("cr_manufacturer.id", manufacturer_id);
+          }
+        })
+        .select(
+          "cr_manufacturer.id",
+          "cr_manufacturer.manufacturer_name"
+        );
+
+      if (manufacturer_info.length == 0) {
+        reject(sendReportApiResult(false, "Manufacturer Not Found"))
+      }
+
+      const manufacturer_annual_performance_Arr = [];
+
+      for (let i = 0; i < manufacturer_info.length; i++) {
+        const total_distributors = await knex
+          .countDistinct("cr_manufacturer_vs_distributor.distributor_id as count")
+          .from("APSISIPDC.cr_manufacturer_vs_distributor")
+          .where("cr_manufacturer_vs_distributor.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_manufacturer_vs_distributor.distributor_id", distributor_id)
+            }
+
+            if (select_date) {
+              this.whereRaw(`"cr_manufacturer_vs_distributor"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_manufacturer_vs_distributor"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_retailers = await knex
+          .countDistinct("cr_retailer_manu_scheme_mapping.retailer_id as count")
+          .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_manu_scheme_mapping"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_manu_scheme_mapping"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        // const total_supervisors = await knex
+        //   .countDistinct("cr_supervisor.id as count")
+        //   .from("APSISIPDC.cr_supervisor")
+        //   .leftJoin(
+        //     "APSISIPDC.cr_supervisor_distributor_manufacturer_map",
+        //     "cr_supervisor_distributor_manufacturer_map.supervisor_id",
+        //     "cr_supervisor.id"
+        //   )
+        //   .where("cr_supervisor.distributor_id", distributor_info[i].id)
+        //   .where(function () {
+        //     if (manufacturer_id) {
+        //       this.where("cr_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+        //     }
+
+        //     if (select_date) {
+        //       this.whereRaw(`"cr_supervisor_distributor_manufacturer_map"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+        //       this.whereRaw(`"cr_supervisor_distributor_manufacturer_map"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+        //     }
+        //   });
+
+        // const total_salesagents = await knex
+        //   .countDistinct("cr_sales_agent.id as count")
+        //   .from("APSISIPDC.cr_sales_agent")
+        //   .leftJoin(
+        //     "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+        //     "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+        //     "cr_sales_agent.id"
+        //   )
+        //   .where("cr_sales_agent.distributor_id", distributor_info[i].id)
+        //   .where(function () {
+        //     if (manufacturer_id) {
+        //       this.where("cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+        //     }
+        //     if (select_date) {
+        //       this.whereRaw(`"cr_salesagent_supervisor_distributor_manufacturer_map"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+        //       this.whereRaw(`"cr_salesagent_supervisor_distributor_manufacturer_map"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+        //     }
+        //   });
+
+        const principal_outstanding_blans = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
+          .select("cr_retailer_loan_calculation.principal_outstanding")
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${selectDatePreviousDay}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          })
+          .orderBy("cr_retailer_loan_calculation.id", "desc")
+          .first();
+
+        const principal_outstanding_beginning_blans =
+          principal_outstanding_blans != undefined ? principal_outstanding_blans.principal_outstanding : 0;
+
+        const total_amount = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
+          .sum("cr_retailer_loan_calculation.disburshment as loan")
+          .sum("cr_retailer_loan_calculation.repayment as collection")
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_blacklist_retailer = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .countDistinct("cr_retailer.id as count")
+          .where("cr_retailer.retailer_status", "BLOCK")
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer"."updated_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer"."updated_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_suspened_retailer = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .countDistinct("cr_retailer.id as count")
+          .where("cr_retailer.retailer_status", "SUSPEND")
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer"."updated_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer"."updated_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_transactions_number = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
+          .count("cr_retailer_loan_calculation.id as count")
+          .whereIn("cr_retailer_loan_calculation.transaction_type", ["DISBURSEMENT", "REPAYMENT"])
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const manufacturer_annual_performance_consolidated_info = {
+          manufacturer_name: manufacturer_info[i].manufacturer_name,
+          manufacturer_id: manufacturer_info[i].id,
+          total_distributors: total_distributors[0].count,
+          total_retailers: total_retailers[0].count,
+          // total_supervisors: total_supervisors[0].count,
+          // total_salesagents: total_salesagents[0].count,
+          total_transactions_number: total_transactions_number[0].count,
+          total_loan: total_amount[0].loan,
+          total_collection: total_amount[0].collection,
+          current_outstanding_amount: principal_outstanding_beginning_blans,
+          total_blacklist_retailer: total_blacklist_retailer[0].count,
+          total_suspened_retailer: total_suspened_retailer[0].count
+        }
+
+        manufacturer_annual_performance_Arr.push(manufacturer_annual_performance_consolidated_info);
+      }
+      const headers = [
+        "Sr.",
+        "Name of manufcaturer",
+        "Mnaufacturer ID",
+        "No of distributors onboarded",
+        "No of retailers onboarded",
+        // "No of supervisors allocated",
+        // "No of sales agents allocated",
+        "Total number of transactions",
+        "Total sales volume (BDT)",
+        "Total loan amount (BDT)",
+        "Total collection amount (BDT)",
+        "Current outstanding amount (BDT)",
+        "Number of times discrepancies occurred in collection amount",
+        "Number of suspended Distributors",
+        "Number of blacklisted Distributors",
+        "Number of suspended Retailers",
+        "Number of blacklisted Retailers",
+        "Total Amount of Non-performing Loans",
+        "Total number of Non-performing accounts"
+      ];
+      const workbook = new excel.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet 1");
+      const headerStyle = workbook.createStyle({
+        fill: {
+          type: "pattern",
+          patternType: "solid",
+          bgColor: "#E1F0FF",
+          fgColor: "#E1F0FF",
+        },
+        font: {
+          color: "#000000",
+          size: "10",
+          bold: true,
+        },
+      });
+      const col = 1;
+      let row = 1;
+      let col_addH = 0;
+      headers.forEach((e) => {
+        worksheet
+          .cell(row, col + col_addH)
+          .string(e)
+          .style(headerStyle);
+        col_addH++;
+      });
+      row++;
+      for (let i = 0; i < manufacturer_annual_performance_Arr.length; i++) {
+        var col_add = 0;
+        let e = manufacturer_annual_performance_Arr[i];
+        worksheet.cell(row, col + col_add).number(i + 1);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.manufacturer_name ? e.manufacturer_name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.manufacturer_id ? e.manufacturer_id : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_distributors ? e.total_distributors : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_retailers ? e.total_retailers : 0);
+        col_add++;
+        // worksheet
+        //   .cell(row, col + col_add)
+        //   .number(e.total_supervisors ? e.total_supervisors : 0);
+        // col_add++;
+        // worksheet
+        //   .cell(row, col + col_add)
+        //   .number(e.total_salesagents ? e.total_salesagents : 0);
+        // col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_transactions_number ? e.total_transactions_number : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.total_sales ? e.total_sales : "-");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_loan ? e.total_loan : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.total_collection ? e.total_collection : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.current_outstanding_amount ? e.current_outstanding_amount : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.total_num_times_discrepancies ? e.total_num_times_discrepancies : "-");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.total_blacklist_distributor ? e.total_blacklist_distributor : "-");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.total_suspened_distributor ? e.total_suspened_distributor : "-");
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.total_blacklist_retailer ? e.total_blacklist_retailer : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.total_suspened_retailer ? e.total_suspened_retailer : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.total_non_performing_loan ? e.total_non_performing_loan : "-");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.total_non_performing_account ? e.total_non_performing_account : "-");
+        col_add++;
+
+        // worksheet.cell(row, col + col_add).number(0);
+        // col_add++;
+        row++;
+      }
+      await workbook.write("public/reports_retailer/consolidated_annual_manufacturer_performance_report.xlsx");
+      const fileName = "./reports_retailer/consolidated_annual_manufacturer_performance_report.xlsx";
+      setTimeout(() => {
+        resolve(sendApiResult(true, "File Generated", fileName));
+      }, 1500);
+    } catch (error) {
+      console.log(error);
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+FileUpload.filterManufacturerAnnualView = async (req, res) => {
+  const { manufacturer_id, distributor_id, select_date } = req.query;
+  const selectDate = moment(select_date).startOf('date').format('YYYY-MM-DD');
+  const selectDatePreviousDay = moment(select_date).subtract(1, 'days').format('YYYY-MM-DD');
+  const currentYearJuly = moment(select_date).startOf('year').add(6, 'months').format('YYYY-MM-DD');
+  const previousYearJuly = moment(select_date).startOf('year').add(6, 'months').subtract(1, 'years').format('YYYY-MM-DD');
+  const currentMonth = 1 + moment(selectDate, 'YYYY-MM-DD').month();
+  const comparison_financial_year = currentMonth > 6 ? currentYearJuly : previousYearJuly;
+  console.log(comparison_financial_year);
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const manufacturer_info = await knex("APSISIPDC.cr_manufacturer")
+        .where(function () {
+          if (manufacturer_id) {
+            this.where("cr_manufacturer.id", manufacturer_id);
+          }
+        })
+        .select(
+          "cr_manufacturer.id",
+          "cr_manufacturer.manufacturer_name"
+        );
+
+      if (manufacturer_info.length == 0) {
+        reject(sendReportApiResult(false, "Manufacturer Not Found"))
+      }
+
+      const manufacturer_annual_performance_Arr = [];
+
+      for (let i = 0; i < manufacturer_info.length; i++) {
+        const total_distributors = await knex
+          .countDistinct("cr_manufacturer_vs_distributor.distributor_id as count")
+          .from("APSISIPDC.cr_manufacturer_vs_distributor")
+          .where("cr_manufacturer_vs_distributor.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_manufacturer_vs_distributor.distributor_id", distributor_id)
+            }
+
+            if (select_date) {
+              this.whereRaw(`"cr_manufacturer_vs_distributor"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_manufacturer_vs_distributor"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_retailers = await knex
+          .countDistinct("cr_retailer_manu_scheme_mapping.retailer_id as count")
+          .from("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_manu_scheme_mapping"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_manu_scheme_mapping"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        // const total_supervisors = await knex
+        //   .countDistinct("cr_supervisor.id as count")
+        //   .from("APSISIPDC.cr_supervisor")
+        //   .leftJoin(
+        //     "APSISIPDC.cr_supervisor_distributor_manufacturer_map",
+        //     "cr_supervisor_distributor_manufacturer_map.supervisor_id",
+        //     "cr_supervisor.id"
+        //   )
+        //   .where("cr_supervisor.distributor_id", distributor_info[i].id)
+        //   .where(function () {
+        //     if (manufacturer_id) {
+        //       this.where("cr_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+        //     }
+
+        //     if (select_date) {
+        //       this.whereRaw(`"cr_supervisor_distributor_manufacturer_map"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+        //       this.whereRaw(`"cr_supervisor_distributor_manufacturer_map"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+        //     }
+        //   });
+
+        // const total_salesagents = await knex
+        //   .countDistinct("cr_sales_agent.id as count")
+        //   .from("APSISIPDC.cr_sales_agent")
+        //   .leftJoin(
+        //     "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+        //     "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+        //     "cr_sales_agent.id"
+        //   )
+        //   .where("cr_sales_agent.distributor_id", distributor_info[i].id)
+        //   .where(function () {
+        //     if (manufacturer_id) {
+        //       this.where("cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+        //     }
+        //     if (select_date) {
+        //       this.whereRaw(`"cr_salesagent_supervisor_distributor_manufacturer_map"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+        //       this.whereRaw(`"cr_salesagent_supervisor_distributor_manufacturer_map"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+        //     }
+        //   });
+
+        const principal_outstanding_blans = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
+          .select("cr_retailer_loan_calculation.principal_outstanding")
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${selectDatePreviousDay}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          })
+          .orderBy("cr_retailer_loan_calculation.id", "desc")
+          .first();
+
+        const principal_outstanding_beginning_blans =
+          principal_outstanding_blans != undefined ? principal_outstanding_blans.principal_outstanding : 0;
+
+        const total_amount = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
+          .sum("cr_retailer_loan_calculation.disburshment as loan")
+          .sum("cr_retailer_loan_calculation.repayment as collection")
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_blacklist_retailer = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .countDistinct("cr_retailer.id as count")
+          .where("cr_retailer.retailer_status", "BLOCK")
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer"."updated_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer"."updated_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_suspened_retailer = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .countDistinct("cr_retailer.id as count")
+          .where("cr_retailer.retailer_status", "SUSPEND")
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer"."updated_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer"."updated_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_transactions_number = await knex("APSISIPDC.cr_retailer_loan_calculation")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer_loan_calculation.manu_scheme_mapping_id"
+          )
+          .count("cr_retailer_loan_calculation.id as count")
+          .whereIn("cr_retailer_loan_calculation.transaction_type", ["DISBURSEMENT", "REPAYMENT"])
+          .where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_info[i].id)
+          .where(function () {
+            if (distributor_id) {
+              this.where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+            }
+            if (select_date) {
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${comparison_financial_year}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${selectDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const manufacturer_annual_performance_consolidated_info = {
+          manufacturer_name: manufacturer_info[i].manufacturer_name,
+          manufacturer_id: manufacturer_info[i].id,
+          total_distributors: total_distributors[0].count,
+          total_retailers: total_retailers[0].count,
+          // total_supervisors: total_supervisors[0].count,
+          // total_salesagents: total_salesagents[0].count,
+          total_transactions_number: total_transactions_number[0].count,
+          total_loan: total_amount[0].loan,
+          total_collection: total_amount[0].collection,
+          current_outstanding_amount: principal_outstanding_beginning_blans,
+          total_blacklist_retailer: total_blacklist_retailer[0].count,
+          total_suspened_retailer: total_suspened_retailer[0].count
+        }
+
+        manufacturer_annual_performance_Arr.push(manufacturer_annual_performance_consolidated_info);
+      }
+      if (manufacturer_annual_performance_Arr == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendReportApiResult(true, "Manufacturer Annual Consolidated Performance filter successfully", manufacturer_annual_performance_Arr));
+
+    } catch (error) {
+      console.log(error);
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 module.exports = FileUpload;

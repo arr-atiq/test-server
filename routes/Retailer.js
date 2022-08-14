@@ -31,6 +31,12 @@ router.get("/retailer-loan-status-report", retailer.generateRetailersLoanStatusR
 router.get("/retailer-loan-status-report-view", retailer.retailerLoanStatusView);
 
 //retailer-report-3
+
+//Monthly Retailer Performance report for Distributor (Supervisor)
+router.get("/retailer-monthly-performance-report-for-distributor", retailer.generateRetailersMonthlyPerformanceDistributor);
+router.get("/retailer-monthly-performance-for-distributor-view", retailer.retailersMonthlyPerformanceDistributor);
+//Monthly Retailer Performance report for Distributor (Supervisor)
+
 router.post("/retailer-upload-list", retailer.retailerUploadList);
 
 router.post(

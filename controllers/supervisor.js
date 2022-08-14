@@ -340,20 +340,24 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
     for (let i = 0; i < limit_data.length; i++) {
       var col_add = 0;
       let e = limit_data[i];
+      let remarks_duplications = e.remarks_duplications.split('-').join(',').split(',');
+      let duplication_arr = remarks_duplications.map(element => {
+        return element.trim();
+      });
       worksheet.cell(row, col + col_add).number(i + 1);
       col_add++;
       worksheet
         .cell(row, col + col_add)
         .string(e.supervisor_name ? e.supervisor_name : "");
       col_add++;
-      if (e.remarks_duplications.includes("Supervisor_NID")) {
+      if (duplication_arr.includes("Supervisor_NID")) {
         worksheet.cell(row, col + col_add).string(e.supervisor_nid ? e.supervisor_nid : "").style(errorStyle);
         col_add++;
       } else {
         worksheet.cell(row, col + col_add).string(e.supervisor_nid ? e.supervisor_nid : "");
         col_add++;
       }
-      if (e.remarks_duplications.includes("Phone")) {
+      if (duplication_arr.includes("Phone")) {
         worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "").style(errorStyle);
         col_add++;
       } else {
@@ -362,7 +366,7 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
       }
       worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
       col_add++;
-      if (e.remarks_duplications.includes("Supervisor_Employee_Code")) {
+      if (duplication_arr.includes("Supervisor_Employee_Code") || duplication_arr.includes("Supervisor_Employee_Code already used by another user")) {
         worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "").style(errorStyle);
         col_add++;
       } else {
@@ -379,8 +383,8 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
       // col_add++;
       row++;
     }
-    await workbook.write("public/unupload_report/supervisorUnuploadedDataDownload.xlsx");
-    const fileName = "./unupload_report/supervisorUnuploadedDataDownload.xlsx";
+    await workbook.write("public/unupload_report/supervisor_duplicated_report.xlsx");
+    const fileName = "./unupload_report/supervisor_duplicated_report.xlsx";
     await knex("APSISIPDC.cr_supervisor_unuploaded_data").del();
     setTimeout(() => {
       res.send(sendApiResult(true, "File Generated", fileName));

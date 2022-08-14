@@ -22,6 +22,43 @@ exports.userDetails = async (req, res) => {
   }
 };
 
+exports.getManufacturersForUser = async (req, res) => {
+  try {
+    const result = await User.getManufacturersForUser(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getSupervisorsForUser = async (req, res) => {
+  try {
+    const result = await User.getSupervisorsForUser(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getSalesagentsForUser = async (req, res) => {
+  try {
+    const result = await User.getSalesagentsForUser(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getRetailersForUser = async (req, res) => {
+  try {
+    const result = await User.getRetailersForUser(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+
 exports.getDashboard = async (req, res) => {
   try {
     const result = await User.getDashboard(req);
