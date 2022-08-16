@@ -884,7 +884,7 @@ exports.getDuplicateRetailerListById = async (req, res) => {
 
 exports.createCreditMemo = async (req, res) => {
   try {
-    const result = await model.createCreditMemo(req);
+    const result = await model.createCreditMemo(req.body);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
@@ -907,4 +907,37 @@ exports.downloadLimitUploadFile = async (req, res) => {
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
+};
+
+exports.uploadRetailerLimitUploadFile = async (req, res) => {
+  const upload = await uploadRetailerLimitUploadFile(req.file.filename, req.body);
+  res.status(200).send(upload);
+};
+
+const uploadRetailerLimitUploadFile = async function (filename, req) {
+  try {
+    let resData = [];
+    const folder_name = req.file_for;
+    const workbook = xlsx.readFile(
+      `./public/configuration_file/limit_upload/${filename}`,
+      { type: "array" }
+    );
+    const sheetnames = Object.keys(workbook.Sheets);
+    let i = sheetnames.length;
+    var insert = "";
+    while (i--) {
+      const sheetname = sheetnames[i];
+      const arrayName = sheetname.toString();
+      resData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetname]);
+      insert = await model.uploadRetailerLimitUploadFile(resData, filename, req);
+    }
+    return insert;
+  } catch (error) {
+    return sendApiResult(false, "File not uploaded due to " + error.message);
+  }
+};
+
+exports.uploadCreditMemoFile = async (req, res) => {
+  const result = await model.uploadCreditMemoFile(req.file.filename, req.body);
+  res.status(200).send(result);
 };

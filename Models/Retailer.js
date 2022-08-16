@@ -2,7 +2,7 @@ const moment = require("moment");
 const excel = require('excel4node');
 const fs = require('fs');
 const { getJsDateFromExcel } = require("excel-date-to-js");
-const { sendApiResult, ValidateNID, ValidatePhoneNumber, timeout, sendReportApiResult } = require("../controllers/helperController");
+const { sendApiResult, ValidateNID, ValidatePhoneNumber, timeout, sendReportApiResult, retailerAvgByManufacturer } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { getSchemeDetailsById } = require("../controllers/scheme");
 const { creditLimit } = require("../controllers/credit_limit");
@@ -277,8 +277,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                     retailer_nid: value.retailer_nid,
                     retailer_smart_nid: parseInt(value.retailer_smart_nid),
                     phone: value.phone
-                  };
-                
+                  };                
                   const masterRetailerInsertLog = await trx("APSISIPDC.cr_retailer").insert(masterRetailerData).returning("id");
                                                           
                   const sales_agent_mapping = {
@@ -309,6 +308,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                   
                   const detailsRetailerData = {
                     retailer_upload_id: value.retailer_upload_id,
+                    retailer_id: masterRetailerInsertLog[0],
                     manu_scheme_mapping_id : parseInt(mappingRetailerInsertLog[0]),
                     retailer_name: value.retailer_name,
                     phone: value.phone,
@@ -359,7 +359,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                   if (Object.keys(checkRetailerManuMapping).length == 0) {
                     let retailerInfo = await trx("APSISIPDC.cr_retailer")
                       .select("id AS retailer_id")
-                      .whereRaw('("retailer_nid" = ' + parseInt(value.retailer_nid) + ' OR "retailer_smart_nid" = ' + parseInt(value.retailer_smart_nid) + ' OR "phone" = ' + value.phone + ')')
+                      .whereRaw('("retailer_nid" = ' + value.retailer_nid + ' OR "retailer_smart_nid" = ' + parseInt(value.retailer_smart_nid) + ' OR "phone" = ' + value.phone + ')')
                       .first();
 
                     let retailerManuDistMappingInsert = {
@@ -371,7 +371,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                       phone: value.phone,
                       retailer_code: value.retailer_code,
                       manufacturer_id: value.manufacturer_id,
-                      distributor_id: distributorInfo.distributor_id,                      
+                      distributor_id: distributorInfo.distributor_id,
                       scheme_id: value.scheme_id,
                       sales_array: JSON.stringify(salesArray),
                       is_valid : is_valid,
@@ -613,6 +613,11 @@ Retailer.checkRetailerEligibility = function (req) {
             "scheme_id",
             "sales_array"
           )
+          .where("is_valid", 1)
+          .where("is_duplicate", 0)
+          .where("is_valid", 1)
+          .whereRaw('"cib_id" IS NULL')
+          .whereRaw('"cib_status" IS NULL')
           .where("limit_status", "Unset")
           .where("status", "Inactive");
 
@@ -665,7 +670,7 @@ Retailer.checkRetailerEligibility = function (req) {
             }
             await trx("APSISIPDC.cr_retailer_sales_volume").insert(retailerSalesVolume);
           }
-          resolve(sendApiResult(true, "Tetailer Check Eligibility & Scheme Wise Limit Configure Successful."));
+          resolve(sendApiResult(true, "Retailer Check Eligibility & Scheme Wise Limit Configure Successful."));
         } else {
           let msg = "No data Found";
           reject(sendApiResult(false, msg));
@@ -761,19 +766,19 @@ Retailer.checkRetailerEligibility = function (req) {
 //   });
 // };
 
-const checkMonthlySalesData = async function (monthCount = 12, minimumSalesAmount, monthlySalesArray) {
-  if (!isNaN(monthCount) || !isNaN(minimumSalesAmount) | !isNaN(monthlySalesArray)) {
-    const validData = [];
-    for (let i = monthCount; i >= 1; --i) {
-      parseInt(monthlySalesArray[i]) >= parseInt(minimumSalesAmount)
-        ? validData.push(true)
-        : validData.push(false);
-    }
-    if (validData.includes(false)) return false;
-    else return true;
-  }
-  return false;
-};
+// const checkMonthlySalesData = async function (monthCount = 12, minimumSalesAmount, monthlySalesArray) {
+//   if (!isNaN(monthCount) || !isNaN(minimumSalesAmount) | !isNaN(monthlySalesArray)) {
+//     const validData = [];
+//     for (let i = monthCount; i >= 1; --i) {
+//       parseInt(monthlySalesArray[i]) >= parseInt(minimumSalesAmount)
+//         ? validData.push(true)
+//         : validData.push(false);
+//     }
+//     if (validData.includes(false)) return false;
+//     else return true;
+//   }
+//   return false;
+// };
 
 const addLeadingZeros = async function (num, size) {
   var s = num + "";
@@ -1168,18 +1173,17 @@ Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async (trx) => {
-        let msg;
         const folderName = req.file_for;
         if (Object.keys(rows).length !== 0) {
           let insert_count = 0;
           for (let index = 0; index < rows.length; index++) {
-            let retailer_code = rows[index].REF_NO;
+            let retailer_nid = rows[index].NID;
+            let retailer_smart_nid = rows[index].Smart_NID;            
             const retailerInfo = await trx("APSISIPDC.cr_retailer")
               .select("id")
-              .where("retailer_code", retailer_code)
-              // .whereNot("kyc_status", 1)
-              .where("kyc_status", null)
-              .where("cib_status", null)
+              .whereRaw('("retailer_nid" = ' + retailer_nid + ' OR "retailer_smart_nid" = ' + parseInt(retailer_smart_nid) + ')')
+              .whereRaw('"kyc_status" IS NULL')
+              .whereRaw('"kyc_id" IS NULL')
               .where("activation_status", "Inactive")
               .where("status", "Active")
               .first();
@@ -1187,7 +1191,7 @@ Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
             if (retailerInfo != undefined && retailerInfo.id != undefined) {
               const retailerEkycData = {
                 retailer_id: retailerInfo.id,
-                retailer_code: retailer_code,
+                retailer_code: rows[index].REF_NO !== undefined ? rows[index].REF_NO : null,
                 subject_role: rows[index].SUBJECT_ROLE !== undefined ? rows[index].SUBJECT_ROLE : null,
                 type_of_financing: rows[index].TYPE_OF_FINANCING !== undefined ? rows[index].TYPE_OF_FINANCING : null,
                 number_of_installment: rows[index].NUMBER_OF_INSTALLMENT !== undefined ? rows[index].NUMBER_OF_INSTALLMENT : null,
@@ -1202,7 +1206,8 @@ Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
                 mother_name: rows[index].MOTHER_NAME !== undefined ? rows[index].MOTHER_NAME : null,
                 spouse_title: rows[index].SPOUSE_TITLE !== undefined ? rows[index].SPOUSE_TITLE : null,
                 spouse_name: rows[index].SPOUSE_NAME !== undefined ? rows[index].SPOUSE_NAME : null,
-                nid: rows[index].NID !== undefined ? rows[index].NID : null,
+                nid: retailer_nid,
+                smart_nid: retailer_smart_nid,
                 tin: rows[index].TIN !== undefined ? rows[index].TIN : null,
                 date_of_birth: rows[index].DATE_OF_BIRTH !== undefined ? getJsDateFromExcel(rows[index].DATE_OF_BIRTH) : null,
                 gender: rows[index].GENDER !== undefined ? rows[index].GENDER : null,
@@ -1247,7 +1252,7 @@ Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
                 ++insert_count;
                 const retailerEkycHistory = {
                   retailer_id: retailerInfo.id,
-                  retailer_code: retailer_code,
+                  retailer_code: rows[index].REF_NO !== undefined ? rows[index].REF_NO : null,
                   kyc_id: parseInt(insertRetailerEkycInfo[0]),
                   kyc_date: rows[index].MAKEDATE !== undefined ? getJsDateFromExcel(rows[index].MAKEDATE) : null,
                   kyc_time: rows[index].MAKEDATE !== undefined ? getJsDateFromExcel(rows[index].MAKEDATE) : null,
@@ -1300,12 +1305,12 @@ Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
           reject(sendApiResult(false, "No Rows Found in your Uploaded File."));
         }
       })
-        .then((result) => {
-          //
-        })
-        .catch((error) => {
-          reject(sendApiResult(false, error.message));
-        });
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -1323,25 +1328,31 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async (trx) => {
-        let msg;
         const folderName = req.file_for;
         if (Object.keys(rows).length !== 0) {
           let insert_count = 0;
           for (let index = 0; index < rows.length; index++) {
-            let retailer_code = rows[index].Ref_No;
-            const retailerInfo = await trx("APSISIPDC.cr_retailer")
+            let retailer_nid = rows[index].NID;
+            let retailer_smart_nid = rows[index].Smart_NID;
+            let manufacturer_id = rows[index].Manufacturer_ID;
+            const retailerInfo = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
               .select("id")
-              .where("retailer_code", retailer_code)
-              .whereNot("kyc_status", null)
-              .where("cib_status", null)
-              .where("activation_status", "Inactive")
-              .where("status", "Active")
+              .whereRaw('("retailer_nid" = ' + retailer_nid + ' OR "retailer_smart_nid" = ' + parseInt(retailer_smart_nid) + ')')
+              .where("manufacturer_id", parseInt(manufacturer_id))
+              .where("is_valid", 1)
+              .where("is_duplicate", 0)
+              .where("is_eligible", 1)
+              .whereRaw('"cib_status" IS NULL')
+              .whereRaw('"cib_id" IS NULL')
+              .where("limit_status", 'Initiated')
+              .where("status", 'Inactive')
               .first();
 
             if (retailerInfo != undefined && retailerInfo.id != undefined) {
               const retailerCibData = {
                 retailer_id: retailerInfo.id,
-                retailer_code: retailer_code,
+                retailer_code: rows[index].Ref_No !== undefined ? rows[index].Ref_No : null,
+                manufacturer_id: rows[index].Manufacturer_ID !== undefined ? rows[index].Manufacturer_ID : null,                
                 subject_code: rows[index].Subject_Code !== undefined ? rows[index].Subject_Code : null,
                 classification: rows[index].Classification !== undefined ? rows[index].Classification : null,
                 ref_no: rows[index].Ref_No !== undefined ? rows[index].Ref_No : null,
@@ -1354,6 +1365,7 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
                 spouse_title: rows[index].Spouse_Title !== undefined ? rows[index].Spouse_Title : null,
                 spouse_name: rows[index].Spouse_Name !== undefined ? rows[index].Spouse_Name : null,
                 nid: rows[index].NID !== undefined ? rows[index].NID : null,
+                smart_nid: rows[index].Smart_NID !== undefined ? rows[index].Smart_NID : null,
                 tin: rows[index].TIN !== undefined ? rows[index].TIN : null,
                 country: rows[index].Country !== undefined ? rows[index].Country : null,
                 dob: rows[index].DOB !== undefined ? getJsDateFromExcel(rows[index].DOB) : null,
@@ -1400,7 +1412,8 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
                 ++insert_count;
                 const retailerCibHistory = {
                   retailer_id: retailerInfo.id,
-                  retailer_code: retailer_code,
+                  manufacturer_id: rows[index].Manufacturer_ID, 
+                  retailer_code: rows[index].Ref_No !== undefined ? rows[index].Ref_No : null,
                   cib_id: parseInt(insertRetailerCibInfo[0]),
                   cib_date: rows[index].Created_Date !== undefined ? getJsDateFromExcel(rows[index].Created_Date) : null,
                   cib_status: ((rows[index].Default_History).toLowerCase() == 'yes') ? 'Active' : 'Inactive',
@@ -1411,7 +1424,7 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
                 }
                 const insertRetailerCibHistory = await trx("APSISIPDC.cr_retailer_cib_history").insert(retailerCibHistory);
                 if (insertRetailerCibHistory == true) {
-                  let retailerCibUpdate = await trx("APSISIPDC.cr_retailer")
+                  let retailerCibUpdate = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
                     .where({ id: retailerInfo.id })
                     .update({
                       cib_status: 1,
@@ -1444,12 +1457,12 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
           resolve(sendApiResult(false, "No Rows Found in your Uploaded File."));
         }
       })
-        .then((result) => {
-          //
-        })
-        .catch((error) => {
-          reject(sendApiResult(false, error.message));
-        });
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -3994,17 +4007,19 @@ Retailer.createCreditMemo = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       knex.transaction(async (trx) => {
-        const { retailer_upload_id } = req.params;
-        const retailerList = await creditMemoRetailerList(retailer_upload_id);
-        const createFrontPage = await preparePdfMemoFrontPage(retailer_upload_id, retailerList);
-        const prepareRetailerListPage = await preparePdfRetailerListPage(retailer_upload_id, retailerList);
-        let updateLog = await trx("APSISIPDC.cr_retailer_upload_log")
-          .where({ retailer_upload_id: retailer_upload_id })
-          .update({
-            credit_memo_status: "Success",              
-            credit_memo_create_date: new Date(),
-          });
-        resolve(sendApiResult(true, "Credit Memo Created Successfully", []));        
+        const uniqueMemoId = new Date().valueOf();        
+        const retailerList = await creditMemoRetailerList();
+        if (Object.keys(retailerList).length !== 0) {
+          const createFrontPage = await preparePdfMemoFrontPage(uniqueMemoId, retailerList);
+          const prepareRetailerListPage = await preparePdfRetailerListPage(uniqueMemoId, retailerList);
+          const memo_log = await creditMemolog(req, uniqueMemoId, retailerList);
+          if(createFrontPage && prepareRetailerListPage && memo_log)
+            resolve(sendApiResult(true, "Credit Memo Created Successfully", []));
+          else 
+            reject(sendApiResult(false, 'Credit Memo Generate Failed!')); 
+        } else {
+          reject(sendApiResult(false, 'No Retailer Found.'));
+        }
       })
       .then((result) => {
         //
@@ -4018,7 +4033,41 @@ Retailer.createCreditMemo = function (req) {
   });
 };
 
-const preparePdfMemoFrontPage = async function (retailer_upload_id, retailerList){
+const creditMemoRetailerList = async function (){
+  const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")    
+    .where("cr_retailer_manu_scheme_mapping.limit_status", 'Upload')
+    .whereRaw(`"cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NOT NULL`)
+    .where("cr_retailer.kyc_status", 1)
+    .where("cr_retailer_manu_scheme_mapping.cib_status", 1)
+    .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
+    .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
+    .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
+    .whereRaw(`"cr_retailer_manu_scheme_mapping"."credit_memo_id" IS NULL`)
+    .whereRaw(`"cr_retailer_manu_scheme_mapping"."credit_memo_status" IS NULL`)
+    .select(
+      "cr_retailer_manu_scheme_mapping.id",
+      "cr_retailer_manu_scheme_mapping.retailer_code",
+      "cr_retailer.retailer_name",
+      "cr_manufacturer.manufacturer_name",
+      "cr_retailer_manu_scheme_mapping.propose_limit",
+      "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+      "cr_retailer_manu_scheme_mapping.processing_fee",
+      knex.raw(`TO_CHAR("cr_retailer"."created_at", 'YYYY/MM/DD') AS "created_date"`)
+    )
+    .innerJoin(
+      "APSISIPDC.cr_retailer",
+      "cr_retailer.id",
+      "cr_retailer_manu_scheme_mapping.retailer_id"
+    )
+    .innerJoin(
+      "APSISIPDC.cr_manufacturer",
+      "cr_manufacturer.id",
+      "cr_retailer_manu_scheme_mapping.manufacturer_id"
+    );
+  return result;
+}
+
+const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList){
   var fonts = {
     Roboto: {
         normal: 'node_modules/font/roboto/Roboto-Regular.ttf',
@@ -4032,6 +4081,15 @@ const preparePdfMemoFrontPage = async function (retailer_upload_id, retailerList
 			italics: 'node_modules/font/calibri/Calibri-Italic.ttf',
 		}
   };
+
+  let manufactureSummaryTable = await manufacture_summary_table(retailerList);
+  
+  let currentdate = new Date();
+  const options = {  year: 'numeric', month: 'short', day: 'numeric'};
+  const today_event = new Date(Date.UTC(currentdate.getFullYear(), ('0' + (currentdate.getMonth() + 0)).slice(-2), (('0' + currentdate.getDate()).slice(-2)), 3, 0, 0));
+  const today = today_event.toLocaleDateString('en-US', options);
+  const add_five_year_event = new Date(Date.UTC((currentdate.getFullYear() + 5), ('0' + (currentdate.getMonth() + 0)).slice(-2), (('0' + currentdate.getDate()).slice(-2)), 3, 0, 0));
+  const add_five_year = add_five_year_event.toLocaleDateString('en-US', options);
 
 	var pdfDocument = {
     pageOrientation: 'portrait',
@@ -4163,29 +4221,8 @@ const preparePdfMemoFrontPage = async function (retailer_upload_id, retailerList
                 style: 'tableExample',
                 margin: [ 1, 1 ],
                 table: {
-                  widths: ['33%', '33%', '33%'],
-                  body: [
-                    [
-                      {text: 'OEM', alignment: 'center', margin: [ 5, 0 ], bold: false},
-                      {text: 'Credit Tenor (days)', alignment: 'center', margin: [ 5, 0 ], bold: false},
-                      {text: 'Grace Period (days)', alignment: 'center', margin: [ 5, 0 ], bold: false},
-                    ],
-                    [
-                      {text: 'BATB', alignment: 'left', margin: [ 5, 0 ], bold: false},
-                      {text: '07', alignment: 'center', margin: [ 5, 0 ], bold: false},
-                      {text: '-', alignment: 'center', margin: [ 5, 0 ], bold: false},
-                    ],
-                    [
-                      {text: 'Syngenta', alignment: 'left', margin: [ 5, 0 ], bold: false},
-                      {text: '180', alignment: 'center', margin: [ 5, 0 ], bold: false},
-                      {text: '-', alignment: 'center', margin: [ 5, 0 ], bold: false},
-                    ],
-                    [
-                      {text: 'UBL', alignment: 'left', margin: [ 5, 0 ], bold: false},
-                      {text: '14', alignment: 'center', margin: [ 5, 0 ], bold: false},
-                      {text: '07', alignment: 'center', margin: [ 5, 0 ], bold: false},
-                    ],
-                  ]
+                  widths : ['33%', '33%', '33%'],
+                  body : manufactureSummaryTable.table,
                 },
                 layout: {
                   hLineWidth: function (i, node) {
@@ -4207,15 +4244,15 @@ const preparePdfMemoFrontPage = async function (retailer_upload_id, retailerList
             ],
             [
               {text: 'Total Proposed Limit under\n this proposal', margin: [ 5, 0 ], bold: true},
-              {text: '<<Summation of Proposed Sanction Amount>>', color: 'red', margin: [ 5, 0 ], bold: false},
+              {text: await amount_in_words(manufactureSummaryTable.sum), color: 'black', margin: [ 5, 0 ], bold: false},
             ],
             [
               {text: 'Sanction Date', margin: [ 5, 0 ], bold: true},
-              {text: '<<Sanction Date>>', color: 'red', margin: [ 5, 0 ], bold: false},
+              {text: today, color: 'black', margin: [ 5, 0 ], bold: false},
             ],
             [
               {text: 'Sanction Expiry', margin: [ 5, 0 ], bold: true},
-              {text: '<<Sanction Date + 05 Years >>', color: 'red', margin: [ 5, 0 ], bold: false},
+              {text: add_five_year, color: 'black', margin: [ 5, 0 ], bold: false},
             ],
             [
               {text: 'Sanction Limit Parameters', margin: [ 5, 0 ], bold: true},
@@ -4224,18 +4261,12 @@ const preparePdfMemoFrontPage = async function (retailer_upload_id, retailerList
           ]
         },
         layout: {
-          hLineStyle: function (i, node) {
-            if (i === 0 || i === node.table.body.length) {
-              return null;
-            }
-            return {dash: {length: 1, space: 1}};
+          hLineWidth: function (i, node) {
+            return 1;
           },
-          vLineStyle: function (i, node) {
-            if (i === 0 || i === node.table.widths.length) {
-              return null;
-            }
-            return {dash: {length: 1}};
-          },
+          vLineWidth: function (i, node) {
+            return 1;
+          }
         }
       },
       {
@@ -4314,8 +4345,8 @@ const preparePdfMemoFrontPage = async function (retailer_upload_id, retailerList
               {text: 'Reviewed by:', alignment: 'center', margin: [ 5, 0 ], bold: true},
             ],
             [
-              {text: ' ', margin: [ 5, 0 ], bold: true},
-              {text: ' ', margin: [ 5, 0 ], bold: false},
+              {text: ' \n \n ', margin: [ 5, 0 ], bold: true},
+              {text: ' \n \n ', margin: [ 5, 0 ], bold: false},
             ],
             [
               {text: 'Head of Unit', alignment: 'center', margin: [ 5, 0 ], bold: false},
@@ -4336,7 +4367,7 @@ const preparePdfMemoFrontPage = async function (retailer_upload_id, retailerList
 	};
   
   let pdfmake = new Pdfmake(fonts);
-  const file_path = 'public/credit_memo/' + retailer_upload_id;
+  const file_path = 'public/credit_memo/' + uniqueMemoId;
   if (!fs.existsSync(file_path)) {
     fs.mkdirSync(file_path, { recursive: true });
   }
@@ -4347,15 +4378,9 @@ const preparePdfMemoFrontPage = async function (retailer_upload_id, retailerList
   return true;
 }
 
-const preparePdfRetailerListPage = async function (retailer_upload_id, retailer_list){
+const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list){
   const retailerList = await creditMemoRetailerListPrepare(retailer_list);
   var fonts = {
-    Roboto: {
-        normal: 'node_modules/font/roboto/Roboto-Regular.ttf',
-        bold: 'node_modules/font/roboto/Roboto-Medium.ttf',
-        italics: 'node_modules/font/roboto/Roboto-Italic.ttf',
-        bolditalics: 'node_modules/font/roboto/Roboto-MediumItalic.ttf'
-    },
   	Calibri: {
 			normal: 'node_modules/font/calibri/Calibri-Regular.ttf',
 			bold: 'node_modules/font/calibri/Calibri-Bold.ttf',
@@ -4400,7 +4425,7 @@ const preparePdfRetailerListPage = async function (retailer_upload_id, retailer_
     ]
 	};	
   let pdfmake = new Pdfmake(fonts);
-  const file_path = 'public/credit_memo/' + retailer_upload_id;
+  const file_path = 'public/credit_memo/' + uniqueMemoId;
   if (!fs.existsSync(file_path)) {
     fs.mkdirSync(file_path, { recursive: true });
   }
@@ -4411,36 +4436,57 @@ const preparePdfRetailerListPage = async function (retailer_upload_id, retailer_
   return true;
 }
 
-const creditMemoRetailerList = async function (retailer_upload_id){
-  const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-    .where("cr_retailer_manu_scheme_mapping.retailer_upload_id", retailer_upload_id)
-    .where("cr_retailer_manu_scheme_mapping.limit_status", 'Upload')
-    .whereRaw(`"cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NOT NULL`)
-    .where("cr_retailer.kyc_status", 1)
-    .where("cr_retailer_manu_scheme_mapping.cib_status", 1)
-    .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
-    .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
-    .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
-    .select(
-      "cr_retailer_manu_scheme_mapping.retailer_code",
-      "cr_retailer.retailer_name",
-      "cr_manufacturer.manufacturer_name",
-      "cr_retailer_manu_scheme_mapping.propose_limit",
-      "cr_retailer_manu_scheme_mapping.crm_approve_limit",
-      "cr_retailer_manu_scheme_mapping.processing_fee",
-      knex.raw(`TO_CHAR("cr_retailer"."created_at", 'YYYY/MM/DD') AS "created_date"`)
-    )
-    .innerJoin(
-      "APSISIPDC.cr_retailer",
-      "cr_retailer.id",
-      "cr_retailer_manu_scheme_mapping.retailer_id"
-    )
-    .innerJoin(
-      "APSISIPDC.cr_manufacturer",
-      "cr_manufacturer.id",
-      "cr_retailer_manu_scheme_mapping.manufacturer_id"
-    );
-  return result;
+const creditMemolog = async function (req, uniqueMemoId, retailerList){
+  let id_list = [];
+  let count_sum = 0;
+  for (const [key, value] of Object.entries(retailerList)) {
+    id_list.push(value.id);
+    count_sum += value.crm_approve_limit;
+  }
+
+  const cr_credit_memo_log = {
+    memo_id : uniqueMemoId,
+    ref_no : null,
+    count_retailer : Object.keys(retailerList).length,
+    count_sum : parseInt(count_sum),
+    credit_memo_status : null,
+    credit_memo_create_date : new Date(),
+    created_by: parseInt(req.user_id)
+  }
+  const insert_log = await knex("APSISIPDC.cr_credit_memo_log").insert(cr_credit_memo_log).returning("id");
+  
+  await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+    .whereIn("id", id_list)
+    .update({
+      credit_memo_id : parseInt(insert_log[0]),
+      credit_memo_status : 1,
+    });
+  
+  return true;
+}
+
+const manufacture_summary_table = async function (retailerList){
+  let temp = [];
+  let tableList = [];
+  temp.push({text: 'OEM', color: '#000', margin: [5, 0 ], alignment: 'center', bold: true});
+  temp.push({text: 'Credit Tenor (Days)', margin: [5, 0 ], alignment: 'center', bold: true});
+  temp.push({text: 'Grace Period (Days)', margin: [5, 0 ], alignment: 'center', bold: true}); 
+  tableList.push(temp);
+
+  let check_array = [];
+  let count_sum = 0;
+  for (const [key, value] of Object.entries(retailerList)) {    
+    if (!check_array.includes(value.manufacturer_name)){
+      let temp = [];
+      temp.push({text: value.manufacturer_name, margin: [5, 0 ], alignment: 'left', bold: false});
+      temp.push({text: '-', margin: [5, 0 ], alignment: 'center', bold: false});
+      temp.push({text: '-', margin: [5, 0 ], alignment: 'center', bold: false});
+      check_array.push(value.manufacturer_name);
+      tableList.push(temp);
+    }
+    count_sum += value.crm_approve_limit;
+  }
+  return {sum : count_sum, table : tableList};
 }
 
 const creditMemoRetailerListPrepare = async function (result){
@@ -4503,42 +4549,44 @@ const dayDifference = async function (created_date){
   let date1 = new Date(created_date);
   let currentdate = new Date();
   let today = currentdate.getFullYear() + "/" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "/" + ('0' + currentdate.getDate()).slice(-2);
-  let date2 = new Date(today);  
+  let date2 = new Date(today);
   let difference_time = date2.getTime() - date1.getTime();
   let difference_days = difference_time / (1000 * 3600 * 24);  
   return difference_days;
 }
 
-const margePdf = async function (retailer_upload_id){
+const margePdf = async function (today, memo_id){
   var merger = new PDFMerger();
-  const file_path = 'public/credit_memo/' + retailer_upload_id;
+  const file_path = 'public/credit_memo/' + memo_id;
+  
   (async () => {
-    merger.add(file_path + '/'+'page_1.pdf');
-    merger.add(file_path + '/'+'page_2.pdf');
-    await merger.save(file_path + '/'+'creditMemo_' + retailer_upload_id + '.pdf');
+    await merger.add(file_path + '/' + 'page_1.pdf');
+    await merger.add(file_path + '/' + 'page_2.pdf');
+    await merger.save(file_path + '/'+'Credit_Memo_' + memo_id + '_(' + today + ')' +'.pdf');
   })();
 }
 
 Retailer.creditMemoDownload = function (req) {
   return new Promise(async (resolve, reject) => {
-    const retailer_upload_id = req.retailer_upload_id;
-    const result = await knex("APSISIPDC.cr_retailer_upload_log")
-      .where("retailer_upload_id", retailer_upload_id)
-      .where("credit_memo_status", 'Success')
+    const memo_id = req.memo_id;
+    const result = await knex("APSISIPDC.cr_credit_memo_log")
+      .where("id", memo_id)
       .select(
-        "cr_retailer_upload_log.credit_memo_url",
+        "cr_credit_memo_log.*",
       )
       .first();
     
-    const file_path = 'public/credit_memo/' + retailer_upload_id + '/'+'creditMemo_' + retailer_upload_id + '.pdf';
-    if(result.credit_memo_url == null){    
-      const margeAllPdf = await margePdf(retailer_upload_id);
-      let updateLog = await knex("APSISIPDC.cr_retailer_upload_log")
-            .where({ retailer_upload_id: retailer_upload_id })
-            .where({ credit_memo_status: "Success" })
-            .update({
-              credit_memo_url: file_path
-            });
+    var file_path = '';
+    const today = moment(new Date()).format('YYYY-MM-DD');
+    if(result.credit_memo_url == null){
+      file_path = 'public/credit_memo/' + result.memo_id + '/'+'Credit_Memo_' + result.memo_id + '_(' + today + ')' +'.pdf';
+      await margePdf(today, result.memo_id);
+      await knex("APSISIPDC.cr_credit_memo_log")
+        .where({ id: memo_id })
+        .update({
+          credit_memo_url : file_path,
+          credit_memo_status : 1
+        });
     }
     await timeout(1500);
     resolve(sendApiResult(true, "Credit Memo Download Successfully", file_path));
@@ -4548,7 +4596,7 @@ Retailer.creditMemoDownload = function (req) {
 Retailer.downloadLimitUploadFile = function (req) {
   return new Promise(async (resolve, reject) => {
     const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-      .where("cr_retailer_manu_scheme_mapping.retailer_upload_id", req.retailer_upload_id)
+      // .where("cr_retailer_manu_scheme_mapping.retailer_upload_id", req.retailer_upload_id)
       .where("cr_retailer_manu_scheme_mapping.limit_status", 'Initiated')
       .whereRaw(`"cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NULL`)
       .where("cr_retailer.kyc_status", 1)
@@ -4560,6 +4608,7 @@ Retailer.downloadLimitUploadFile = function (req) {
       .select(
         "cr_retailer.retailer_name",
         "cr_retailer_manu_scheme_mapping.retailer_nid",
+        "cr_retailer_manu_scheme_mapping.manufacturer_id",
         knex.raw(`TO_CHAR("cr_retailer_kyc_information"."date_of_birth", 'YYYY-MM-DD') AS "date_of_birth"`),   
         "cr_retailer_manu_scheme_mapping.retailer_code",
         knex.raw(`CASE "cr_retailer_manu_scheme_mapping"."cib_status" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "cib_status"`),
@@ -4631,7 +4680,7 @@ Retailer.downloadLimitUploadFile = function (req) {
       var headers = [
         "Sr.",
         "Name of the Retailer",
-        "Retailer NID",
+        "Retailer_NID",
         "Age",
         "Retailer Code",
         "CIB Status",
@@ -4642,9 +4691,9 @@ Retailer.downloadLimitUploadFile = function (req) {
         "Average Monthly Sales",
         "Proposed Sanction Limit by System",
         "% of Proposed Sanction with Average Sales Value",
-        "Proposed Limit by CRM",
+        "Proposed_Limit_by_CRM",
         "% Of Proposed Sanction by CRM with Average Sales Value",
-        "Manufacturer Name",
+        "Manufacturer_Name",
         "Scheme Name",
         "Pre-Assigned Limit for this manufacturer in DANA System",
         "Pre-Assigned Limit across all manufacturers in DANA System",
@@ -4657,7 +4706,7 @@ Retailer.downloadLimitUploadFile = function (req) {
         "Current Overdue Amount in DANA",
         "Historical Maximum Overdue Days in DANA",
         "Current Maximum Overdue Days in DANA",
-        "Retailer Mobile Number"
+        "Retailer_Mobile_Number"
       ];
 
       var col = 1;
@@ -4676,6 +4725,9 @@ Retailer.downloadLimitUploadFile = function (req) {
       for (let i = 0; i < result.length; i++) {
         var col_add = 0;
         let e = result[i];
+        // let limit_info_details = retailerAvgByManufacturer(e.retailer_nid, e.manufacturer_id);        
+        // console.log('limit_info_details');
+        // console.log(limit_info_details);
         worksheet.cell(row, col + col_add).number((i + 1));
         col_add++;
         worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : "");
@@ -4685,7 +4737,7 @@ Retailer.downloadLimitUploadFile = function (req) {
         worksheet.cell(row, col + col_add).number(e.date_of_birth ? await yearDifference(e.date_of_birth) : "0");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.retailer_code ? e.retailer_code : "-");
-        col_add++;                
+        col_add++;
         worksheet.cell(row, col + col_add).string(e.cib_status ? e.cib_status : "-");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.total_outstanding ? e.total_outstanding : "-");
@@ -4698,7 +4750,7 @@ Retailer.downloadLimitUploadFile = function (req) {
         col_add++;
         worksheet.cell(row, col + col_add).string(e.avg_monthly_sales ? e.avg_monthly_sales : "-");
         col_add++;
-        worksheet.cell(row, col + col_add).string(e.proposed_sanction_limit_by_system ? e.proposed_sanction_limit_by_system : "-");
+        worksheet.cell(row, col + col_add).number(e.proposed_sanction_limit_by_system ? e.proposed_sanction_limit_by_system : 0);
         col_add++;
         worksheet.cell(row, col + col_add).string(e.proposed_sanction_with_avg_sales_value ? e.proposed_sanction_with_avg_sales_value : "-");
         col_add++;
@@ -4740,8 +4792,8 @@ Retailer.downloadLimitUploadFile = function (req) {
       if (!fs.existsSync(file_path)) {
         fs.mkdirSync(file_path, { recursive: true });
       }
-      workbook.write(file_path + " Limit Upload Retailer List (" + today + ").xlsx");
-      const fileName = "retailer/limit_upload/" + " Limit Upload Retailer List (" + today + ").xlsx";
+      workbook.write(file_path + "Limit_Upload_Retailer_List_(" + today + ").xlsx");
+      const fileName = "retailer/limit_upload/" + "Limit_Upload_Retailer_List_(" + today + ").xlsx";
       await timeout(1500);
       resolve(sendApiResult(true, "Limit Upload Retailer List", fileName));
     }
@@ -4756,6 +4808,208 @@ const yearDifference = async function (dob){
   let difference_time = date2.getTime() - date1.getTime();
   let difference_year = difference_time / (1000 * 3600 * 24 * 365);  
   return parseInt(difference_year);
+}
+
+Retailer.uploadRetailerLimitUploadFile = function (rows, filename, req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex.transaction(async (trx) => {
+        const manufacturer_sql = await trx("APSISIPDC.cr_manufacturer")
+          .select("id", "manufacturer_name")
+          .where("status", "Active");
+
+        const manufacturer_list = [];
+        for (const [key, value] of Object.entries(manufacturer_sql)) {
+          manufacturer_list[value.manufacturer_name] = value.id;
+        }
+        let update_count = 0;
+        if (Object.keys(rows).length !== 0) {
+            for (let index = 0; index < rows.length; index++) {
+              if(rows[index].Retailer_NID != undefined && rows[index].Manufacturer_Name != undefined && rows[index].Proposed_Limit_by_CRM != undefined){
+                let limit_crm = rows[index].Proposed_Limit_by_CRM;
+                let retailer_nid = rows[index].Retailer_NID;
+                let manufacturer_id = rows[index].Manufacturer_Name ? manufacturer_list[rows[index].Manufacturer_Name] : null;
+                let mobile_number = rows[index].Retailer_Mobile_Number;
+                const limitUpdate = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+                    .where({ retailer_nid : retailer_nid, manufacturer_id : manufacturer_id, phone : mobile_number, cib_status : 1, is_valid : 1, is_duplicate : 0, is_eligible : 1, status : 'Inactive', limit_status : 'Initiated'})
+                    .whereRaw('("cr_retailer_manu_scheme_mapping"."system_limit_date" IS NOT NULL AND "cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NULL)')                    
+                    .update({
+                      crm_approve_limit: parseInt(limit_crm),
+                      crm_approve_date: new Date(),
+                      limit_status : 'Upload'
+                    });
+                if(limitUpdate) ++update_count;
+              }
+            }
+            if (Object.keys(rows).length != 0) {              
+              resolve(sendApiResult(true, "Limit Upload Successfull. " + update_count + " Retailer's Limit Updated."));
+            }
+            else {
+              reject(sendApiResult(false, "Limit Upload Failed"));
+            }
+        }
+        else {
+          resolve(sendApiResult(true, "No Valid Retailer Limit Found in your Uploaded File."));
+        }        
+      })
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  }).catch((error) => {
+    console.log(error, 'Promise error');
+  });
+};
+
+Retailer.uploadCreditMemoFile = function (filename, req) {
+  return new Promise(async (resolve, reject) => {
+    await knex.transaction(async (trx) => {
+      const limitUpdate = await trx("APSISIPDC.cr_credit_memo_log")
+      .where({id : req.memo_id})      
+      .update({
+        credit_memo_upload_status : 1,
+        credit_memo_upload_url : 'public/credit_memo/signed/' + filename,
+        credit_memo_upload_date : new Date()
+      });
+      resolve(sendApiResult(true, "Credit Memo Upload Successfully."));
+    })
+    .then((result) => {
+      //
+    })
+    .catch((error) => {
+      reject(sendApiResult(false, error.message));
+    });
+  }).catch((error) => {
+    console.log(error, 'Promise error');
+  });
+}
+
+const amount_in_words = async function (numericValue) {	
+	numericValue = parseFloat(numericValue).toFixed(2);	
+	var amount = numericValue.toString().split('.');
+	var taka = amount[0];
+	var paisa = amount[1];
+	var full_amount_in_words = await convert(taka) +" Taka and "+ await convert(paisa)+" Paisa Only";
+	return full_amount_in_words;
+}
+
+const convert = async function (numericValue) {
+	var iWords = ['Zero', ' One', ' Two', ' Three', ' Four', ' Five', ' Six', ' Seven', ' Eight', ' Nine'];
+	var ePlace = ['Ten', ' Eleven', ' Twelve', ' Thirteen', ' Fourteen', ' Fifteen', ' Sixteen', ' Seventeen', ' Eighteen', ' Nineteen'];
+	var tensPlace = ['', ' Ten', ' Twenty', ' Thirty', ' Forty', ' Fifty', ' Sixty', ' Seventy', ' Eighty', ' Ninety'];
+	var inWords = [];
+	var numReversed, inWords, actnumber, i, j;
+	inWords = [];	
+	if(numericValue == "00" || numericValue =="0"){
+		return 'Zero';
+	}
+	var obStr = numericValue.toString();	
+	numReversed = obStr.split('');
+	actnumber = numReversed.reverse();
+	if (Number(numericValue) == 0) {
+		return 'Zero';
+	}
+	var iWordsLength = numReversed.length;
+	var finalWord = '';
+	j = 0;
+	for (i = 0; i < iWordsLength; i++) {
+		switch (i) {
+			case 0:
+				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+					inWords[j] = '';
+				} else {
+					inWords[j] = iWords[actnumber[i]];
+				}
+				inWords[j] = inWords[j] + '';
+				break;
+			case 1:				
+				if (actnumber[i] == 0) {
+					inWords[j] = '';
+				} else if (actnumber[i] == 1) {
+					inWords[j] = ePlace[actnumber[i - 1]];
+				} else {
+					inWords[j] = tensPlace[actnumber[i]];
+				}
+				break;
+			case 2:
+				if (actnumber[i] == '0') {
+					inWords[j] = '';
+				} else if (actnumber[i - 1] !== '0' && actnumber[i - 2] !== '0') {
+					inWords[j] = iWords[actnumber[i]] + ' Hundred';
+				} else {
+					inWords[j] = iWords[actnumber[i]] + ' Hundred';
+				}
+				break;
+			case 3:
+				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+					inWords[j] = '';
+				} else {
+					inWords[j] = iWords[actnumber[i]];
+				}
+				if (actnumber[i + 1] !== '0' || actnumber[i] > '0') {
+					inWords[j] = inWords[j] + ' Thousand';
+				}
+				break;
+			case 4:
+				if (actnumber[i] == 0) {
+					inWords[j] = '';
+				} else if (actnumber[i] == 1) {
+					inWords[j] = ePlace[actnumber[i - 1]];
+				} else {
+					inWords[j] = tensPlace[actnumber[i]];
+				}
+				break;
+			case 5:
+				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+					inWords[j] = '';
+				} else {
+					inWords[j] = iWords[actnumber[i]];
+				}
+				if (actnumber[i + 1] !== '0' || actnumber[i] > '0') {
+					inWords[j] = inWords[j] + ' Lakh';
+				}
+				break;
+			case 6:				
+				if (actnumber[i] == 0) {
+					inWords[j] = '';
+				} else if (actnumber[i] == 1) {
+					inWords[j] = ePlace[actnumber[i - 1]];
+				} else {
+					inWords[j] = tensPlace[actnumber[i]];
+				}
+				break;
+			case 7:
+				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+					inWords[j] = '';
+				} else {
+					inWords[j] = iWords[actnumber[i]];
+				}
+				inWords[j] = inWords[j] + ' Crore';
+				break;
+			case 8:				
+				if (actnumber[i] == 0) {
+					inWords[j] = '';
+				} else if (actnumber[i] == 1) {
+					inWords[j] = ePlace[actnumber[i - 1]];
+				} else {
+					inWords[j] = tensPlace[actnumber[i]];
+				}
+				break;
+			default:
+				break;
+		}
+		j++;
+	}
+	inWords.reverse();
+	for (i = 0; i < inWords.length; i++) {
+		finalWord += inWords[i];
+	}
+	return finalWord;
 }
 
 module.exports = Retailer;

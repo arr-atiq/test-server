@@ -4,8 +4,10 @@ const router = express.Router();
 const multer = require("multer");
 const retailer = require("../controllers/retailer");
 
-const { uploadDynamicBulkConfig } = require("../controllers/helper");
+const { uploadDynamicBulkConfig, uploadLimitUpload, uploadCreditMemo } = require("../controllers/helper");
 const uploadDynBulkFile = multer({ storage: uploadDynamicBulkConfig("file") });
+const uploadLimitUploadFile = multer({ storage: uploadLimitUpload("file") });
+const uploadCreditMemoFile = multer({ storage: uploadCreditMemo("file") });
 
 router.get("/retailers", retailer.getRetailerList);
 router.get("/retailer-region", retailer.getRetailerRegionOperation);
@@ -51,6 +53,9 @@ router.post(
     retailer.uploadRetailerCibFile
 );
 
+router.get("/check-retailer-data-validity/", retailer.checkRetailerDataValidity);
+router.get("/check-retailer-eligibility/", retailer.checkRetailerEligibility);
+
 router.post("/retailer-list-excel-download", retailer.retailerListExcelDownload);
 router.get("/retailer-ineligible-excel-download", retailer.retailerIneligibleExcelDownload);
 router.post("/download-ekyc-report", retailer.downloadEkycReport);
@@ -59,8 +64,20 @@ router.get("/get-retailer-invalid-data/:retailer_upload_id", retailer.getRetaile
 router.get("/get-retailer-invalid-data-by-id/:retailer_id", retailer.getRetailerInvalidDataById);
 router.post("/update-retailer-invalid-data-by-id/", retailer.updateRetailerInvalidDataById);
 router.get("/get-duplicate-retailer-list-by-id/:retailer_upload_id", retailer.getDuplicateRetailerListById);
-router.get("/create-credit-memo/:retailer_upload_id", retailer.createCreditMemo);
-router.post("/download-credit-memo", retailer.creditMemoDownload);
+router.post("/create-credit-memo/", retailer.createCreditMemo);
 router.post("/download-limit-upload-file", retailer.downloadLimitUploadFile);
+router.post("/download-credit-memo", retailer.creditMemoDownload);
+
+router.post(
+    "/upload-limit-upload-file",
+    uploadLimitUploadFile.single("file"),
+    retailer.uploadRetailerLimitUploadFile
+);
+
+router.post(
+    "/upload-credit-memo-file",
+    uploadCreditMemoFile.single("file"),
+    retailer.uploadCreditMemoFile
+);
 
 module.exports = router;
