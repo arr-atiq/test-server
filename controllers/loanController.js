@@ -28,25 +28,33 @@ exports.insertLoanCalculation = async (req, res) => {
   };
   var responseValue = [];
   try{
+    // get all rmn account 
     const allRMNAccount = await getAllRmnAccount();
 
     var allValueResponse = [];
     const myPromise = new Promise((resolve, reject) => {
+      // map rmn account
       allRMNAccount &&
         allRMNAccount?.length > 0 &&
         allRMNAccount?.map(async (rmnAccount) => {
           var loanTableData = await getDataLoanTable(rmnAccount.ac_number_1rmn);
           if (loanTableData?.onermn_acc) {
+            // get scheme id
             const getSchemeId = await getSchemeID(rmnAccount.ac_number_1rmn);
   
             const principalAmount = await getPrincipalAmount(
               rmnAccount.ac_number_1rmn
             );
-            const schemaGetvalue = await axios.get(
-              `${HOSTIP}/scheme/${getSchemeId[0].scheme_id}`,
-              config
-            );
-            const schemavalue = schemaGetvalue.data.data[0];
+            // get scheme value call axios
+            // const schemaGetvalue = await axios.get(
+            //   `${HOSTIP}/scheme/${getSchemeId[0].scheme_id}`,
+            //   config
+            // );
+            const schemaGetvalue =await getSchemeValue(getSchemeId[0]?.scheme_id)
+            // console.log('schemaGetvalue',schemaGetvalue[0])
+            // return
+            const schemavalue = schemaGetvalue[0];
+            // loan tenor in days found
             var LoanTenorIndays = await findLoanTenorIndays(
               rmnAccount.ac_number_1rmn,
               schemavalue
@@ -58,7 +66,7 @@ exports.insertLoanCalculation = async (req, res) => {
               disbursement_id:LoanTenorIndays.disID,
               overdue_amount:parseFloat(LoanTenorIndays?.minimum_amount) + (parseFloat(principalAmount.total_outstanding) - parseFloat(principalAmount.principal_outstanding))
             }
-  
+            // scheme expiry date er sathe add hbe ... expiry date month ase oita er sathe 12 multiply korte hbe , expiry date er jnno
             var date = moment(
               moment(rmnAccount?.crm_approve_date),
               "YYYY-MM-DD"
@@ -66,18 +74,19 @@ exports.insertLoanCalculation = async (req, res) => {
             var now = moment();
   
            
-  
+           // check expiry or not expiry condition
             var checkExpiry = false;
             if (now > date) {
               checkExpiry = true;
             } else {
               checkExpiry = false;
             }
+            //found grace value. Grace value loan tenor in days hole pore extra grace date add korte hbe 
             var graceValue =
               parseInt(schemavalue.loan_tenor_in_days) +
               parseInt(schemavalue.grace_periods_in_days);
               console.log('checkExpirycheckExpiry',checkExpiry)
-  
+           // expiry check condition
             if (checkExpiry) {
               const interestAfterExpiryOverdue = calculateInterest(
                 principalAmount.total_outstanding,
@@ -526,17 +535,8 @@ exports.repayment = async (req, res) => {
 
   // const retailerAvg = await retailerAvgByManufacturer(nid , manuID)
   // console.log('retailerAvg',retailerAvg)
-  // // const p2 = new Promise(async(resolve, reject) => {
-  // //  const retailerAvg = await retailerAvgByManufacturer(nid , manuID)
-  // //  console.log('retailerAvg',retailerAvg)
-
-  // //  if(retailerAvg){
-  // //   resolve(true)
-  // //  }
-  // // }).then((value) => {
-  // //   console.log('valueisvalue',value)
-  // // })
-   return 
+  // res.send(retailerAvg)
+  //  return 
   const findSalesAgent = await findSalesrelation(sales_agent_id, retailer_id);
   const firstRepaymentID = await getfirstRepaymentID(onermn_acc);
   var newInterestPaid = 0
