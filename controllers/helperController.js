@@ -834,8 +834,23 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
    // })
    return data
    }else{
-    responseValue ={
-      'success': false , 'data':'One Rmn Account Not Found'
+    // responseValue ={
+    //   'success': false , 'data':'One Rmn Account Not Found'
+    // }
+    responseValue = {
+      pre_assigned_limit_manufacturer :  0,
+      pre_assigned_limit_all_manufacturer :  0,
+      avg_ticket_size :  0,
+      highest_ticket_size :  0,
+      avg_payment_period :  0,
+      lowest_ticket_size :  0,
+      relationship_tenor :  0,
+      no_revolving_time :  0,
+      current_overdue_amount : 0,
+      historical_maximum_overdue :  0,
+      current_maximum_overdue :  0,
+      max_sanction_amount_allowed :  0,
+      proposed_sanction_amount_total_lifting_amount :  0,
     }
    }
    return responseValue

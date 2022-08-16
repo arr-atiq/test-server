@@ -46,11 +46,14 @@ exports.insertLoanCalculation = async (req, res) => {
               rmnAccount.ac_number_1rmn
             );
             // get scheme value call axios
-            const schemaGetvalue = await axios.get(
-              `${HOSTIP}/scheme/${getSchemeId[0].scheme_id}`,
-              config
-            );
-            const schemavalue = schemaGetvalue.data.data[0];
+            // const schemaGetvalue = await axios.get(
+            //   `${HOSTIP}/scheme/${getSchemeId[0].scheme_id}`,
+            //   config
+            // );
+            const schemaGetvalue =await getSchemeValue(getSchemeId[0]?.scheme_id)
+            // console.log('schemaGetvalue',schemaGetvalue[0])
+            // return
+            const schemavalue = schemaGetvalue[0];
             // loan tenor in days found
             var LoanTenorIndays = await findLoanTenorIndays(
               rmnAccount.ac_number_1rmn,
@@ -532,16 +535,7 @@ exports.repayment = async (req, res) => {
 
   // const retailerAvg = await retailerAvgByManufacturer(nid , manuID)
   // console.log('retailerAvg',retailerAvg)
-  // // const p2 = new Promise(async(resolve, reject) => {
-  // //  const retailerAvg = await retailerAvgByManufacturer(nid , manuID)
-  // //  console.log('retailerAvg',retailerAvg)
-
-  // //  if(retailerAvg){
-  // //   resolve(true)
-  // //  }
-  // // }).then((value) => {
-  // //   console.log('valueisvalue',value)
-  // // })
+  // res.send(retailerAvg)
   //  return 
   const findSalesAgent = await findSalesrelation(sales_agent_id, retailer_id);
   const firstRepaymentID = await getfirstRepaymentID(onermn_acc);
