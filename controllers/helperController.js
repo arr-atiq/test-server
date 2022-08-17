@@ -752,8 +752,9 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
     const currMaxOverdue = await findCurrMaxOverDueAmount(retailerData?.ac_number_1rmn) ?? []
     const currMaxHisOverdue = await findHisMaxOverDueAmount(retailerData?.ac_number_1rmn) ?? []
     const allRepData = await getAllRepData (retailerData.ac_number_1rmn)
- 
- 
+    const total_outstanding_value = await getTotalOutstanding(retailerData?.ac_number_1rmn) 
+    const overdue_amount_total  = await getTotalOverdueAmount (retailerData?.ac_number_1rmn)
+    
     let sales_array = retailerData.sales_array
     let totalSales = getTotal(JSON.parse(sales_array));
     let totalRepDays = 0
@@ -818,6 +819,10 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
        current_maximum_overdue : currMaxOverdue?.MAXAMOUNT ?? 0,
        max_sanction_amount_allowed : retailerData?.crm_approve_limit ?? 0,
        proposed_sanction_amount_total_lifting_amount : propose_snaction_total_lift_amount ?? 0,
+       total_outstanding : total_outstanding_value.total_outstanding ?? 0,
+       avg_monthly_sales: avgSalarySales,
+       overdue_amount : overdue_amount_total?.TOTAL_AMOUNT ?? 0 ,
+       proposed_sanction_limit_by_system:retailerData.propose_limit ?? 0
      }
      // resolve(responseValue) ;
    })
@@ -825,13 +830,28 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
      console.error('error.message' ,error.message)
    });
  
-   // .then(() => {
-   //   const highTicketSize = Math.max(...ticketSizeArray)
-   //   const lowTicketSize = Math.min(...ticketSizeArray)
  
-   //   console.log('highTicketSize',lowTicketSize)
-   // })
-   return data
+   responseValue = {
+    pre_assigned_limit_manufacturer :  0,
+    pre_assigned_limit_all_manufacturer :  0,
+    avg_ticket_size :  0,
+    highest_ticket_size :  0,
+    avg_payment_period :  0,
+    lowest_ticket_size :  0,
+    relationship_tenor :  0,
+    no_revolving_time :  0,
+    current_overdue_amount : 0,
+    historical_maximum_overdue :  0,
+    current_maximum_overdue :  0,
+    max_sanction_amount_allowed :  0,
+    proposed_sanction_amount_total_lifting_amount :  0,
+    total_outstanding : 0,
+    avg_monthly_sales: 0,
+    overdue_amount : 0 ,
+    proposed_sanction_limit_by_system:0
+    }
+
+   return data ?? responseValue
    }else{
     // responseValue ={
     //   'success': false , 'data':'One Rmn Account Not Found'
@@ -850,6 +870,10 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
       current_maximum_overdue :  0,
       max_sanction_amount_allowed :  0,
       proposed_sanction_amount_total_lifting_amount :  0,
+      total_outstanding : 0,
+      avg_monthly_sales: 0,
+      overdue_amount : 0 ,
+      proposed_sanction_limit_by_system:0
     }
    }
    return responseValue
@@ -920,7 +944,6 @@ var findCurrOverDueAmount =async (oneRmn) =>{
   return  await knex("APSISIPDC.cr_disbursement")
   .where("dis_status", 0).orderBy("id", "asc")
   .where("onermn_acc", oneRmn).first() ?? []
-
 }
 
 var findCurrMaxOverDueAmount =async (oneRmn) =>{
@@ -934,5 +957,22 @@ var findHisMaxOverDueAmount =async (oneRmn) =>{
   return  await knex("APSISIPDC.cr_overdue_amount")
   .select(knex.raw('MAX("cr_overdue_amount"."overdue_amount") AS maxAmount') , )
   .where("onermn", oneRmn).first() ?? []
+}
+
+var getTotalOutstanding = async (onermn_acc) => {
+  return await knex
+    .from("APSISIPDC.cr_retailer_loan_calculation")
+    .select()
+    .where("onermn_acc", onermn_acc)
+    .orderBy("id", "desc")
+    .first();
+};
+
+var getTotalOverdueAmount =async (onermn_acc) =>{
+  return await knex
+  .from("APSISIPDC.cr_disbursement")
+  .select(knex.raw('SUM("cr_disbursement"."overdue_amount") AS total_amount') , )
+  .where("dis_status", 0)
+  .where("onermn_acc", oneRmn).first();
 }
 // @Ashik RETAILER AVERAGE END
