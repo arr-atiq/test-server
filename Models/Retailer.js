@@ -2,10 +2,12 @@ const moment = require("moment");
 const excel = require('excel4node');
 const fs = require('fs');
 const { getJsDateFromExcel } = require("excel-date-to-js");
-const { sendApiResult, ValidateNID, timeout, sendReportApiResult } = require("../controllers/helperController");
+const { sendApiResult, ValidateNID, ValidatePhoneNumber, timeout, sendReportApiResult, retailerAvgByManufacturer } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { getSchemeDetailsById } = require("../controllers/scheme");
 const { creditLimit } = require("../controllers/credit_limit");
+const Pdfmake = require("pdfmake");
+const PDFMerger = require("pdf-merger-js");
 
 const Retailer = function () { };
 
@@ -28,7 +30,8 @@ Retailer.insertExcelData = function (rows, filename, req) {
               sales_agent_id: rows[index].Sales_Agent_ID !== undefined ? rows[index].Sales_Agent_ID : null,
               retailer_name: rows[index].Retailer_Name !== undefined ? rows[index].Retailer_Name : null,
               sales_agent_id: rows[index].Sales_Agent_ID !== undefined ? rows[index].Sales_Agent_ID : null,
-              retailer_nid: rows[index].Retailer_NID !== undefined ? rows[index].Retailer_NID : null,
+              retailer_nid: rows[index].Retailer_NID !== undefined ? ((rows[index].Retailer_NID).length != 0 ? rows[index].Retailer_NID : rows[index].Retailer_Smart_NID) : null,
+              retailer_smart_nid: rows[index].Retailer_Smart_NID !== undefined ? rows[index].Retailer_Smart_NID : null,
               phone: rows[index].Mobile_No_of_the_Retailer !== undefined ? rows[index].Mobile_No_of_the_Retailer : null,
               email: rows[index].Email !== undefined ? rows[index].Email : null,
               retailer_type: rows[index].Retailer_Type !== undefined ? rows[index].Retailer_Type : null,
@@ -37,7 +40,7 @@ Retailer.insertExcelData = function (rows, filename, req) {
               onboarding: rows[index].Onboarding !== undefined ? rows[index].Onboarding : null,
               order_placement: rows[index].Order_Placement !== undefined ? rows[index].Order_Placement : null,
               repayment: rows[index].Repayment !== undefined ? rows[index].Repayment : null,
-              manufacturer: rows[index].Corresponding_manufacturer_code !== undefined ? rows[index].Corresponding_manufacturer_code : null,
+              manufacturer_id: rows[index].Corresponding_manufacturer_code !== undefined ? parseInt(rows[index].Corresponding_manufacturer_code) : null,
               distributor_code: rows[index].Corresponding_distributor_code !== undefined ? rows[index].Corresponding_distributor_code : null,
               retailer_tin: rows[index].Retailer_TIN !== undefined ? rows[index].Retailer_TIN : null,
               corporate_registration_no: rows[index].Retailer_Corporate_Registration_No !== undefined ? rows[index].Retailer_Corporate_Registration_No : null,
@@ -45,17 +48,18 @@ Retailer.insertExcelData = function (rows, filename, req) {
               outlet_address: rows[index].Outlet_Address !== undefined ? rows[index].Outlet_Address : null,
               outlet_address_1: rows[index].Address_Line_1 !== undefined ? rows[index].Address_Line_1 : null,
               outlet_address_2: rows[index].Address_Line_2 !== undefined ? rows[index].Address_Line_2 : null,
-              postal_code: rows[index].Postal_Code !== undefined ? rows[index].Postal_Code : null,
-              post_office: rows[index].Post_Office !== undefined ? rows[index].Post_Office : null,
-              thana: rows[index].Thana !== undefined ? rows[index].Thana : null,
-              district: rows[index].District !== undefined ? rows[index].District : null,
-              division: rows[index].Division !== undefined ? rows[index].Division : null,
+              postal_code: rows[index].Outlet_Postal_Code !== undefined ? rows[index].Outlet_Postal_Code : null,
+              post_office: rows[index].Outlet_Post_Office !== undefined ? rows[index].Outlet_Post_Office : null,
+              thana: rows[index].Outlet_Thana !== undefined ? rows[index].Outlet_Thana : null,
+              district: rows[index].Outlet_District !== undefined ? rows[index].Outlet_District : null,
+              division: rows[index].Outlet_Division !== undefined ? rows[index].Outlet_Division : null,
               autho_rep_full_name: rows[index].Full_Name_of_Retailer_Authorized_Representative !== undefined ? rows[index].Full_Name_of_Retailer_Authorized_Representative : null,
               autho_rep_nid: rows[index].NID_of_Authorized_Representative !== undefined ? rows[index].NID_of_Authorized_Representative : null,
               autho_rep_phone: rows[index].Mobile_No_of_Representative !== undefined ? rows[index].Mobile_No_of_Representative : null,
               autho_rep_email: rows[index].Official_Email_of_Retailer_Representative !== undefined ? rows[index].Official_Email_of_Retailer_Representative : null,
               region_operation: rows[index].Region_of_Operation !== undefined ? rows[index].Region_of_Operation : null,
-              duration_sales_data: rows[index].Duration_of_Sales_Data_Submitted_in_Months !== undefined ? rows[index].Duration_of_Sales_Data_Submitted_in_Months : null,
+              place_of_birth: rows[index].Place_of_Birth !== undefined ? rows[index].Place_of_Birth : null,
+              duration_sales_data: rows[index].Duration_of_Sales_Data_Submitted_in_Months !== undefined ? parseInt(rows[index].Duration_of_Sales_Data_Submitted_in_Months) : null,
               scheme_id: rows[index].Scheme_ID !== undefined ? rows[index].Scheme_ID : null,
               start_date: rows[index].Start_Date !== undefined ? getJsDateFromExcel(rows[index].Start_Date) : null,
               end_date: rows[index].End_Date !== undefined ? getJsDateFromExcel(rows[index].End_Date) : null,
@@ -187,25 +191,18 @@ Retailer.getRetailerRegionOperation = function (req) {
   });
 };
 
-Retailer.checkRetailerEligibility = function (req) {
+Retailer.checkRetailerDataValidity = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       knex.transaction(async (trx) => {
         const bulk_retailer_upload_log = await trx("APSISIPDC.cr_retailer_upload_log")
-          .select("retailer_upload_id")
+          .select("retailer_upload_id", "file_found_rows")
+          .where("validity_check_status", 0)
+          .where("validity_check_date", null)
           .where("eligibility_check_status", 0)
           .where("eligibility_check_date", null);
 
         if (Object.keys(bulk_retailer_upload_log).length != 0) {
-          const distributorSql = await trx("APSISIPDC.cr_distributor")
-            .select("id", "distributor_code")
-            .where("status", "Active");
-          console.log(distributorSql)
-          const distributorList = [];
-          for (const [key, value] of Object.entries(distributorSql)) {
-            distributorList[value.distributor_code] = value.id;
-            console.log(distributorList[value.distributor_code], value.id)
-          }
 
           const retailerTypeSql = await trx("APSISIPDC.cr_retailer_type")
             .select("id", "name")
@@ -224,293 +221,396 @@ Retailer.checkRetailerEligibility = function (req) {
           for (const [key, value] of Object.entries(retailerTypeEntitySql)) {
             retailerTypeEntity[value.name] = value.id;
           }
+
+          const retailer_fields_validation = await trx("APSISIPDC.cr_retailer_fields_validation")
+            .select("field_name", "field_type", "operator", "field_length")
+            .where("status", 'Active');
+
+          const validation_array = {};
+          for (const [key, value] of Object.entries(retailer_fields_validation)) {
+            let temp = {};
+            temp['type'] = value.field_type;
+            temp['operator'] = value.operator;
+            temp['length'] = value.field_length;
+            validation_array[value.field_name] = temp;
+          }
+
           for (const [index, log] of Object.entries(bulk_retailer_upload_log)) {
             const bulkRetailerInfoList = await trx("APSISIPDC.cr_retailer_temp")
               .select()
               .where("retailer_upload_id", log.retailer_upload_id)
-              .where("eligibility_status", null)
               .where("reason", null);
 
-            const monthCount = 6, minimumSalesAmount = 1000; // static value
-            let validNID, validMonthlySalesData;
-            let eligibileOutletCount = 0, disqualifiedOutletCount = 0;
             if (Object.keys(bulkRetailerInfoList).length != 0) {
-              let max_r_number_rn = 0;
-              const r_number_rn = await trx("APSISIPDC.cr_retailer")
-                .whereRaw('"master_r_number" >= 100000000000')
-                .select(trx.raw(`MAX("master_r_number") AS master_r_number`))
-                .first();
-
-              max_r_number_rn = r_number_rn.master_r_number == null ? 100000000001 : r_number_rn.master_r_number;
-
-              const max_master_loan_info = await knex("APSISIPDC.cr_retailer")
-                .select(
-                  knex.raw(`COUNT("id") AS max_master_loan_id`)
-                );
-
-              const customer_id_info = await knex("APSISIPDC.cr_retailer")
-                .select(
-                  knex.raw(`MAX("customer_id") AS max_customer_id`)
-                )
-                .where("customer_id", '>=', 10000000)
-                .whereNotNull("customer_id");
-
-              let max_customer_id = (customer_id_info[0].max_customer_id != null) ? customer_id_info[0].max_customer_id : 10000000;
-              let max_master_loan_id = (max_master_loan_info[0].max_master_loan_id != null) ? max_master_loan_info[0].max_master_loan_id : 0;
-              // let master_loan_id = '1001DANA' + await addLeadingZeros(++max_master_loan_id, 8);
+              let eligibileOutletCount = 0, disqualifiedOutletCount = 0;
               for (const [key, value] of Object.entries(bulkRetailerInfoList)) {
-                console.log(key, value, bulkRetailerInfoList)
-                if (!value.manufacturer || !distributorList[value.distributor_code]) {
-
-                  await trx("APSISIPDC.cr_retailer_temp")
-                    .where({ id: value.id })
-                    .update({
-                      eligibility_status: "Failed",
-                      reason: "manufacture | Distributor mapping is not correct",
-                      updated_at: new Date(),
-                    });
-                  ++disqualifiedOutletCount;
-
+                let disqualifiedReason = "";
+                let validityCheck = await checkRetailerDataValidityByRow(value, validation_array);
+                let eligibility_status = 'Valid';
+                let is_valid = 1;
+                if (Object.keys(validityCheck).length != 0) {
+                  eligibility_status = "Invalid";
+                  let insertLog = [];
+                  for (const [key, field] of Object.entries(validityCheck)) {
+                    const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+                    const temp = {
+                      retailer_upload_id: value.retailer_upload_id,
+                      temp_upload_id: value.id,
+                      field_name: field,
+                      status: 'Active',
+                      created: new Date(date)
+                    };
+                    insertLog.push(temp);
+                  }
+                  await trx("APSISIPDC.cr_retailer_invalid_fields_log").insert(insertLog).returning("id");
+                  is_valid = 0;
                 }
-                else {
-                  let disqualifiedReason = "";
-                  validNID = ValidateNID(value.retailer_nid);
-                  if (validNID == false) {
-                    disqualifiedReason = disqualifiedReason + "NID Number Invalid. ;; ";
-                  }
-                  const monthlySalesArray = [];
-                  for (let i = 1; i <= 12; i++) {
-                    monthlySalesArray[i] = value["month_" + i];
-                  }
-                  validMonthlySalesData = await checkMonthlySalesData(monthCount, minimumSalesAmount, monthlySalesArray);
-                  if (validMonthlySalesData == false) {
-                    disqualifiedReason = disqualifiedReason + "Monthly Sales Data Invalid. ;; ";
-                  }
+                let salesArray = [];
+                for (let i = 1; i <= 12; i++) {
+                  salesArray.push(value["month_" + i]);
+                }
+                const checkMasterRetailer = await trx("APSISIPDC.cr_retailer")
+                  .select("id")
+                  .whereRaw('("retailer_nid" = ' + value.retailer_nid + ' OR "retailer_smart_nid" = ' + parseInt(value.retailer_smart_nid) + ' OR "phone" = ' + value.phone + ')');
 
-                  if (validNID == false || validMonthlySalesData == false) {
+                const distributorInfo = await trx("APSISIPDC.cr_manufacturer_vs_distributor")
+                  .select("distributor_id")
+                  .where("manufacturer_id", parseInt(value.manufacturer_id))
+                  .where("distributor_code", value.distributor_code)
+                  .where("status", 'Active')
+                  .first();
+
+                if (Object.keys(checkMasterRetailer).length == 0) {
+                  const masterRetailerData = {
+                    retailer_upload_id: value.retailer_upload_id,
+                    temp_upload_id: value.id,
+                    retailer_name: value.retailer_name,
+                    retailer_nid: value.retailer_nid,
+                    retailer_smart_nid: parseInt(value.retailer_smart_nid),
+                    phone: value.phone
+                  };
+                  const masterRetailerInsertLog = await trx("APSISIPDC.cr_retailer").insert(masterRetailerData).returning("id");
+
+                  const sales_agent_mapping = {
+                    'retailer_id': parseInt(masterRetailerInsertLog[0]),
+                    'retailer_code': value.retailer_code,
+                    'manufacturer_id': value.manufacturer_id,
+                    'sales_agent_id': value.sales_agent_id,
+                  };
+                  await trx("APSISIPDC.cr_retailer_vs_sales_agent").insert(sales_agent_mapping);
+
+                  let retailerManuDistMappingInsert = {
+                    retailer_upload_id: value.retailer_upload_id,
+                    temp_upload_id: value.id,
+                    retailer_id: masterRetailerInsertLog[0],
+                    retailer_nid: value.retailer_nid,
+                    retailer_smart_nid: parseInt(value.retailer_smart_nid),
+                    phone: value.phone,
+                    retailer_code: value.retailer_code,
+                    manufacturer_id: value.manufacturer_id,
+                    distributor_id: distributorInfo.distributor_id,
+                    scheme_id: value.scheme_id,
+                    sales_array: JSON.stringify(salesArray),
+                    is_valid: is_valid,
+                    is_duplicate: 0
+                  };
+
+                  const mappingRetailerInsertLog = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping").insert(retailerManuDistMappingInsert).returning("id");
+
+                  const detailsRetailerData = {
+                    retailer_upload_id: value.retailer_upload_id,
+                    retailer_id: masterRetailerInsertLog[0],
+                    manu_scheme_mapping_id: parseInt(mappingRetailerInsertLog[0]),
+                    retailer_name: value.retailer_name,
+                    phone: value.phone,
+                    email: value.email,
+                    retailer_type: parseInt(retailerType[value.retailer_type]),
+                    type_of_entity: parseInt(retailerTypeEntity[value.type_of_entity]),
+                    onboarding: value.onboarding,
+                    order_placement: value.order_placement,
+                    repayment: value.repayment,
+                    retailer_tin: value.retailer_tin,
+                    corporate_registration_no: value.corporate_registration_no,
+                    trade_license_no: value.trade_license_no,
+                    place_of_birth: value.place_of_birth,
+                    outlet_address: value.outlet_address,
+                    outlet_address_1: value.outlet_address_1,
+                    outlet_address_2: value.outlet_address_2,
+                    postal_code: parseInt(value.postal_code),
+                    post_office: value.post_office,
+                    thana: value.thana,
+                    district: value.district,
+                    division: value.division,
+                    autho_rep_full_name: value.autho_rep_full_name,
+                    autho_rep_nid: parseInt(value.autho_rep_nid),
+                    autho_rep_phone: value.autho_rep_phone,
+                    autho_rep_email: value.autho_rep_email,
+                    region_operation: value.region_operation,
+                    duration_sales_data: parseInt(value.duration_sales_data),
+                    status: 'Active',
+                  };
+                  const detailsRetailerInsertLog = await trx("APSISIPDC.cr_retailer_details_info").insert(detailsRetailerData);
+
+                  if (detailsRetailerInsertLog == true) {
                     const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
                       .where({ id: value.id })
                       .update({
-                        eligibility_status: "Failed",
-                        reason: disqualifiedReason,
+                        eligibility_status: "Success",
+                        reason: null,
                         updated_at: new Date(),
                       });
-                    ++disqualifiedOutletCount;
+                    ++eligibileOutletCount;
                   }
-                  if (validNID == true && validMonthlySalesData == true) {
-                    let salesArray = [];
-                    for (let i = 1; i <= 12; i++) {
-                      salesArray.push(value["month_" + i]);
-                    }
-                    const checkMasterRetailer = await trx("APSISIPDC.cr_retailer")
+                } else {
+                  const checkRetailerManuMapping = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+                    .select("id")
+                    .where("manufacturer_id", parseInt(value.manufacturer_id))
+                    .whereRaw('("retailer_nid" = ' + value.retailer_nid + ' OR "retailer_smart_nid" = ' + parseInt(value.retailer_smart_nid) + ' OR "phone" = ' + value.phone + ')');
+
+                  if (Object.keys(checkRetailerManuMapping).length == 0) {
+                    let retailerInfo = await trx("APSISIPDC.cr_retailer")
+                      .select("id AS retailer_id")
+                      .whereRaw('("retailer_nid" = ' + value.retailer_nid + ' OR "retailer_smart_nid" = ' + parseInt(value.retailer_smart_nid) + ' OR "phone" = ' + value.phone + ')')
+                      .first();
+
+                    let retailerManuDistMappingInsert = {
+                      retailer_upload_id: value.retailer_upload_id,
+                      temp_upload_id: value.id,
+                      retailer_id: retailerInfo.retailer_id,
+                      retailer_nid: value.retailer_nid,
+                      retailer_smart_nid: parseInt(value.retailer_smart_nid),
+                      phone: value.phone,
+                      retailer_code: value.retailer_code,
+                      manufacturer_id: value.manufacturer_id,
+                      distributor_id: distributorInfo.distributor_id,
+                      scheme_id: value.scheme_id,
+                      sales_array: JSON.stringify(salesArray),
+                      is_valid: is_valid,
+                      is_duplicate: 1,
+                    };
+
+                    const mappingRetailerInsertLog = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping").insert(retailerManuDistMappingInsert).returning("id");;
+
+                    const checkManuMapping = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
                       .select("id")
-                      // .where("retailer_code", value.retailer_code);
-                      .where("retailer_nid", value.retailer_nid.toString());
+                      .whereRaw('("retailer_nid" = ' + value.retailer_nid + ' OR "retailer_smart_nid" = ' + parseInt(value.retailer_smart_nid) + ' OR "phone" = ' + value.phone + ')')
+                      .first();
 
-                    if (Object.keys(checkMasterRetailer).length == 0) {
-                      const temp_r_number_rn = ++max_r_number_rn;
-                      const masterRetailerData = {
-                        retailer_upload_id: value.retailer_upload_id,
-                        master_r_number: parseInt(temp_r_number_rn),
-                        ac_number_1rn: await prepare_1RN_accountNumber(temp_r_number_rn),
-                        master_loan_id: '1001DANA' + await addLeadingZeros(++max_master_loan_id, 8),
-                        customer_id: parseInt(++max_customer_id),
-                        retailer_name: value.retailer_name,
-                        retailer_nid: value.retailer_nid.toString(),
-                        phone: value.phone,
-                        email: value.email,
-                        retailer_type: parseInt(retailerType[value.retailer_type]),
-                        type_of_entity: parseInt(retailerTypeEntity[value.type_of_entity]),
-                        retailer_code: value.retailer_code,
-                        onboarding: value.onboarding,
-                        order_placement: value.order_placement,
-                        repayment: value.repayment,
-                        retailer_tin: value.retailer_tin,
-                        corporate_registration_no: value.corporate_registration_no,
-                        trade_license_no: value.trade_license_no,
-                        outlet_address: value.outlet_address,
-                        outlet_address_1: value.outlet_address_1,
-                        outlet_address_2: value.outlet_address_2,
-                        postal_code: parseInt(value.postal_code),
-                        post_office: value.post_office,
-                        thana: value.thana,
-                        district: value.district,
-                        division: value.division,
-                        autho_rep_full_name: value.autho_rep_full_name,
-                        autho_rep_nid: value.autho_rep_nid.toString(),
-                        autho_rep_phone: value.autho_rep_phone,
-                        autho_rep_email: value.autho_rep_email,
-                        region_operation: value.region_operation,
-                        duration_sales_data: parseInt(value.duration_sales_data),
-                      };
+                    const duplicate_log = {
+                      retailer_upload_id: value.retailer_upload_id,
+                      new_retailer_info_id: parseInt(mappingRetailerInsertLog[0]),
+                      old_retailer_info_id: checkManuMapping.id,
+                      reason: 'New Manufacturer',
+                      solved_status: 0,
+                      status: 'Active'
+                    };
+                    await trx("APSISIPDC.cr_retailer_duplicate_log").insert(duplicate_log);
 
-                      const masterRetailerInsertLog = await trx("APSISIPDC.cr_retailer").insert(masterRetailerData)
-                        .returning("id");
+                    const detailsRetailerData = {
+                      retailer_upload_id: value.retailer_upload_id,
+                      manu_scheme_mapping_id: parseInt(mappingRetailerInsertLog[0]),
+                      retailer_name: value.retailer_name,
+                      phone: value.phone,
+                      email: value.email,
+                      retailer_type: parseInt(retailerType[value.retailer_type]),
+                      type_of_entity: parseInt(retailerTypeEntity[value.type_of_entity]),
+                      onboarding: value.onboarding,
+                      order_placement: value.order_placement,
+                      repayment: value.repayment,
+                      retailer_tin: value.retailer_tin,
+                      corporate_registration_no: value.corporate_registration_no,
+                      trade_license_no: value.trade_license_no,
+                      place_of_birth: value.place_of_birth,
+                      outlet_address: value.outlet_address,
+                      outlet_address_1: value.outlet_address_1,
+                      outlet_address_2: value.outlet_address_2,
+                      postal_code: parseInt(value.postal_code),
+                      post_office: value.post_office,
+                      thana: value.thana,
+                      district: value.district,
+                      division: value.division,
+                      autho_rep_full_name: value.autho_rep_full_name,
+                      autho_rep_nid: parseInt(value.autho_rep_nid),
+                      autho_rep_phone: value.autho_rep_phone,
+                      autho_rep_email: value.autho_rep_email,
+                      region_operation: value.region_operation,
+                      duration_sales_data: parseInt(value.duration_sales_data),
+                      status: 'Active',
+                    };
+                    const detailsRetailerInsertLog = await trx("APSISIPDC.cr_retailer_details_info").insert(detailsRetailerData);
 
-                      const sales_agent_mapping = {
-                        'retailer_id': parseInt(masterRetailerInsertLog[0]),
-                        'retailer_code': value.retailer_code,
-                        'manufacturer_id': value.manufacturer,
-                        'sales_agent_id': value.sales_agent_id,
-                      };
-                      await trx("APSISIPDC.cr_retailer_vs_sales_agent").insert(sales_agent_mapping);
-
-                      let max_r_number_rmn = 0;
-                      let r_number_rmn = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
-                        .whereRaw('"master_r_number" >= 1000000')
-                        .select(trx.raw(`MAX("master_r_number") AS master_r_number`))
-                        .first();
-
-                      max_r_number_rmn = r_number_rmn.MASTER_R_NUMBER === undefined || r_number_rmn.MASTER_R_NUMBER == null ? 1000000 : parseInt(r_number_rmn.MASTER_R_NUMBER);
-
-                      let temp_r_number_rmn = ++max_r_number_rmn;
-                      // console.log("masterRetailerInsertLog " + r_number_rmn + " => " + temp_r_number_rmn);
-
-                      console.log("--------------", value.manufacturer, distributorList[value.distributor_code])
-                      let loan_id_counter = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
-                        .where("manufacturer_id", value.manufacturer)
-                        .where("distributor_id", distributorList[value.distributor_code])
-                        .select("id");
-
-                      let loan_id = '';
-                      if (Object.keys(loan_id_counter).length == 0)
-                        loan_id = '1001DN' + await addLeadingZeros(value.manufacturer, 2) + await addLeadingZeros(distributorList[value.distributor_code], 3) + await addLeadingZeros(1, 5);
-                      else
-                        loan_id = '1001DN' + await addLeadingZeros(value.manufacturer, 2) + await addLeadingZeros(distributorList[value.distributor_code], 3) + await addLeadingZeros(++(Object.keys(loan_id_counter).length), 5);
-
-                      let retailerManuDistMappingInsert = {
-                        master_r_number: parseInt(temp_r_number_rmn),
-                        ac_number_1rmn: await prepare_1RMN_accountNumber(temp_r_number_rmn, value.manufacturer),
-                        loan_id: loan_id,
-                        retailer_id: masterRetailerInsertLog[0],
-                        retailer_nid: value.retailer_nid.toString(),
-                        retailer_code: value.retailer_code,
-                        manufacturer_id: value.manufacturer,
-                        distributor_id: distributorList[value.distributor_code],
-                        scheme_id: value.scheme_id,
-                        sales_array: JSON.stringify(salesArray),
-                        status: "Active",
-                      };
-
-                      const mappingRetailerInsertLog = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping").insert(retailerManuDistMappingInsert);
-
-                      if (mappingRetailerInsertLog == true) {
-                        const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
-                          .where({ id: value.id })
-                          .update({
-                            eligibility_status: "Success",
-                            reason: null,
-                            updated_at: new Date(),
-                          });
-                        ++eligibileOutletCount;
-                      }
-                    } else {
-                      const checkRetailerManuMapping = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
-                        .select("id")
-                        // .where("retailer_code", value.retailer_code)
-                        .where("retailer_nid", value.retailer_nid.toString())
-                        .where("manufacturer_id", value.manufacturer);
-
-                      if (Object.keys(checkRetailerManuMapping).length == 0) {
-                        let max_r_number_rmn = 0;
-                        let retailerInfo = await trx("APSISIPDC.cr_retailer")
-                          .where("retailer_nid", value.retailer_nid.toString())
-                          .select("id AS retailer_id")
-                          .first();
-
-                        let r_number_rmn = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
-                          .whereRaw('"master_r_number" >= 1000000')
-                          .select(trx.raw(`MAX("master_r_number") AS master_r_number`))
-                          .first();
-
-                        let loan_id_counter = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
-                          .where("manufacturer_id", value.manufacturer)
-                          .where("distributor_id", distributorList[value.distributor_code])
-                          .select("id");
-
-                        let loan_id = '';
-                        if (Object.keys(loan_id_counter).length == 0)
-                          loan_id = '1001DN' + await addLeadingZeros(value.manufacturer, 2) + await addLeadingZeros(distributorList[value.distributor_code], 3) + await addLeadingZeros(1, 5);
-                        else
-                          loan_id = '1001DN' + await addLeadingZeros(value.manufacturer, 2) + await addLeadingZeros(distributorList[value.distributor_code], 3) + await addLeadingZeros(++(Object.keys(loan_id_counter).length), 5);
-
-                        max_r_number_rmn = r_number_rmn.MASTER_R_NUMBER === undefined || r_number_rmn.MASTER_R_NUMBER == null ? 1000000 : r_number_rmn.MASTER_R_NUMBER;
-
-                        let temp_r_number_rmn = ++max_r_number_rmn;
-                        let retailerManuDistMappingInsert = {
-                          master_r_number: parseInt(temp_r_number_rmn),
-                          ac_number_1rmn: await prepare_1RMN_accountNumber(temp_r_number_rmn, value.manufacturer),
-                          loan_id: loan_id,
-                          retailer_id: retailerInfo.retailer_id,
-                          retailer_nid: value.retailer_nid.toString(),
-                          retailer_code: value.retailer_code,
-                          manufacturer_id: value.manufacturer,
-                          distributor_id: distributorList[value.distributor_code],
-                          scheme_id: value.scheme_id,
-                          sales_array: JSON.stringify(salesArray),
-                          status: "Active",
-                        };
-
-                        const mappingRetailerInsertLog = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping").insert(retailerManuDistMappingInsert);
-
-                        if (mappingRetailerInsertLog == true) {
-                          const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
-                            .where({ id: value.id })
-                            .update({
-                              eligibility_status: "Success",
-                              reason: null,
-                              updated_at: new Date(),
-                            });
-                          ++eligibileOutletCount;
-                        }
-                      } else {
-                        disqualifiedReason = disqualifiedReason + "Duplicate NID Found. ;; ";
-                        const duplicate_nid_log = {
-                          retailer_upload_id: value.retailer_upload_id,
-                          retailer_temp_id: value.id,
-                          reason: 'Duplicate NID',
-                          status: 'Active'
-                        };
-                        await trx("APSISIPDC.cr_retailer_duplicate_log").insert(duplicate_nid_log);
-
-                        const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
-                          .where({ id: value.id })
-                          .update({
-                            eligibility_status: "Failed",
-                            reason: disqualifiedReason,
-                            updated_at: new Date()
-                          });
-                        ++disqualifiedOutletCount;
-                      }
+                    if (detailsRetailerInsertLog == true) {
+                      const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
+                        .where({ id: value.id })
+                        .update({
+                          eligibility_status: "Success",
+                          reason: null,
+                          updated_at: new Date(),
+                        });
+                      ++eligibileOutletCount;
                     }
+                  } else {
+                    disqualifiedReason = disqualifiedReason + "Duplicate NID Found. ;; ";
+                    const retailerEligibilityUpdate = await trx("APSISIPDC.cr_retailer_temp")
+                      .where({ id: value.id })
+                      .update({
+                        eligibility_status: "Duplicate",
+                        reason: disqualifiedReason,
+                        updated_at: new Date()
+                      });
+                    ++disqualifiedOutletCount;
                   }
                 }
               }
               await trx("APSISIPDC.cr_retailer_upload_log")
                 .where({ retailer_upload_id: log.retailer_upload_id })
                 .update({
-                  eligibility_check_status: 1,
-                  eligibility_check_date: new Date(),
-                  count_eligibility: parseInt(eligibileOutletCount),
-                  count_ineligible: parseInt(disqualifiedOutletCount),
-                  updated_at: new Date()
+                  validity_check_status: 1,
+                  validity_check_date: new Date()
                 });
-            } else {
-              reject(sendApiResult(false, "No Retailer List to check Eligibility."));
             }
           }
+          resolve(sendApiResult(true, "Retailer Validity Check Successful."));
         } else {
-          reject(sendApiResult(false, "No Retailer List to check Eligibility."));
+          reject(sendApiResult(false, 'No Retailer Found'));
         }
-        resolve(sendApiResult(true, "Retailer Eligibility Check Successful."));
       })
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, error.message));
+        });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   });
 };
 
-Retailer.schemeWiseLimitConfigure = async function (req) {
+Retailer.checkRetailerDataValidityByID = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      knex.transaction(async (trx) => {
+        const { retailer_upload_id } = req.params;
+        const bulk_retailer_upload_log = await trx("APSISIPDC.cr_retailer_upload_log")
+          .select("retailer_upload_id", "file_found_rows", "count_valid", "count_invalid")
+          .where("retailer_upload_id", retailer_upload_id);
+
+        if (Object.keys(bulk_retailer_upload_log).length != 0) {
+          const retailer_fields_validation = await trx("APSISIPDC.cr_retailer_fields_validation")
+            .select("field_name", "field_type", "operator", "field_length")
+            .where("status", 'Active');
+
+          const validation_array = {};
+          for (const [key, value] of Object.entries(retailer_fields_validation)) {
+            let temp = {};
+            temp['type'] = value.field_type;
+            temp['operator'] = value.operator;
+            temp['length'] = value.field_length;
+            validation_array[value.field_name] = temp;
+          }
+          const bulkRetailerInfoList = await trx("APSISIPDC.cr_retailer_temp")
+            .select()
+            .where("retailer_upload_id", retailer_upload_id)
+            .where("eligibility_status", 'Invalid');
+
+          if (Object.keys(bulkRetailerInfoList).length != 0) {
+            let valid_data_count = 0, invalid_data_count = 0;
+            for (const [key, value] of Object.entries(bulkRetailerInfoList)) {
+              let validityCheck = await checkRetailerDataValidityByRow(value, validation_array);
+              await trx("APSISIPDC.cr_retailer_invalid_fields_log").where({ retailer_upload_id: retailer_upload_id, temp_upload_id: value.id })
+                .update({
+                  status: 'Inactive',
+                  updated: new Date(date)
+                });
+              let eligibility_status = 'Valid';
+              if (Object.keys(validityCheck).length != 0) {
+                eligibility_status = "Invalid";
+                ++invalid_data_count;
+                let insertLog = [];
+                const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+                for (const [key, field] of Object.entries(validityCheck)) {
+                  const temp = {
+                    retailer_upload_id: retailer_upload_id,
+                    temp_upload_id: value.id,
+                    field_name: field,
+                    status: 'Active',
+                    created: new Date(date)
+                  };
+                  insertLog.push(temp);
+                }
+                await trx("APSISIPDC.cr_retailer_invalid_fields_log").insert(insertLog);
+              } else {
+                ++valid_data_count;
+              }
+              await trx("APSISIPDC.cr_retailer_temp").where({ id: value.id })
+                .update({
+                  eligibility_status: eligibility_status
+                });
+            }
+
+            await trx("APSISIPDC.cr_retailer_upload_log").where({ retailer_upload_id: retailer_upload_id })
+              .update({
+                count_valid: parseInt(bulk_retailer_upload_log[0].count_valid + valid_data_count),
+                count_invalid: parseInt(invalid_data_count)
+              });
+
+            resolve(sendApiResult(true, "Retailer Validity Check Successful."));
+          } else {
+            reject(sendApiResult(false, "No Retailer List to check Validity."));
+          }
+        } else {
+          reject(sendApiResult(false, "No Retailer List to check Validity."));
+        }
+      })
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, error.message));
+        });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+const checkRetailerDataValidityByRow = async function (row, validation_array) {
+  if (Object.keys(row).length != 0) {
+    let validData = [];
+    for (const [key, value] of Object.entries(validation_array)) {
+      if (row[key] != null) {
+        let condition = '';
+        if (typeof (row[key]) == validation_array[key]['type']) {
+          if (key == 'phone' || key == 'autho_rep_phone' || key == 'retailer_nid' || key == 'autho_rep_nid') {
+            if (key == 'phone' || key == 'autho_rep_phone') {
+              let validPhone = ValidatePhoneNumber(row[key]);
+              if (validPhone == false) validData.push(key);
+            }
+            if (key == 'retailer_nid' || key == 'autho_rep_nid') {
+              let validNID = ValidateNID(row[key]);
+              if (validNID == false) validData.push(key);
+            }
+          } else {
+            let value_length = typeof (row[key]) != 'number' ? row[key].length : row[key].toString().length;
+            if (validation_array[key]['operator'] == '<=') {
+              condition = (value_length <= validation_array[key]['length']);
+            } else {
+              condition = (value_length == validation_array[key]['length']);
+            }
+            (condition) ? null : validData.push(key);
+          }
+        } else {
+          validData.push(key);
+        }
+      }
+    }
+    if (Object.keys(validData).length == 0) return validData;
+    else return validData;
+  }
+};
+
+Retailer.checkRetailerEligibility = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async (trx) => {
@@ -524,13 +624,17 @@ Retailer.schemeWiseLimitConfigure = async function (req) {
             "scheme_id",
             "sales_array"
           )
+          .where("is_valid", 1)
+          .where("is_duplicate", 0)
+          .where("is_valid", 1)
+          .whereRaw('"cib_id" IS NULL')
+          .whereRaw('"cib_status" IS NULL')
           .where("limit_status", "Unset")
-          .where("status", "Active");
+          .where("status", "Inactive");
 
         if (Object.keys(retailerList).length !== 0) {
           for (const [key, value] of Object.entries(retailerList)) {
             let schemaParameterDeatils = await getSchemeDetailsById(value.scheme_id);
-
             const salesArray = JSON.parse(value.sales_array);
             const systemLimit = await creditLimit(
               schemaParameterDeatils.uninterrupted_sales,
@@ -546,6 +650,7 @@ Retailer.schemeWiseLimitConfigure = async function (req) {
               .update({
                 system_limit: parseFloat(systemLimit),
                 limit_status: "Initiated",
+                is_eligible: (parseInt(systemLimit) > 0) ? 1 : 0,
                 system_limit_date: new Date(),
                 updated_at: new Date(),
               });
@@ -576,31 +681,115 @@ Retailer.schemeWiseLimitConfigure = async function (req) {
             }
             await trx("APSISIPDC.cr_retailer_sales_volume").insert(retailerSalesVolume);
           }
+          resolve(sendApiResult(true, "Retailer Check Eligibility & Scheme Wise Limit Configure Successful."));
         } else {
           let msg = "No data Found";
           reject(sendApiResult(false, msg));
         }
-        resolve(sendApiResult(true, "Scheme Wise Limit Configure Successful."));
       })
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, error.message));
+        });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   });
 };
 
-const checkMonthlySalesData = async function (monthCount = 12, minimumSalesAmount, monthlySalesArray) {
-  if (!isNaN(monthCount) || !isNaN(minimumSalesAmount) | !isNaN(monthlySalesArray)) {
-    const validData = [];
-    for (let i = monthCount; i >= 1; --i) {
-      parseInt(monthlySalesArray[i]) >= parseInt(minimumSalesAmount)
-        ? validData.push(true)
-        : validData.push(false);
-    }
-    if (validData.includes(false)) return false;
-    else return true;
-  }
-  return false;
-};
+// Retailer.schemeWiseLimitConfigure = async function (req) {
+//   return new Promise(async (resolve, reject) => {
+//     try {
+//       await knex.transaction(async (trx) => {
+//         const retailerList = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+//           .select(
+//             "id",
+//             "retailer_id",
+//             "retailer_code",
+//             "manufacturer_id",
+//             "distributor_id",
+//             "scheme_id",
+//             "sales_array"
+//           )
+//           .where("limit_status", "Unset")
+//           .where("status", "Active");
+
+//         if (Object.keys(retailerList).length !== 0) {
+//           for (const [key, value] of Object.entries(retailerList)) {
+//             let schemaParameterDeatils = await getSchemeDetailsById(value.scheme_id);
+
+//             const salesArray = JSON.parse(value.sales_array);
+//             const systemLimit = await creditLimit(
+//               schemaParameterDeatils.uninterrupted_sales,
+//               schemaParameterDeatils.min_avg_sales_manufacturer,
+//               schemaParameterDeatils.avg_sales_duration,
+//               schemaParameterDeatils.multiplying_factor,
+//               salesArray,
+//               schemaParameterDeatils.interval_checking_avg_sales_duration
+//             );
+
+//             await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+//               .where({ id: value.id })
+//               .update({
+//                 system_limit: parseFloat(systemLimit),
+//                 limit_status: "Initiated",
+//                 system_limit_date: new Date(),
+//                 updated_at: new Date(),
+//               });
+
+//             const retailerLimitHistory = {
+//               mapping_id: value.id,
+//               manufacturer_id: value.manufacturer_id,
+//               retailer_id: value.retailer_id,
+//               retailer_code: value.retailer_code,
+//               distributor_id: value.distributor_id,
+//               system_limit: systemLimit,
+//               system_limit_date: new Date(),
+//               status: "Active",
+//             };
+//             await trx("APSISIPDC.cr_retailer_credit_limit_history").insert(retailerLimitHistory);
+
+//             let retailerSalesVolume = [];
+//             for (let i = 1; i <= 12; i++) {
+//               const tempSalesVolume = {
+//                 manufacturer_id: value.manufacturer_id,
+//                 retailer_id: value.retailer_id,
+//                 retailer_code: value.retailer_code,
+//                 mapping_id: value.id,
+//                 month: i,
+//                 amount: salesArray[i - 1],
+//               };
+//               retailerSalesVolume.push(tempSalesVolume);
+//             }
+//             await trx("APSISIPDC.cr_retailer_sales_volume").insert(retailerSalesVolume);
+//           }
+//         } else {
+//           let msg = "No data Found";
+//           reject(sendApiResult(false, msg));
+//         }
+//         resolve(sendApiResult(true, "Scheme Wise Limit Configure Successful."));
+//       })
+//     } catch (error) {
+//       reject(sendApiResult(false, error.message));
+//     }
+//   });
+// };
+
+// const checkMonthlySalesData = async function (monthCount = 12, minimumSalesAmount, monthlySalesArray) {
+//   if (!isNaN(monthCount) || !isNaN(minimumSalesAmount) | !isNaN(monthlySalesArray)) {
+//     const validData = [];
+//     for (let i = monthCount; i >= 1; --i) {
+//       parseInt(monthlySalesArray[i]) >= parseInt(minimumSalesAmount)
+//         ? validData.push(true)
+//         : validData.push(false);
+//     }
+//     if (validData.includes(false)) return false;
+//     else return true;
+//   }
+//   return false;
+// };
 
 const addLeadingZeros = async function (num, size) {
   var s = num + "";
@@ -939,7 +1128,6 @@ Retailer.updateSchemaByRetailers = function (req) {
 
 Retailer.updateLimitMapping = async (req, res) => {
 
-  console.log("haha start");
   const {
     type,
     limitValue,
@@ -976,7 +1164,7 @@ Retailer.updateLimitMapping = async (req, res) => {
               crm_approve_date: knex.fn.now(),
               crm_approve_by: user_id
             });
-          console.log('updateData', updateData)
+
           if (updateData <= 0) res.send(sendApiResult(false, 'Could not Found ac_number_1rmn'));
           resolve(sendApiResult(
             true,
@@ -995,18 +1183,17 @@ Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async (trx) => {
-        let msg;
         const folderName = req.file_for;
         if (Object.keys(rows).length !== 0) {
           let insert_count = 0;
           for (let index = 0; index < rows.length; index++) {
-            let retailer_code = rows[index].REF_NO;
+            let retailer_nid = rows[index].NID;
+            let retailer_smart_nid = rows[index].Smart_NID;
             const retailerInfo = await trx("APSISIPDC.cr_retailer")
               .select("id")
-              .where("retailer_code", retailer_code)
-              // .whereNot("kyc_status", 1)
-              .where("kyc_status", null)
-              .where("cib_status", null)
+              .whereRaw('("retailer_nid" = ' + retailer_nid + ' OR "retailer_smart_nid" = ' + parseInt(retailer_smart_nid) + ')')
+              .whereRaw('"kyc_status" IS NULL')
+              .whereRaw('"kyc_id" IS NULL')
               .where("activation_status", "Inactive")
               .where("status", "Active")
               .first();
@@ -1014,7 +1201,7 @@ Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
             if (retailerInfo != undefined && retailerInfo.id != undefined) {
               const retailerEkycData = {
                 retailer_id: retailerInfo.id,
-                retailer_code: retailer_code,
+                retailer_code: rows[index].REF_NO !== undefined ? rows[index].REF_NO : null,
                 subject_role: rows[index].SUBJECT_ROLE !== undefined ? rows[index].SUBJECT_ROLE : null,
                 type_of_financing: rows[index].TYPE_OF_FINANCING !== undefined ? rows[index].TYPE_OF_FINANCING : null,
                 number_of_installment: rows[index].NUMBER_OF_INSTALLMENT !== undefined ? rows[index].NUMBER_OF_INSTALLMENT : null,
@@ -1029,7 +1216,8 @@ Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
                 mother_name: rows[index].MOTHER_NAME !== undefined ? rows[index].MOTHER_NAME : null,
                 spouse_title: rows[index].SPOUSE_TITLE !== undefined ? rows[index].SPOUSE_TITLE : null,
                 spouse_name: rows[index].SPOUSE_NAME !== undefined ? rows[index].SPOUSE_NAME : null,
-                nid: rows[index].NID !== undefined ? rows[index].NID : null,
+                nid: retailer_nid,
+                smart_nid: retailer_smart_nid,
                 tin: rows[index].TIN !== undefined ? rows[index].TIN : null,
                 date_of_birth: rows[index].DATE_OF_BIRTH !== undefined ? getJsDateFromExcel(rows[index].DATE_OF_BIRTH) : null,
                 gender: rows[index].GENDER !== undefined ? rows[index].GENDER : null,
@@ -1074,7 +1262,7 @@ Retailer.uploadRetailerEkycFile = function (rows, filename, req) {
                 ++insert_count;
                 const retailerEkycHistory = {
                   retailer_id: retailerInfo.id,
-                  retailer_code: retailer_code,
+                  retailer_code: rows[index].REF_NO !== undefined ? rows[index].REF_NO : null,
                   kyc_id: parseInt(insertRetailerEkycInfo[0]),
                   kyc_date: rows[index].MAKEDATE !== undefined ? getJsDateFromExcel(rows[index].MAKEDATE) : null,
                   kyc_time: rows[index].MAKEDATE !== undefined ? getJsDateFromExcel(rows[index].MAKEDATE) : null,
@@ -1150,25 +1338,31 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
   return new Promise(async (resolve, reject) => {
     try {
       await knex.transaction(async (trx) => {
-        let msg;
         const folderName = req.file_for;
         if (Object.keys(rows).length !== 0) {
           let insert_count = 0;
           for (let index = 0; index < rows.length; index++) {
-            let retailer_code = rows[index].Ref_No;
-            const retailerInfo = await trx("APSISIPDC.cr_retailer")
+            let retailer_nid = rows[index].NID;
+            let retailer_smart_nid = rows[index].Smart_NID;
+            let manufacturer_id = rows[index].Manufacturer_ID;
+            const retailerInfo = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
               .select("id")
-              .where("retailer_code", retailer_code)
-              .whereNot("kyc_status", null)
-              .where("cib_status", null)
-              .where("activation_status", "Inactive")
-              .where("status", "Active")
+              .whereRaw('("retailer_nid" = ' + retailer_nid + ' OR "retailer_smart_nid" = ' + parseInt(retailer_smart_nid) + ')')
+              .where("manufacturer_id", parseInt(manufacturer_id))
+              .where("is_valid", 1)
+              .where("is_duplicate", 0)
+              .where("is_eligible", 1)
+              .whereRaw('"cib_status" IS NULL')
+              .whereRaw('"cib_id" IS NULL')
+              .where("limit_status", 'Initiated')
+              .where("status", 'Inactive')
               .first();
 
             if (retailerInfo != undefined && retailerInfo.id != undefined) {
               const retailerCibData = {
                 retailer_id: retailerInfo.id,
-                retailer_code: retailer_code,
+                retailer_code: rows[index].Ref_No !== undefined ? rows[index].Ref_No : null,
+                manufacturer_id: rows[index].Manufacturer_ID !== undefined ? rows[index].Manufacturer_ID : null,
                 subject_code: rows[index].Subject_Code !== undefined ? rows[index].Subject_Code : null,
                 classification: rows[index].Classification !== undefined ? rows[index].Classification : null,
                 ref_no: rows[index].Ref_No !== undefined ? rows[index].Ref_No : null,
@@ -1181,6 +1375,7 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
                 spouse_title: rows[index].Spouse_Title !== undefined ? rows[index].Spouse_Title : null,
                 spouse_name: rows[index].Spouse_Name !== undefined ? rows[index].Spouse_Name : null,
                 nid: rows[index].NID !== undefined ? rows[index].NID : null,
+                smart_nid: rows[index].Smart_NID !== undefined ? rows[index].Smart_NID : null,
                 tin: rows[index].TIN !== undefined ? rows[index].TIN : null,
                 country: rows[index].Country !== undefined ? rows[index].Country : null,
                 dob: rows[index].DOB !== undefined ? getJsDateFromExcel(rows[index].DOB) : null,
@@ -1227,7 +1422,8 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
                 ++insert_count;
                 const retailerCibHistory = {
                   retailer_id: retailerInfo.id,
-                  retailer_code: retailer_code,
+                  manufacturer_id: rows[index].Manufacturer_ID,
+                  retailer_code: rows[index].Ref_No !== undefined ? rows[index].Ref_No : null,
                   cib_id: parseInt(insertRetailerCibInfo[0]),
                   cib_date: rows[index].Created_Date !== undefined ? getJsDateFromExcel(rows[index].Created_Date) : null,
                   cib_status: ((rows[index].Default_History).toLowerCase() == 'yes') ? 'Active' : 'Inactive',
@@ -1238,7 +1434,7 @@ Retailer.uploadRetailerCibFile = function (rows, filename, req) {
                 }
                 const insertRetailerCibHistory = await trx("APSISIPDC.cr_retailer_cib_history").insert(retailerCibHistory);
                 if (insertRetailerCibHistory == true) {
-                  let retailerCibUpdate = await trx("APSISIPDC.cr_retailer")
+                  let retailerCibUpdate = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
                     .where({ id: retailerInfo.id })
                     .update({
                       cib_status: 1,
@@ -2546,7 +2742,6 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
         retailer_performance_info_Arr.push(retailer_performance_info);
       }
 
-      console.log(retailer_performance_info_Arr);
       const headers = [
         "Sr.",
         "Retailer_name",
@@ -3266,7 +3461,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributor = async (req, res) => {
         retailer_performance_info_Arr.push(retailer_performance_info);
       }
 
-      console.log(retailer_performance_info_Arr);
       const headers = [
         "Sr.",
         "Retailer name",
@@ -3682,10 +3876,1547 @@ Retailer.retailersMonthlyPerformanceDistributor = async (req, res) => {
       resolve(sendReportApiResult(true, "Retailer Performance filter successfully", retailer_performance_info_Arr));
 
     } catch (error) {
-      console.log(error);
       reject(sendApiResult(false, error.message));
     }
   });
 };
 
+Retailer.downloadEkycReport = function (req) {
+  return new Promise(async (resolve, reject) => {
+    const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+      .where("cr_retailer_manu_scheme_mapping.limit_status", 'Initiated')
+      .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_status" IS NULL`)
+      .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NULL`)
+      .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
+      .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
+      .where("cr_retailer_manu_scheme_mapping.is_eligible", 1)
+      .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
+      .select(
+        "cr_retailer_kyc_information.subject_role",
+        "cr_retailer_kyc_information.type_of_financing",
+        "cr_retailer_kyc_information.number_of_installment",
+        "cr_retailer_kyc_information.installment_amount",
+        "cr_retailer_kyc_information.total_requested_amount",
+        "cr_retailer_kyc_information.periodicity_of_payment",
+        "cr_retailer_kyc_information.title",
+        "cr_retailer_kyc_information.name",
+        "cr_retailer_kyc_information.father_title",
+        "cr_retailer_kyc_information.father_name",
+        "cr_retailer_kyc_information.mother_title",
+        "cr_retailer_kyc_information.mother_name",
+        "cr_retailer_kyc_information.spouse_title",
+        "cr_retailer_kyc_information.spouse_name",
+        "cr_retailer_kyc_information.nid",
+        "cr_retailer_kyc_information.smart_nid",
+        "cr_retailer_kyc_information.tin",
+        knex.raw(`TO_CHAR("cr_retailer_kyc_information"."date_of_birth", 'YYYY-MM-DD') AS "date_of_birth"`),
+        "cr_retailer_kyc_information.gender",
+        "cr_retailer_kyc_information.district_of_birth",
+        "cr_retailer_kyc_information.country_of_birth",
+        "cr_retailer_kyc_information.permanent_district",
+        "cr_retailer_kyc_information.permanent_street_name_and_number",
+        "cr_retailer_kyc_information.permanent_postal_code",
+        "cr_retailer_kyc_information.permanent_country",
+        "cr_retailer_kyc_information.present_district",
+        "cr_retailer_kyc_information.present_street_name_and_number",
+        "cr_retailer_kyc_information.present_postal_code",
+        "cr_retailer_kyc_information.present_country",
+        "cr_retailer_kyc_information.id_type",
+        "cr_retailer_kyc_information.id_number",
+        knex.raw(`TO_CHAR("cr_retailer_kyc_information"."id_issue_date", 'YYYY-MM-DD') AS "id_issue_date"`),
+        "cr_retailer_kyc_information.id_issue_country",
+        "cr_retailer_kyc_information.sector_type",
+        "cr_retailer_kyc_information.sector_code",
+        "cr_retailer_kyc_information.telephone_number",
+        "cr_retailer_kyc_information.data_source",
+        "cr_retailer_kyc_information.ref_no",
+        "cr_retailer_kyc_information.applicant_type",
+        "cr_retailer_kyc_information.remarks",
+        "cr_retailer_kyc_information.ekycresultid",
+        "cr_retailer_kyc_information.trackingno",
+        "cr_retailer_kyc_information.mobileno",
+        "cr_retailer_kyc_information.fullnamebn",
+        "cr_retailer_kyc_information.mothernamebn",
+        "cr_retailer_kyc_information.fathernamebn",
+        "cr_retailer_kyc_information.permanentaddressbn",
+        "cr_retailer_kyc_information.facematchscorerpa",
+        "cr_retailer_kyc_information.makeby",
+        knex.raw(`TO_CHAR("cr_retailer_kyc_information"."makedate", 'YYYY-MM-DD') AS "makedate"`),
+        knex.raw(`CASE "cr_retailer"."kyc_status" WHEN 0 THEN 'Not Verified' WHEN 1 THEN 'Verified' END AS "isverified"`)
+      )
+      .innerJoin(
+        "APSISIPDC.cr_retailer",
+        "cr_retailer.id",
+        "cr_retailer_manu_scheme_mapping.retailer_id"
+      )
+      .innerJoin(
+        "APSISIPDC.cr_retailer_kyc_information",
+        "cr_retailer_kyc_information.nid",
+        "cr_retailer.retailer_nid"
+      );
+
+    if (result.length == 0) {
+      reject(sendApiResult(false, "No Retailer list Found."));
+    } else {
+      const today = moment(new Date()).format('YYYY-MM-DD');
+      var workbook = new excel.Workbook();
+      var worksheet = workbook.addWorksheet("Limit Upload Retailer List");
+      var headerStyle = workbook.createStyle({
+        fill: {
+          type: "pattern",
+          patternType: "solid",
+          bgColor: "#E1F0FF",
+          fgColor: "#E1F0FF"
+        },
+        font: {
+          color: "#000000",
+          size: "10",
+          bold: true
+        }
+      });
+
+      var headers = [
+        "Sr.",
+        "SUBJECT_ROLE",
+        "TYPE_OF_FINANCING",
+        "NUMBER_OF_INSTALLMENT",
+        "INSTALLMENT_AMOUNT",
+        "TOTAL_REQUESTED_AMOUNT",
+        "PERIODICITY_OF_PAYMENT",
+        "TITLE",
+        "NAME",
+        "FATHER_TITLE",
+        "FATHER_NAME",
+        "MOTHER_TITLE",
+        "MOTHER_NAME",
+        "SPOUSE_TITLE",
+        "SPOUSE_NAME",
+        "NID",
+        "SMART_NID",
+        "TIN",
+        "DATE_OF_BIRTH",
+        "GENDER",
+        "DISTRICT_OF_BIRTH",
+        "COUNTRY_OF_BIRTH",
+        "PERMANENT_DISTRICT",
+        "PERMANENT_STREET_NAME_AND_NUMBER",
+        "PERMANENT_POSTAL_CODE",
+        "PERMANENT_COUNTRY",
+        "PRESENT_DISTRICT",
+        "PRESENT_STREET_NAME_AND_NUMBER",
+        "PRESENT_POSTAL_CODE",
+        "PRESENT_COUNTRY",
+        "ID_TYPE",
+        "ID_NUMBER",
+        "ID_ISSUE_DATE",
+        "ID_ISSUE_COUNTRY",
+        "SECTOR_TYPE",
+        "SECTOR_CODE",
+        "TELEPHONE_NUMBER",
+        "DATA_SOURCE",
+        "REF_NO",
+        "APPLICANT_TYPE",
+        "REMARKS",
+        "EKYCRESULTID",
+        "TRACKINGNO",
+        "MOBILENO",
+        "FULLNAMEBN",
+        "MOTHERNAMEBN",
+        "FATHERNAMEBN",
+        "PERMANENTADDRESSBN",
+        "FACEMATCHSCORERPA",
+        "MAKEBY",
+        "MAKEDATE",
+        "ISVERIFIED"
+      ];
+
+      var col = 1;
+      var row = 1;
+      var col_add = 0;
+
+      headers.forEach((e) => {
+        worksheet
+          .cell(row, col + col_add)
+          .string(e)
+          .style(headerStyle);
+        col_add++;
+      });
+
+      row = 2;
+      for (let i = 0; i < result.length; i++) {
+        var col_add = 0;
+        let e = result[i];
+        worksheet.cell(row, col + col_add).number((i + 1));
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.subject_role ? e.subject_role : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.type_of_financing ? e.type_of_financing : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.number_of_installment ? e.number_of_installment : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.installment_amount ? e.installment_amount : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.total_requested_amount ? e.total_requested_amount : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.periodicity_of_payment ? e.periodicity_of_payment : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.title ? e.title : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.name ? e.name : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.father_title ? e.father_title : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.father_name ? e.father_name : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.mother_title ? e.mother_title : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.mother_name ? e.mother_name : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.spouse_title ? e.spouse_title : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.spouse_name ? e.spouse_name : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.nid ? e.nid : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.smart_nid ? e.smart_nid : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.tin ? e.tin : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.date_of_birth ? e.date_of_birth: " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.gender ? e.gender : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.district_of_birth ? e.district_of_birth : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.country_of_birth ? e.country_of_birth : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.permanent_district ? e.permanent_district : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.permanent_street_name_and_number ? e.permanent_street_name_and_number : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.permanent_postal_code ? e.permanent_postal_code : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.permanent_country ? e.permanent_country : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.present_district ? e.present_district : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.present_street_name_and_number ? e.present_street_name_and_number : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.present_postal_code ? e.present_postal_code : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.present_country ? e.present_country : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.id_type ? e.id_type : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.id_number ? e.id_number : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.id_issue_date ? e.id_issue_date : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.id_issue_country ? e.id_issue_country : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.sector_type ? e.sector_type : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.sector_code ? e.sector_code : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.telephone_number ? e.telephone_number : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.data_source ? e.data_source : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.ref_no ? e.ref_no : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.applicant_type ? e.applicant_type : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.remarks ? e.remarks : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.ekycresultid ? e.ekycresultid : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.trackingno ? e.trackingno : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.mobileno ? e.mobileno : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.fullnamebn ? e.fullnamebn : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.mothernamebn ? e.mothernamebn : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.fathernamebn ? e.fathernamebn : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.permanentaddressbn ? e.permanentaddressbn : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.facematchscorerpa ? e.facematchscorerpa : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.makeby ? e.makeby : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.makedate ? e.makedate : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.isverified ? e.isverified : "");
+        col_add++;
+        row++;
+      }
+      const file_path = 'public/eKyc-report/';
+      if (!fs.existsSync(file_path)) {
+        fs.mkdirSync(file_path, { recursive: true });
+      }
+      workbook.write(file_path + " eKyc_Report_(" + today + ").xlsx");
+      const fileName = "eKyc-report/" + "eKyc_Report_(" + today + ").xlsx";
+      await timeout(1500);
+      resolve(sendApiResult(true, "eKyc_Report", fileName));
+    }
+  });
+}
+
+Retailer.getRetailerInvalidData = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      knex.transaction(async (trx) => {
+        const { retailer_upload_id } = req.params;
+        const retailer_info = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .select(
+            "cr_retailer_manu_scheme_mapping.id",
+            "cr_retailer.retailer_name",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer_manu_scheme_mapping.retailer_nid",
+            "cr_retailer.phone",
+            knex.raw(`CASE "cr_retailer_manu_scheme_mapping"."is_valid" WHEN 0 THEN 'Yes' WHEN 1 THEN 'No' END AS "invalid"`),
+            knex.raw(`CASE "cr_retailer_manu_scheme_mapping"."is_duplicate" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "is_duplicate"`)
+          )
+          .innerJoin(
+            "APSISIPDC.cr_retailer",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .where("cr_retailer_manu_scheme_mapping.retailer_upload_id", retailer_upload_id)
+          .whereRaw(`"cr_retailer_manu_scheme_mapping"."is_valid" = 0 OR "cr_retailer_manu_scheme_mapping"."is_duplicate" = 1`)
+          .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
+          .orderBy("cr_retailer_manu_scheme_mapping.id", "asc");
+
+        resolve(sendApiResult(true, "Retailer Data Found", retailer_info));
+      })
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+Retailer.getRetailerInvalidDataById = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      knex.transaction(async (trx) => {
+        const { retailer_mapping_id } = req.params;
+        const retailer_info = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .select()
+          .where("id", retailer_mapping_id);
+
+        if (Object.keys(retailer_info).length != 0) {
+          const fields_array = {};
+          for (const [key, value] of Object.entries(retailer_info)) {
+            const invalid_fields = await trx("APSISIPDC.cr_retailer_invalid_fields_log")
+              .select("field_name")
+              .where("temp_upload_id", retailer_id)
+              .where("status", 'Active');
+
+            if (Object.keys(invalid_fields).length != 0) {
+              let temp = {};
+              for (const [index, field] of Object.entries(invalid_fields)) {
+                temp[field.field_name] =  value[field.field_name];
+              }
+              fields_array[retailer_id] = temp;
+            }
+          }
+          resolve(sendApiResult(true, "Retailer Data Found", fields_array));
+        } else {
+          reject(sendApiResult(false, "No Invalid Data."));
+        }
+      })
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+Retailer.updateRetailerInvalidDataById = function (request) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      knex.transaction(async (trx) => {
+        for (const [key, value] of Object.entries(request)) {
+          for (const [index, data] of Object.entries(value)) {
+            await trx("APSISIPDC.cr_retailer_temp").where({ id : key })
+              .update({
+                [index] : data
+              });
+          }
+        }
+        resolve(sendApiResult(true, "Retailer Data Updated Successfully"));
+      })
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+Retailer.getDuplicateRetailerListById = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      knex.transaction(async (trx) => {
+        const { retailer_upload_id } = req.params;
+        const data = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .innerJoin(
+            "APSISIPDC.cr_schema",
+            "cr_schema.id",
+            "cr_retailer_manu_scheme_mapping.scheme_id"
+          )
+          .innerJoin(
+            "APSISIPDC.cr_retailer",
+            "cr_retailer.id",
+            "cr_retailer_manu_scheme_mapping.retailer_id"
+          )
+          .innerJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .where("cr_retailer.retailer_upload_id", retailer_upload_id)
+          .where("cr_retailer.status", "Active")
+          .where("cr_retailer_manu_scheme_mapping.status", "Duplicate")
+          .select(
+            'cr_retailer_manu_scheme_mapping.id',
+            'cr_schema.scheme_name',
+            'cr_retailer.retailer_name',
+            'cr_retailer.retailer_nid',
+            'cr_manufacturer.manufacturer_name',
+            'cr_retailer_manu_scheme_mapping.manufacturer_id',
+            'cr_retailer.phone'
+          );
+
+        if (Object.keys(data).length != 0) {
+          let mapping_data = [];
+          for (const [key, value] of Object.entries(data)) {
+            const mapping_info = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+              .select(
+                knex.raw(`LISTAGG ("cr_manufacturer"."manufacturer_name", ', ') as "manufacturer_name"`)
+              )
+              .where("cr_retailer_manu_scheme_mapping.retailer_nid", value.retailer_nid)
+              .where("cr_retailer_manu_scheme_mapping.status", 'Active')
+              .innerJoin(
+                "APSISIPDC.cr_manufacturer",
+                "cr_manufacturer.id",
+                "cr_retailer_manu_scheme_mapping.manufacturer_id"
+              );
+              let temp = {};
+              temp['mapping_id'] = value.id;
+              temp['retailer_name'] = value.retailer_name;
+              temp['phone'] = value.phone;
+              temp['requested_manufacturer_name'] = value.manufacturer_name;
+              temp['existing_manufacturer_name'] = mapping_info[0].manufacturer_name;
+              temp['scheme_name'] = value.scheme_name;
+              mapping_data.push(temp);
+          }
+          resolve(sendApiResult(true, "Retailer Data Found Successfully", mapping_data));
+        } else {
+          reject(sendApiResult(false, 'No Retailer Found.'));
+        }
+      })
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+Retailer.createCreditMemo = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      knex.transaction(async (trx) => {
+        const uniqueMemoId = new Date().valueOf();
+        const retailerList = await creditMemoRetailerList();
+        if (Object.keys(retailerList).length !== 0) {
+          const memoReferenceNumber = await prepareReferenceNumber();
+          const createFrontPage = await preparePdfMemoFrontPage(uniqueMemoId, retailerList, memoReferenceNumber);
+          const prepareRetailerListPage = await preparePdfRetailerListPage(uniqueMemoId, retailerList, memoReferenceNumber);
+          const memo_log = await creditMemolog(req, uniqueMemoId, retailerList, memoReferenceNumber);
+          if(createFrontPage && prepareRetailerListPage && memo_log)
+            resolve(sendApiResult(true, "Credit Memo Created Successfully", []));
+          else
+            reject(sendApiResult(false, 'Credit Memo Generate Failed!'));
+        } else {
+          reject(sendApiResult(false, 'No Retailer Found.'));
+        }
+      })
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+const creditMemoRetailerList = async function (){
+  const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+    .where("cr_retailer_manu_scheme_mapping.limit_status", 'Upload')
+    .whereRaw(`"cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NOT NULL`)
+    .where("cr_retailer.kyc_status", 1)
+    .where("cr_retailer_manu_scheme_mapping.cib_status", 1)
+    .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
+    .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
+    .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
+    .whereRaw(`"cr_retailer_manu_scheme_mapping"."credit_memo_id" IS NULL`)
+    .whereRaw(`"cr_retailer_manu_scheme_mapping"."credit_memo_status" IS NULL`)
+    .select(
+      "cr_retailer_manu_scheme_mapping.id",
+      "cr_retailer_manu_scheme_mapping.retailer_code",
+      "cr_retailer_manu_scheme_mapping.retailer_nid",
+      "cr_retailer_manu_scheme_mapping.retailer_smart_nid",
+      "cr_retailer_manu_scheme_mapping.manufacturer_id",
+      "cr_retailer.retailer_name",
+      "cr_manufacturer.manufacturer_name",
+      "cr_retailer_manu_scheme_mapping.propose_limit",
+      "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+      "cr_retailer_manu_scheme_mapping.processing_fee",
+      knex.raw(`TO_CHAR("cr_retailer"."created_at", 'YYYY/MM/DD') AS "created_date"`)
+    )
+    .innerJoin(
+      "APSISIPDC.cr_retailer",
+      "cr_retailer.id",
+      "cr_retailer_manu_scheme_mapping.retailer_id"
+    )
+    .innerJoin(
+      "APSISIPDC.cr_manufacturer",
+      "cr_manufacturer.id",
+      "cr_retailer_manu_scheme_mapping.manufacturer_id"
+    );
+  return result;
+}
+
+const prepareReferenceNumber = async function (){
+  let currentdate = new Date();
+  let today = currentdate.getFullYear() + "" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "" + ('0' + currentdate.getDate()).slice(-2);
+  const memo_info = await knex("APSISIPDC.cr_credit_memo_log")
+      .select(
+        "cr_credit_memo_log.id"
+      );
+  const referenceNumber = 'IPDC/CM/DANA/' + today + '/APNL' + await addingExtraZeros(Object.keys(memo_info).length,4);
+  return referenceNumber;
+}
+
+const addingExtraZeros = async function (str, max) {
+  str = str.toString();
+  return str.length < max ? await addingExtraZeros('0' + str, max) : str;
+}
+
+const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memoReferenceNumber){
+  var fonts = {
+    Roboto: {
+        normal: 'node_modules/font/roboto/Roboto-Regular.ttf',
+        bold: 'node_modules/font/roboto/Roboto-Medium.ttf',
+        italics: 'node_modules/font/roboto/Roboto-Italic.ttf',
+        bolditalics: 'node_modules/font/roboto/Roboto-MediumItalic.ttf'
+    },
+  	Calibri: {
+			normal: 'node_modules/font/calibri/Calibri-Regular.ttf',
+			bold: 'node_modules/font/calibri/Calibri-Bold.ttf',
+			italics: 'node_modules/font/calibri/Calibri-Italic.ttf',
+		}
+  };
+
+  let manufactureSummaryTable = await manufacture_summary_table(retailerList);
+
+  let currentdate = new Date();
+  const options = {  year: 'numeric', month: 'short', day: 'numeric'};
+  const today_event = new Date(Date.UTC(currentdate.getFullYear(), ('0' + (currentdate.getMonth() + 0)).slice(-2), (('0' + currentdate.getDate()).slice(-2)), 3, 0, 0));
+  const today = today_event.toLocaleDateString('en-US', options);
+  const add_five_year_event = new Date(Date.UTC((currentdate.getFullYear() + 5), ('0' + (currentdate.getMonth() + 0)).slice(-2), (('0' + currentdate.getDate()).slice(-2)), 3, 0, 0));
+  const add_five_year = add_five_year_event.toLocaleDateString('en-US', options);
+
+	var pdfDocument = {
+    pageOrientation: 'portrait',
+    pageSize: 'Letter',
+    pageMargins:[ 55, 80, 55, 25 ],
+    defaultStyle: {
+        font: 'Calibri',
+        fontSize: 9,
+        bold: true
+    },
+    // margin: [left, top, right, bottom],
+    header: {
+      columns: [
+        {
+          text: 'MCC No. ' + memoReferenceNumber,
+          margin: [55, 40, 0, 0 ],
+          alignment: 'left',
+        },
+        {
+          image: 'public/credit_memo/ipdc_logo.png',
+          width: 80,
+          margin: [50, 22, 0, 0 ],
+          alignment: 'right',
+        },
+      ]
+    },
+    footer: {
+      columns: []
+    },
+    content: [
+      {
+        text: 'IPDC FINANCE LIMITED',
+        margin: [ 0, 0, 0, 7 ],
+        alignment: 'center',
+        fontSize: 10,
+      },
+      {
+        style: 'tableExample',
+        table: {
+          widths: ['32.5%', '13.5%', '13.5%', '13.5%', '13.5%', '13.5%'],
+          body: [
+            [
+              {text: ' ▢  APPROVED\n ▢  CONDITIONALLY APPROVED\n ▢  DEFERRED\n ▢  DECLINED', fontSize: 9, lineHeight: 1.1, alignment: 'left', bold: false, margin: [ 7, 0, 0, 0 ]},
+              {text: 'APPROVER-1', fontSize: 9, alignment: 'center', bold: true},
+              {text: 'APPROVER-2', fontSize: 9, alignment: 'center', bold: true},
+              {text: 'APPROVER-3', fontSize: 9, alignment: 'center', bold: true},
+              {text: 'APPROVER-4', fontSize: 9, alignment: 'center', bold: true},
+              {text: 'APPROVER-5', fontSize: 9, alignment: 'center', bold: true}
+            ]
+          ]
+        },
+        layout: {
+          hLineWidth: function (i, node) {
+            return 1;
+          },
+          vLineWidth: function (i, node) {
+            return 1;
+          }
+        }
+		  },
+      {
+        text: 'PROPOSAL FOR APPROVAL OF RETAILER FINANCING',
+        alignment: 'center',
+        margin: [ 0, 10, 0, 0 ],
+        fontSize: 10,
+        bold: true,
+      },
+      {
+        text: 'FACILITY FAVOURING RETAILERS UNDER DANA',
+        alignment: 'center',
+        margin: [ 0, 2, 0, 0 ],
+        fontSize: 10,
+        bold: true,
+      },
+		  {
+        canvas: [
+          {
+            type: 'line',
+            x1: 45,
+            y1: 5,
+            x2: 600 - 3 * 50,
+            y2: 5,
+            lineWidth: 1.5,
+            color:'#C0C0C0'
+          }
+        ]
+      },
+      {
+        text: 'PROPOSAL SUMMARY: ',
+        alignment: 'left',
+        margin: [ 0, 10, 0, 0 ],
+        fontSize: 9,
+        bold: true,
+        decoration: 'underline'
+      },
+      {
+        text: 'We propose for the approval of the Retailer Financing facility favouring Retailers of OEMs mentioned in the attached list. Major terms and conditions of the facility are as follows:',
+        alignment: 'justify',
+        lineHeight: 1.2,
+        margin: [ 0, 2, 0, 0 ],
+        fontSize: 9,
+        bold: false,
+      },
+      {
+        style: 'tableExample',
+        margin: [ 0, 5, 0, 0 ],
+        table: {
+          widths: ['28%', '72%'],
+          body: [
+            [
+              {text: 'Particulars', margin: [ 5, 0 ], bold: true},
+              {text: 'Description', margin: [ 5, 0 ], bold: true},
+            ],
+            [
+              {text: 'Facility Type', margin: [ 5, 0 ], bold: true},
+              {text: 'Term Loan (Revolving)', margin: [ 5, 0 ], bold: false},
+            ],
+            [
+              {text: 'Sanction Tenor', margin: [ 5, 0 ], bold: true},
+              {text: '60 months (Renewable)', margin: [ 5, 0 ], bold: false},
+            ],
+            [
+              {text: 'Purpose', margin: [ 5, 0 ], bold: true},
+              {text: 'Term Loan (Revolving)', margin: [ 5, 0 ], bold: false},
+            ],
+            [
+              {text: 'Credit Tenor', margin: [ 5, 0 ], bold: true},
+              {
+                style: 'tableExample',
+                margin: [ 1, 1 ],
+                table: {
+                  widths : ['33%', '33%', '33%'],
+                  body : manufactureSummaryTable.table,
+                },
+                layout: {
+                  hLineWidth: function (i, node) {
+                    return 1;
+                  },
+                  vLineWidth: function (i, node) {
+                    return 1;
+                  }
+                }
+              }
+            ],
+            [
+              {text: 'Payment Modality', margin: [ 5, 0 ], bold: true},
+              {text: 'Retailers make direct payments to IPDC’s bank account in multiple tranches until maturity. ', alignment: 'justify', fontSize: 9, margin: [ 5, 0 ], lineHeight: 1.2, bold: false},
+            ],
+            [
+              {text: 'Interest Rate', margin: [ 5, 0 ], bold: true},
+              {text: '11.00% p.a.', margin: [ 5, 0 ], bold: false},
+            ],
+            [
+              {text: 'Total Proposed Limit under\n this proposal', margin: [ 5, 0 ], bold: true},
+              // {text: await amount_in_words(manufactureSummaryTable.sum), color: 'black', margin: [ 5, 0 ], bold: false},
+              {text: await numberWithCommas(manufactureSummaryTable.sum), color: 'black', margin: [ 5, 0 ], bold: false},
+            ],
+            [
+              {text: 'Sanction Date', margin: [ 5, 0 ], bold: true},
+              {text: today, color: 'black', margin: [ 5, 0 ], bold: false},
+            ],
+            [
+              {text: 'Sanction Expiry', margin: [ 5, 0 ], bold: true},
+              {text: add_five_year, color: 'black', margin: [ 5, 0 ], bold: false},
+            ],
+            [
+              {text: 'Sanction Limit Parameters', margin: [ 5, 0 ], bold: true},
+              {text: 'Based on the latest 12 month\'s uninterrupted sales data of the Retailers of OEMs and as per already decided credit parameters set for the OEMs. Proposed sanction amounts per Retailer under this proposal are mentioned in the attached list.', alignment: 'justify', fontSize: 8.6, margin: [ 5, 0 ], lineHeight: 1.2, bold: false},
+            ],
+          ]
+        },
+        layout: {
+          hLineWidth: function (i, node) {
+            return 1;
+          },
+          vLineWidth: function (i, node) {
+            return 1;
+          }
+        }
+      },
+      {
+        text: 'SUBMISSION: ',
+        alignment: 'left',
+        margin: [ 0, 12, 0, 0 ],
+        fontSize: 10,
+        bold: true,
+        decoration: 'underline'
+      },
+      {
+        text: 'Approval is sought for Retailer Financing facility favouring Retailers of OEMs cited in the attached list (<<Total No. of Retailers in Annexure>> Retailers) as per the above-mentioned terms subject to completion of appropriate documentation. ',
+        alignment: 'justify',
+        lineHeight: 1.2,
+        margin: [ 0, 2, 0, 0 ],
+        fontSize: 9.2,
+        bold: false,
+      },
+      {
+        text: 'CIB Status Check, NID and Signature Verification: ',
+        alignment: 'left',
+        margin: [ 0, 12, 0, 0 ],
+        fontSize: 10,
+        bold: true,
+        decoration: 'underline'
+      },
+      {
+        text: 'CIB Status Check, NID and Signature Verification of the mentioned Retailers has been found okay.',
+        alignment: 'left',
+        lineHeight: 1.2,
+        margin: [ 0, 2, 0, 0 ],
+        fontSize: 9.2,
+        bold: false,
+      },
+      {
+        text: 'REMARKS',
+        alignment: 'left',
+        margin: [ 0, 12, 0, 0 ],
+        fontSize: 10,
+        bold: true,
+        decoration: 'underline'
+      },
+      {
+        text: ' ',
+        alignment: 'left',
+        lineHeight: 1.2,
+        margin: [ 0, 2, 0, 0 ],
+        fontSize: 10,
+        bold: false,
+      },
+      {
+        text: 'Annexure',
+        alignment: 'left',
+        margin: [ 0, 12, 0, 0 ],
+        fontSize: 10,
+        bold: true,
+        decoration: 'underline'
+      },
+      {
+        text: 'List of retailers proposed for retailer financing facility.  ',
+        alignment: 'left',
+        lineHeight: 1.2,
+        margin: [ 0, 2, 0, 0 ],
+        fontSize: 9.2,
+        italics: true,
+        bold: false,
+      },
+      {
+        style: 'tableExample',
+        margin: [ 0, 5, 0, 0 ],
+        table: {
+          widths: ['50%', '50%'],
+          body: [
+            [
+              {text: 'Proposed by:', alignment: 'center', margin: [ 5, 0 ], bold: true},
+              {text: 'Reviewed by:', alignment: 'center', margin: [ 5, 0 ], bold: true},
+            ],
+            [
+              {text: ' \n \n ', margin: [ 5, 0 ], bold: true},
+              {text: ' \n \n ', margin: [ 5, 0 ], bold: false},
+            ],
+            [
+              {text: 'Head of Unit', alignment: 'center', margin: [ 5, 0 ], bold: false},
+              {text: 'Representative of CRM Department', alignment: 'center', margin: [ 5, 0 ], bold: false},
+            ],
+          ]
+        },
+        layout: {
+          hLineWidth: function (i, node) {
+            return 1;
+          },
+          vLineWidth: function (i, node) {
+            return 1;
+          }
+        }
+      },
+    ],
+	};
+
+  let pdfmake = new Pdfmake(fonts);
+  const file_path = 'public/credit_memo/' + uniqueMemoId;
+  if (!fs.existsSync(file_path)) {
+    fs.mkdirSync(file_path, { recursive: true });
+  }
+  var file_name = "page_1.pdf";
+  let pdfDoc = pdfmake.createPdfKitDocument(pdfDocument, {});
+  pdfDoc.pipe(fs.createWriteStream(file_path + '/'+ file_name));
+  pdfDoc.end();
+  return true;
+}
+
+const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list, memoReferenceNumber){
+  const retailerList = await creditMemoRetailerListPrepare(retailer_list);
+  var fonts = {
+  	Calibri: {
+			normal: 'node_modules/font/calibri/Calibri-Regular.ttf',
+			bold: 'node_modules/font/calibri/Calibri-Bold.ttf',
+			italics: 'node_modules/font/calibri/Calibri-Italic.ttf',
+		}
+  };
+
+	var pdfDocument = {
+    pageOrientation: 'landscape',
+    pageMargins:[ 55, 80, 55, 25 ],
+    pageSize: { width: 900, height: 630 },
+    defaultStyle: {
+        font: 'Calibri',
+        fontSize: 10,
+    },
+    header: {
+      columns: [
+        {
+          text: 'MCC No. ' + memoReferenceNumber,
+          margin: [55, 40, 0, 0 ],
+          alignment: 'left',
+        },
+        {
+          image: 'public/credit_memo/ipdc_logo.png',
+          width: 80,
+          margin: [50, 22, 0, 0 ],
+          alignment: 'right',
+        },
+      ]
+    },
+    footer: {
+      columns: []
+    },
+    content: [
+        {
+            table: {
+                headerRows: 1,
+                widths: [50, 45, 45, 45, 50, 50, 66, 70, 50, 62, 60, 55, 50],
+                body : retailerList
+            }
+        }
+    ]
+	};
+  let pdfmake = new Pdfmake(fonts);
+  const file_path = 'public/credit_memo/' + uniqueMemoId;
+  if (!fs.existsSync(file_path)) {
+    fs.mkdirSync(file_path, { recursive: true });
+  }
+  var file_name = "page_2.pdf";
+  let pdfDoc = pdfmake.createPdfKitDocument(pdfDocument, {});
+  pdfDoc.pipe(fs.createWriteStream(file_path + '/'+ file_name));
+  pdfDoc.end();
+  return true;
+}
+
+const creditMemolog = async function (req, uniqueMemoId, retailerList, memoReferenceNumber){
+  let id_list = [];
+  let count_sum = 0;
+  for (const [key, value] of Object.entries(retailerList)) {
+    id_list.push(value.id);
+    count_sum += value.crm_approve_limit;
+  }
+
+  const cr_credit_memo_log = {
+    memo_id : uniqueMemoId,
+    ref_no : memoReferenceNumber,
+    count_retailer : Object.keys(retailerList).length,
+    count_sum : parseInt(count_sum),
+    credit_memo_status : null,
+    credit_memo_create_date : new Date(),
+    created_by: parseInt(req.user_id)
+  }
+  const insert_log = await knex("APSISIPDC.cr_credit_memo_log").insert(cr_credit_memo_log).returning("id");
+
+  await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+    .whereIn("id", id_list)
+    .update({
+      credit_memo_id : parseInt(insert_log[0]),
+      credit_memo_status : 1,
+    });
+
+  return true;
+}
+
+const manufacture_summary_table = async function (retailerList){
+  let temp = [];
+  let tableList = [];
+  temp.push({text: 'OEM', color: '#000', margin: [5, 0 ], alignment: 'center', bold: true});
+  temp.push({text: 'Credit Tenor (Days)', margin: [5, 0 ], alignment: 'center', bold: true});
+  temp.push({text: 'Grace Period (Days)', margin: [5, 0 ], alignment: 'center', bold: true});
+  tableList.push(temp);
+
+  let check_array = [];
+  let count_sum = 0;
+  for (const [key, value] of Object.entries(retailerList)) {
+    if (!check_array.includes(value.manufacturer_name)){
+      let temp = [];
+      temp.push({text: value.manufacturer_name, margin: [5, 0 ], alignment: 'left', bold: false});
+      temp.push({text: '-', margin: [5, 0 ], alignment: 'center', bold: false});
+      temp.push({text: '-', margin: [5, 0 ], alignment: 'center', bold: false});
+      check_array.push(value.manufacturer_name);
+      tableList.push(temp);
+    }
+    count_sum += value.crm_approve_limit;
+  }
+  return {sum : count_sum, table : tableList};
+}
+
+const creditMemoRetailerListPrepare = async function (result){
+
+  let retailerList = [];
+  let count = 0;
+
+  let temp = [];
+  temp.push({text: 'Serial No.', color: '#000', margin: [0, 35 ], alignment: 'center', border: [true, true, true, true], bold: true});
+  temp.push({text: 'Retailer Name', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({text: 'Unique Code of Retailer', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({text: 'OEM', color: '#000', margin: [0, 35 ], alignment: 'center',  border: [false, true, true, true], bold: true});
+  temp.push({text: 'Processing Fee', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({text: 'Existing Limit', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({text: 'Existing Limit for All Manufacturers', color: '#000', margin: [0, 20 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({text: 'Max. Sanction Amount Allowed', color: '#000', margin: [0, 20 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({text: 'Proposed Limit', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({text: 'Enhancement', color: '#000', margin: [0, 35 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({text: 'Proposed Sanction Amount as a % of total lifting amount of 12M', color: '#000', margin: [0, 2, 0, 1 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({text: 'Relationship Tenor', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({text: 'Number of Times Revolved', color: '#000', margin: [0, 20 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  retailerList.push(temp);
+
+  for (const [key, value] of Object.entries(result)) {
+    let limit_info_details = await retailerAvgByManufacturer(value.retailer_nid, value.manufacturer_id);
+    if(limit_info_details != undefined){
+      let temp = [];
+      temp.push({text: (++count) +' .', alignment: 'center'});
+      temp.push({text: value.retailer_name, alignment: 'center'});
+      temp.push({text: value.retailer_code, alignment: 'center'});
+      temp.push({text: value.manufacturer_name, alignment: 'center'});
+      temp.push({text: await numberWithCommas(value.processing_fee), alignment: 'center'});
+      temp.push({text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer), alignment: 'center'});
+      temp.push({text: await numberWithCommas(limit_info_details.pre_assigned_limit_all_manufacturer), alignment: 'center'});
+      temp.push({text: await numberWithCommas(limit_info_details.max_sanction_amount_allowed), alignment: 'center'});
+      temp.push({text: await numberWithCommas(value.crm_approve_limit), alignment: 'center'});
+      temp.push({text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer - value.crm_approve_limit), alignment: 'center'});
+      temp.push({text: await numberWithCommas(limit_info_details.proposed_sanction_amount_total_lifting_amount), alignment: 'center'});
+      temp.push({text: await dayDifference(value.created_date), alignment: 'center'});
+      temp.push({text: '-', alignment: 'center'});
+      retailerList.push(temp);
+    }
+  }
+  temp = [];
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  temp.push({text: ' ', alignment: 'center'});
+  retailerList.push(temp);
+  return retailerList;
+}
+
+const numberWithCommas = async function (num) {
+  if(num){
+    var parts = num.toString().split('.');
+    return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (parts[1] ? "." + parts[1] : "");
+  }
+}
+
+const dayDifference = async function (created_date){
+  let date1 = new Date(created_date);
+  let currentdate = new Date();
+  let today = currentdate.getFullYear() + "/" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "/" + ('0' + currentdate.getDate()).slice(-2);
+  let date2 = new Date(today);
+  let difference_time = date2.getTime() - date1.getTime();
+  let difference_days = difference_time / (1000 * 3600 * 24);
+  return difference_days;
+}
+
+const margePdf = async function (today, memo_id){
+  var merger = new PDFMerger();
+  const file_path = 'public/credit_memo/' + memo_id;
+
+  (async () => {
+    await merger.add(file_path + '/' + 'page_1.pdf');
+    await merger.add(file_path + '/' + 'page_2.pdf');
+    await merger.save(file_path + '/'+'Credit_Memo_' + memo_id + '_(' + today + ')' +'.pdf');
+  })();
+}
+
+Retailer.creditMemoDownload = function (req) {
+  return new Promise(async (resolve, reject) => {
+    const memo_id = req.memo_id;
+    const result = await knex("APSISIPDC.cr_credit_memo_log")
+      .where("id", memo_id)
+      .select(
+        "cr_credit_memo_log.*",
+      )
+      .first();
+
+    var file_path = '';
+    const today = moment(new Date()).format('YYYY-MM-DD');
+    if(result.credit_memo_url == null){
+      file_path = 'public/credit_memo/' + result.memo_id + '/'+'Credit_Memo_' + result.memo_id + '_(' + today + ')' +'.pdf';
+      await margePdf(today, result.memo_id);
+      await knex("APSISIPDC.cr_credit_memo_log")
+        .where({ id: memo_id })
+        .update({
+          credit_memo_url : file_path,
+          credit_memo_status : 1
+        });
+    }
+    await timeout(1500);
+    resolve(sendApiResult(true, "Credit Memo Download Successfully", file_path));
+  });
+}
+
+Retailer.downloadLimitUploadFile = function (req) {
+  return new Promise(async (resolve, reject) => {
+    const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+      .where("cr_retailer_manu_scheme_mapping.limit_status", 'Initiated')
+      .whereRaw(`"cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NULL`)
+      .where("cr_retailer.kyc_status", 1)
+      .where("cr_retailer_manu_scheme_mapping.cib_status", 1)
+      .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
+      .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
+      .where("cr_retailer_manu_scheme_mapping.is_eligible", 1)
+      .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
+      .select(
+        "cr_retailer.retailer_name",
+        "cr_retailer_manu_scheme_mapping.retailer_nid",
+        "cr_retailer_manu_scheme_mapping.manufacturer_id",
+        knex.raw(`TO_CHAR("cr_retailer_kyc_information"."date_of_birth", 'YYYY-MM-DD') AS "date_of_birth"`),
+        "cr_retailer_manu_scheme_mapping.retailer_code",
+        knex.raw(`CASE "cr_retailer_manu_scheme_mapping"."cib_status" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "cib_status"`),
+        "cr_retailer_manu_scheme_mapping.loan_id as total_outstanding",
+        "cr_retailer_manu_scheme_mapping.loan_id as overdue_amount",
+        "cr_retailer_manu_scheme_mapping.loan_id as default_history",
+        knex.raw(`CASE "cr_retailer"."kyc_status" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "kyc_status"`),
+        "cr_retailer_manu_scheme_mapping.loan_id as avg_monthly_sales",
+        "cr_retailer_manu_scheme_mapping.system_limit as proposed_sanction_limit_by_system",
+        "cr_retailer_manu_scheme_mapping.loan_id as proposed_sanction_with_avg_sales_value",
+        "cr_retailer_manu_scheme_mapping.loan_id as proposed_limit_by_crm",
+        "cr_retailer_manu_scheme_mapping.loan_id as proposed_sanction_by_crm_with_average_sales_value",
+        "cr_manufacturer.manufacturer_name",
+        "cr_schema.scheme_name",
+        "cr_retailer.phone"
+      )
+      .innerJoin(
+        "APSISIPDC.cr_retailer",
+        "cr_retailer.id",
+        "cr_retailer_manu_scheme_mapping.retailer_id"
+      )
+      .innerJoin(
+        "APSISIPDC.cr_manufacturer",
+        "cr_manufacturer.id",
+        "cr_retailer_manu_scheme_mapping.manufacturer_id"
+      )
+      .innerJoin(
+        "APSISIPDC.cr_retailer_kyc_information",
+        "cr_retailer_kyc_information.nid",
+        "cr_retailer.retailer_nid"
+      )
+      .innerJoin(
+        "APSISIPDC.cr_schema",
+        "cr_schema.id",
+        "cr_retailer_manu_scheme_mapping.scheme_id"
+      );
+
+    if (result.length == 0) {
+      reject(sendApiResult(false, "No Retailer list Found."));
+    } else {
+      const today = moment(new Date()).format('YYYY-MM-DD');
+      var workbook = new excel.Workbook();
+      var worksheet = workbook.addWorksheet("Limit Upload Retailer List");
+      var headerStyle = workbook.createStyle({
+        fill: {
+          type: "pattern",
+          patternType: "solid",
+          bgColor: "#E1F0FF",
+          fgColor: "#E1F0FF"
+        },
+        font: {
+          color: "#000000",
+          size: "10",
+          bold: true
+        }
+      });
+
+      var headers = [
+        "Sr.",
+        "Name of the Retailer",
+        "Retailer_NID",
+        "Age",
+        "Retailer Code",
+        "CIB Status",
+        "Total Outstanding (BDT)",
+        "Overdue Amount (BDT)",
+        "Default History",
+        "E-KYC Verification Status",
+        "Average Monthly Sales",
+        "Proposed Sanction Limit by System",
+        "% of Proposed Sanction with Average Sales Value",
+        "Proposed_Limit_by_CRM",
+        "% Of Proposed Sanction by CRM with Average Sales Value",
+        "Manufacturer_Name",
+        "Scheme Name",
+        "Pre-Assigned Limit for this manufacturer in DANA System",
+        "Pre-Assigned Limit across all manufacturers in DANA System",
+        "Average Ticket Size (Applicable for existing retailers only)",
+        "Highest Ticket Size",
+        "Average Payment Period (Applicable for existing retailers only)",
+        "Lowest Ticket Size",
+        "Relationship Tenor (Applicable for existing retailers only)",
+        "No of Revolving Times (Applicable for existing retailers only)",
+        "Current Overdue Amount in DANA",
+        "Historical Maximum Overdue Days in DANA",
+        "Current Maximum Overdue Days in DANA",
+        "Retailer_Mobile_Number"
+      ];
+
+      var col = 1;
+      var row = 1;
+      var col_add = 0;
+
+      headers.forEach((e) => {
+        worksheet
+          .cell(row, col + col_add)
+          .string(e)
+          .style(headerStyle);
+        col_add++;
+      });
+
+      row = 2;
+      for (let i = 0; i < result.length; i++) {
+        var col_add = 0;
+        let e = result[i];
+        let limit_info_details = await retailerAvgByManufacturer(e.retailer_nid, e.manufacturer_id);
+        if(limit_info_details != undefined){
+          worksheet.cell(row, col + col_add).number((i + 1));
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : "");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.retailer_nid ? e.retailer_nid : "");
+          col_add++;
+          worksheet.cell(row, col + col_add).number(e.date_of_birth ? await yearDifference(e.date_of_birth) : "0");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.retailer_code ? e.retailer_code : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.cib_status ? e.cib_status : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.total_outstanding ? e.total_outstanding : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.overdue_amount ? e.overdue_amount : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.default_history ? e.default_history : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.kyc_status ? e.kyc_status : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.avg_monthly_sales ? e.avg_monthly_sales : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).number(e.proposed_sanction_limit_by_system ? e.proposed_sanction_limit_by_system : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.proposed_sanction_with_avg_sales_value ? e.proposed_sanction_with_avg_sales_value : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(" ");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.proposed_sanction_by_crm_with_average_sales_value ? e.proposed_sanction_by_crm_with_average_sales_value : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.manufacturer_name ? e.manufacturer_name : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.scheme_name ? e.scheme_name : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.pre_assigned_limit_manufacturer ? limit_info_details.pre_assigned_limit_manufacturer : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.pre_assigned_limit_all_manufacturer ? limit_info_details.pre_assigned_limit_all_manufacturer : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.avg_ticket_size ? limit_info_details.avg_ticket_size : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.highest_ticket_size ? limit_info_details.highest_ticket_size : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.avg_payment_period ? limit_info_details.avg_payment_period : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.lowest_ticket_size ? limit_info_details.lowest_ticket_size : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.relationship_tenor ? limit_info_details.relationship_tenor : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.no_revolving_times ? limit_info_details.no_revolving_times : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.current_overdue_amount ? limit_info_details.current_overdue_amount : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.historical_maximum_overdue_days ? limit_info_details.historical_maximum_overdue_days : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.current_maximum_overdue_days ? limit_info_details.current_maximum_overdue_days : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
+          col_add++;
+          row++;
+        } else {
+          // console.log('undefined');
+          // console.log(e.retailer_nid + ' => ' +e.manufacturer_id);
+        }
+      }
+      const file_path = 'public/retailer/limit_upload/';
+      if (!fs.existsSync(file_path)) {
+        fs.mkdirSync(file_path, { recursive: true });
+      }
+      workbook.write(file_path + "Limit_Upload_Retailer_List_(" + today + ").xlsx");
+      const fileName = "retailer/limit_upload/" + "Limit_Upload_Retailer_List_(" + today + ").xlsx";
+      await timeout(1500);
+      resolve(sendApiResult(true, "Limit Upload Retailer List", fileName));
+    }
+  })
+}
+
+const yearDifference = async function (dob){
+  let date1 = new Date(dob);
+  let currentdate = new Date();
+  let today = currentdate.getFullYear() + "-" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "-" + ('0' + currentdate.getDate()).slice(-2);
+  let date2 = new Date(today);
+  let difference_time = date2.getTime() - date1.getTime();
+  let difference_year = difference_time / (1000 * 3600 * 24 * 365);
+  return parseInt(difference_year);
+}
+
+Retailer.uploadRetailerLimitUploadFile = function (rows, filename, req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await knex.transaction(async (trx) => {
+        const manufacturer_sql = await trx("APSISIPDC.cr_manufacturer")
+          .select("id", "manufacturer_name")
+          .where("status", "Active");
+
+        const manufacturer_list = [];
+        for (const [key, value] of Object.entries(manufacturer_sql)) {
+          manufacturer_list[value.manufacturer_name] = value.id;
+        }
+        let update_count = 0;
+        if (Object.keys(rows).length !== 0) {
+            for (let index = 0; index < rows.length; index++) {
+              if(rows[index].Retailer_NID != undefined && rows[index].Manufacturer_Name != undefined && rows[index].Proposed_Limit_by_CRM != undefined){
+                let limit_crm = rows[index].Proposed_Limit_by_CRM;
+                let retailer_nid = rows[index].Retailer_NID;
+                let manufacturer_id = rows[index].Manufacturer_Name ? manufacturer_list[rows[index].Manufacturer_Name] : null;
+                let mobile_number = rows[index].Retailer_Mobile_Number;
+                const limitUpdate = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+                    .where({ retailer_nid : retailer_nid, manufacturer_id : manufacturer_id, phone : mobile_number, cib_status : 1, is_valid : 1, is_duplicate : 0, is_eligible : 1, status : 'Inactive', limit_status : 'Initiated'})
+                    .whereRaw('("cr_retailer_manu_scheme_mapping"."system_limit_date" IS NOT NULL AND "cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NULL)')
+                    .update({
+                      crm_approve_limit: parseInt(limit_crm),
+                      crm_approve_date: new Date(),
+                      limit_status : 'Upload'
+                    });
+                if(limitUpdate) ++update_count;
+              }
+            }
+            if (Object.keys(rows).length != 0) {
+              resolve(sendApiResult(true, "Limit Upload Successfull. " + update_count + " Retailer's Limit Updated."));
+            }
+            else {
+              reject(sendApiResult(false, "Limit Upload Failed"));
+            }
+        }
+        else {
+          resolve(sendApiResult(true, "No Valid Retailer Limit Found in your Uploaded File."));
+        }
+      })
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  }).catch((error) => {
+    console.log(error, 'Promise error');
+  });
+};
+
+Retailer.uploadCreditMemoFile = function (filename, req) {
+  return new Promise(async (resolve, reject) => {
+    await knex.transaction(async (trx) => {
+      const limitUpdate = await trx("APSISIPDC.cr_credit_memo_log")
+      .where({id : req.memo_id})
+      .update({
+        credit_memo_upload_status : 1,
+        credit_memo_upload_url : 'public/credit_memo/signed/' + filename,
+        credit_memo_upload_date : new Date()
+      });
+      resolve(sendApiResult(true, "Credit Memo Upload Successfully."));
+    })
+    .then((result) => {
+      //
+    })
+    .catch((error) => {
+      reject(sendApiResult(false, error.message));
+    });
+  }).catch((error) => {
+    console.log(error, 'Promise error');
+  });
+}
+
+Retailer.creditMemoAction = function (req) {
+  return new Promise(async (resolve, reject) => {
+    await knex.transaction(async (trx) => {
+      const memo_id = req.memo_id;
+      const action_type = req.action_type;
+      switch(action_type) {
+        case 'Approve':
+          const credit_memo_approve = await creditMemoApprove(memo_id);
+          break;
+        case 'Reject':
+          const credit_memo_reject = await creditMemoReject(memo_id);
+          break;
+        case 'Release':
+          const credit_memo_release = await creditMemoRelease(memo_id);
+          break;
+        default:
+      }
+      resolve(sendApiResult(true, "Credit Memo " + action_type + " Successfully.", action_type));
+    })
+    .then((result) => {
+      //
+    })
+    .catch((error) => {
+      reject(sendApiResult(false, error.message));
+    });
+  }).catch((error) => {
+    console.log(error, 'Promise error');
+  });
+}
+
+const creditMemoApprove = async function (memo_id) {
+
+}
+
+const creditMemoReject = async function (memo_id) {
+
+}
+
+const creditMemoRelease = async function (memo_id) {
+
+}
+
+const amount_in_words = async function (numericValue) {
+	numericValue = parseFloat(numericValue).toFixed(2);
+	var amount = numericValue.toString().split('.');
+	var taka = amount[0];
+	var paisa = amount[1];
+	var full_amount_in_words = await convert(taka) +" Taka and "+ await convert(paisa)+" Paisa Only";
+	return full_amount_in_words;
+}
+
+const convert = async function (numericValue) {
+	var iWords = ['Zero', ' One', ' Two', ' Three', ' Four', ' Five', ' Six', ' Seven', ' Eight', ' Nine'];
+	var ePlace = ['Ten', ' Eleven', ' Twelve', ' Thirteen', ' Fourteen', ' Fifteen', ' Sixteen', ' Seventeen', ' Eighteen', ' Nineteen'];
+	var tensPlace = ['', ' Ten', ' Twenty', ' Thirty', ' Forty', ' Fifty', ' Sixty', ' Seventy', ' Eighty', ' Ninety'];
+	var inWords = [];
+	var numReversed, inWords, actnumber, i, j;
+	inWords = [];
+	if(numericValue == "00" || numericValue =="0"){
+		return 'Zero';
+	}
+	var obStr = numericValue.toString();
+	numReversed = obStr.split('');
+	actnumber = numReversed.reverse();
+	if (Number(numericValue) == 0) {
+		return 'Zero';
+	}
+	var iWordsLength = numReversed.length;
+	var finalWord = '';
+	j = 0;
+	for (i = 0; i < iWordsLength; i++) {
+		switch (i) {
+			case 0:
+				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+					inWords[j] = '';
+				} else {
+					inWords[j] = iWords[actnumber[i]];
+				}
+				inWords[j] = inWords[j] + '';
+				break;
+			case 1:
+				if (actnumber[i] == 0) {
+					inWords[j] = '';
+				} else if (actnumber[i] == 1) {
+					inWords[j] = ePlace[actnumber[i - 1]];
+				} else {
+					inWords[j] = tensPlace[actnumber[i]];
+				}
+				break;
+			case 2:
+				if (actnumber[i] == '0') {
+					inWords[j] = '';
+				} else if (actnumber[i - 1] !== '0' && actnumber[i - 2] !== '0') {
+					inWords[j] = iWords[actnumber[i]] + ' Hundred';
+				} else {
+					inWords[j] = iWords[actnumber[i]] + ' Hundred';
+				}
+				break;
+			case 3:
+				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+					inWords[j] = '';
+				} else {
+					inWords[j] = iWords[actnumber[i]];
+				}
+				if (actnumber[i + 1] !== '0' || actnumber[i] > '0') {
+					inWords[j] = inWords[j] + ' Thousand';
+				}
+				break;
+			case 4:
+				if (actnumber[i] == 0) {
+					inWords[j] = '';
+				} else if (actnumber[i] == 1) {
+					inWords[j] = ePlace[actnumber[i - 1]];
+				} else {
+					inWords[j] = tensPlace[actnumber[i]];
+				}
+				break;
+			case 5:
+				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+					inWords[j] = '';
+				} else {
+					inWords[j] = iWords[actnumber[i]];
+				}
+				if (actnumber[i + 1] !== '0' || actnumber[i] > '0') {
+					inWords[j] = inWords[j] + ' Lakh';
+				}
+				break;
+			case 6:
+				if (actnumber[i] == 0) {
+					inWords[j] = '';
+				} else if (actnumber[i] == 1) {
+					inWords[j] = ePlace[actnumber[i - 1]];
+				} else {
+					inWords[j] = tensPlace[actnumber[i]];
+				}
+				break;
+			case 7:
+				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+					inWords[j] = '';
+				} else {
+					inWords[j] = iWords[actnumber[i]];
+				}
+				inWords[j] = inWords[j] + ' Crore';
+				break;
+			case 8:
+				if (actnumber[i] == 0) {
+					inWords[j] = '';
+				} else if (actnumber[i] == 1) {
+					inWords[j] = ePlace[actnumber[i - 1]];
+				} else {
+					inWords[j] = tensPlace[actnumber[i]];
+				}
+				break;
+			default:
+				break;
+		}
+		j++;
+	}
+	inWords.reverse();
+	for (i = 0; i < inWords.length; i++) {
+		finalWord += inWords[i];
+	}
+	return finalWord;
+}
+
 module.exports = Retailer;
+

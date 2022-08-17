@@ -51,6 +51,25 @@ exports.getRetailerRegionOperation = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.checkRetailerDataValidity = async (req, res) => {
+  try {
+    const result = await model.checkRetailerDataValidity(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.checkRetailerDataValidityById = async (req, res) => {
+  try {
+    const result = await model.checkRetailerDataValidityByID(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.checkRetailerEligibility = async (req, res) => {
   try {
     const result = await model.checkRetailerEligibility(req);
@@ -817,3 +836,117 @@ exports.generateRetailersIndividualTotalReport = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 }
+
+exports.downloadEkycReport = async (req, res) => {
+  try {
+    const result = await model.downloadEkycReport(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getRetailerInvalidData = async (req, res) => {
+  try {
+    const result = await model.getRetailerInvalidData(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getRetailerInvalidDataById = async (req, res) => {
+  try {
+    const result = await model.getRetailerInvalidDataById(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.updateRetailerInvalidDataById = async (req, res) => {
+  try {
+    const result = await model.updateRetailerInvalidDataById(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getDuplicateRetailerListById = async (req, res) => {
+  try {
+    const result = await model.getDuplicateRetailerListById(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.createCreditMemo = async (req, res) => {
+  try {
+    const result = await model.createCreditMemo(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.creditMemoDownload = async (req, res) => {
+  try {
+    const result = await model.creditMemoDownload(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.downloadLimitUploadFile = async (req, res) => {
+  try {
+    const result = await model.downloadLimitUploadFile(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.uploadRetailerLimitUploadFile = async (req, res) => {
+  const upload = await uploadRetailerLimitUploadFile(req.file.filename, req.body);
+  res.status(200).send(upload);
+};
+
+const uploadRetailerLimitUploadFile = async function (filename, req) {
+  try {
+    let resData = [];
+    const folder_name = req.file_for;
+    const workbook = xlsx.readFile(
+      `./public/configuration_file/limit_upload/${filename}`,
+      { type: "array" }
+    );
+    const sheetnames = Object.keys(workbook.Sheets);
+    let i = sheetnames.length;
+    var insert = "";
+    while (i--) {
+      const sheetname = sheetnames[i];
+      const arrayName = sheetname.toString();
+      resData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetname]);
+      insert = await model.uploadRetailerLimitUploadFile(resData, filename, req);
+    }
+    return insert;
+  } catch (error) {
+    return sendApiResult(false, "File not uploaded due to " + error.message);
+  }
+};
+
+exports.uploadCreditMemoFile = async (req, res) => {
+  const result = await model.uploadCreditMemoFile(req.file.filename, req.body);
+  res.status(200).send(result);
+};
+
+exports.creditMemoAction = async (req, res) => {
+  try {
+    const result = await model.creditMemoAction(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
