@@ -616,6 +616,40 @@ exports.uploadDynamicBulkConfig = function (name) {
   return storage;
 };
 
+exports.uploadLimitUpload = function (name) {
+  const max = 100;
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const path = `./public/configuration_file/limit_upload`;
+      fs.mkdirSync(path, { recursive: true });
+      cb(null, path);
+    },
+    filename: (req, file, cb) => {
+      if (typeof file !== undefined) {
+        cb(null, `${file.fieldname}-${Date.now()}-${file.originalname}`);
+      }
+    },
+  });
+  return storage;
+};
+
+exports.uploadCreditMemo = function (name) {
+  const max = 100;
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const path = `./public/credit_memo/signed`;
+      fs.mkdirSync(path, { recursive: true });
+      cb(null, path);
+    },
+    filename: (req, file, cb) => {
+      if (typeof file !== undefined) {
+        cb(null, `${file.fieldname}-${Date.now()}-${file.originalname}`);
+      }
+    },
+  });
+  return storage;
+};
+
 exports.uploadConfig = function (name) {
   const max = 100;
   const storage = multer.diskStorage({
