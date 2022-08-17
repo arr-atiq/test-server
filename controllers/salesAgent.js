@@ -100,6 +100,16 @@ exports.retailersBySalesAgentAndManufacturer = async (req, res) => {
   }
 };
 
+exports.getSalesAgentListDropDown = async (req, res) => {
+  try {
+    const result = await model.getSalesAgentListDropDown(req);
+    result.total_amount = result.data.total_amount;
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 
 
 exports.getSalesAgentListByManufacturerAndSupervisor = async (req, res) => {
