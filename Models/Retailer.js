@@ -1117,7 +1117,6 @@ Retailer.updateSchemaByRetailers = function (req) {
 
 Retailer.updateLimitMapping = async (req, res) => {
 
-  console.log("haha start");
   const {
     type,
     limitValue,
@@ -1154,7 +1153,7 @@ Retailer.updateLimitMapping = async (req, res) => {
               crm_approve_date: knex.fn.now(),
               crm_approve_by: user_id
             });
-          console.log('updateData', updateData)
+          
           if (updateData <= 0) res.send(sendApiResult(false, 'Could not Found ac_number_1rmn'));
           resolve(sendApiResult(
             true,
@@ -2732,7 +2731,6 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
         retailer_performance_info_Arr.push(retailer_performance_info);
       }
 
-      console.log(retailer_performance_info_Arr);
       const headers = [
         "Sr.",
         "Retailer_name",
@@ -3138,8 +3136,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributor = async (req, res) => {
         .where("cr_supervisor.id", supervisor_id);
 
       const distributor_id = distributor[0]?.distributor_id ?? 0;
-      console.log(distributor_id);
-
 
       const filter_report_data = await knex("APSISIPDC.cr_retailer")
         .leftJoin(
@@ -3442,7 +3438,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributor = async (req, res) => {
         retailer_performance_info_Arr.push(retailer_performance_info);
       }
 
-      console.log(retailer_performance_info_Arr);
       const headers = [
         "Sr.",
         "Retailer name",
@@ -4010,9 +4005,10 @@ Retailer.createCreditMemo = function (req) {
         const uniqueMemoId = new Date().valueOf();        
         const retailerList = await creditMemoRetailerList();
         if (Object.keys(retailerList).length !== 0) {
-          const createFrontPage = await preparePdfMemoFrontPage(uniqueMemoId, retailerList);
-          const prepareRetailerListPage = await preparePdfRetailerListPage(uniqueMemoId, retailerList);
-          const memo_log = await creditMemolog(req, uniqueMemoId, retailerList);
+          const memoReferenceNumber = await prepareReferenceNumber();
+          const createFrontPage = await preparePdfMemoFrontPage(uniqueMemoId, retailerList, memoReferenceNumber);          
+          const prepareRetailerListPage = await preparePdfRetailerListPage(uniqueMemoId, retailerList, memoReferenceNumber);
+          const memo_log = await creditMemolog(req, uniqueMemoId, retailerList, memoReferenceNumber);
           if(createFrontPage && prepareRetailerListPage && memo_log)
             resolve(sendApiResult(true, "Credit Memo Created Successfully", []));
           else 
@@ -4047,6 +4043,9 @@ const creditMemoRetailerList = async function (){
     .select(
       "cr_retailer_manu_scheme_mapping.id",
       "cr_retailer_manu_scheme_mapping.retailer_code",
+      "cr_retailer_manu_scheme_mapping.retailer_nid",
+      "cr_retailer_manu_scheme_mapping.retailer_smart_nid",
+      "cr_retailer_manu_scheme_mapping.manufacturer_id",
       "cr_retailer.retailer_name",
       "cr_manufacturer.manufacturer_name",
       "cr_retailer_manu_scheme_mapping.propose_limit",
@@ -4067,7 +4066,23 @@ const creditMemoRetailerList = async function (){
   return result;
 }
 
-const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList){
+const prepareReferenceNumber = async function (){
+  let currentdate = new Date();
+  let today = currentdate.getFullYear() + "" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "" + ('0' + currentdate.getDate()).slice(-2);  
+  const memo_info = await knex("APSISIPDC.cr_credit_memo_log")
+      .select(
+        "cr_credit_memo_log.id"
+      );
+  const referenceNumber = 'IPDC/CM/DANA/' + today + '/APNL' + await addingExtraZeros(Object.keys(memo_info).length,4);
+  return referenceNumber;
+}
+
+const addingExtraZeros = async function (str, max) {	
+  str = str.toString();  
+  return str.length < max ? await addingExtraZeros('0' + str, max) : str;
+}
+
+const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memoReferenceNumber){
   var fonts = {
     Roboto: {
         normal: 'node_modules/font/roboto/Roboto-Regular.ttf',
@@ -4104,7 +4119,7 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList){
     header: {
       columns: [       
         {
-          text: 'MCC No. XXXX-XX ',   
+          text: 'MCC No. ' + memoReferenceNumber,   
           margin: [55, 40, 0, 0 ],
           alignment: 'left', 
         },
@@ -4244,7 +4259,8 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList){
             ],
             [
               {text: 'Total Proposed Limit under\n this proposal', margin: [ 5, 0 ], bold: true},
-              {text: await amount_in_words(manufactureSummaryTable.sum), color: 'black', margin: [ 5, 0 ], bold: false},
+              // {text: await amount_in_words(manufactureSummaryTable.sum), color: 'black', margin: [ 5, 0 ], bold: false},
+              {text: await numberWithCommas(manufactureSummaryTable.sum), color: 'black', margin: [ 5, 0 ], bold: false},
             ],
             [
               {text: 'Sanction Date', margin: [ 5, 0 ], bold: true},
@@ -4378,7 +4394,7 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList){
   return true;
 }
 
-const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list){
+const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list, memoReferenceNumber){
   const retailerList = await creditMemoRetailerListPrepare(retailer_list);
   var fonts = {
   	Calibri: {
@@ -4399,7 +4415,7 @@ const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list){
     header: {
       columns: [       
         {
-          text: 'MCC No. XXXX-XX ',   
+          text: 'MCC No. ' + memoReferenceNumber,
           margin: [55, 40, 0, 0 ],
           alignment: 'left', 
         },
@@ -4436,7 +4452,7 @@ const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list){
   return true;
 }
 
-const creditMemolog = async function (req, uniqueMemoId, retailerList){
+const creditMemolog = async function (req, uniqueMemoId, retailerList, memoReferenceNumber){
   let id_list = [];
   let count_sum = 0;
   for (const [key, value] of Object.entries(retailerList)) {
@@ -4446,7 +4462,7 @@ const creditMemolog = async function (req, uniqueMemoId, retailerList){
 
   const cr_credit_memo_log = {
     memo_id : uniqueMemoId,
-    ref_no : null,
+    ref_no : memoReferenceNumber,
     count_retailer : Object.keys(retailerList).length,
     count_sum : parseInt(count_sum),
     credit_memo_status : null,
@@ -4511,21 +4527,24 @@ const creditMemoRetailerListPrepare = async function (result){
   retailerList.push(temp);
 
   for (const [key, value] of Object.entries(result)) {
-    let temp = [];
-    temp.push({text: (++count) +' .', alignment: 'center'});
-    temp.push({text: value.retailer_name, alignment: 'center'});
-    temp.push({text: value.retailer_code, alignment: 'center'});
-    temp.push({text: value.manufacturer_name, alignment: 'center'});
-    temp.push({text: value.processing_fee, alignment: 'center'});
-    temp.push({text: '-', alignment: 'center'});
-    temp.push({text: '-', alignment: 'center'});
-    temp.push({text: '-', alignment: 'center'});
-    temp.push({text: value.crm_approve_limit, alignment: 'center'});
-    temp.push({text: '-', alignment: 'center'});
-    temp.push({text: '-', alignment: 'center'});
-    temp.push({text: await dayDifference(value.created_date), alignment: 'center'});
-    temp.push({text: '-', alignment: 'center'});
-    retailerList.push(temp);
+    let limit_info_details = await retailerAvgByManufacturer(value.retailer_nid, value.manufacturer_id);
+    if(limit_info_details != undefined){
+      let temp = [];
+      temp.push({text: (++count) +' .', alignment: 'center'});
+      temp.push({text: value.retailer_name, alignment: 'center'});
+      temp.push({text: value.retailer_code, alignment: 'center'});
+      temp.push({text: value.manufacturer_name, alignment: 'center'});
+      temp.push({text: await numberWithCommas(value.processing_fee), alignment: 'center'});
+      temp.push({text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer), alignment: 'center'});
+      temp.push({text: await numberWithCommas(limit_info_details.pre_assigned_limit_all_manufacturer), alignment: 'center'});
+      temp.push({text: await numberWithCommas(limit_info_details.max_sanction_amount_allowed), alignment: 'center'});
+      temp.push({text: await numberWithCommas(value.crm_approve_limit), alignment: 'center'});
+      temp.push({text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer - value.crm_approve_limit), alignment: 'center'});
+      temp.push({text: await numberWithCommas(limit_info_details.proposed_sanction_amount_total_lifting_amount), alignment: 'center'});
+      temp.push({text: await dayDifference(value.created_date), alignment: 'center'});
+      temp.push({text: '-', alignment: 'center'});
+      retailerList.push(temp);
+    }
   }
   temp = [];
   temp.push({text: ' ', alignment: 'center'});
@@ -4545,13 +4564,20 @@ const creditMemoRetailerListPrepare = async function (result){
   return retailerList;
 }
 
+const numberWithCommas = async function (num) {
+  if(num){
+    var parts = num.toString().split('.');	
+    return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (parts[1] ? "." + parts[1] : "");
+  }	
+}
+
 const dayDifference = async function (created_date){
   let date1 = new Date(created_date);
   let currentdate = new Date();
   let today = currentdate.getFullYear() + "/" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "/" + ('0' + currentdate.getDate()).slice(-2);
   let date2 = new Date(today);
   let difference_time = date2.getTime() - date1.getTime();
-  let difference_days = difference_time / (1000 * 3600 * 24);  
+  let difference_days = difference_time / (1000 * 3600 * 24);
   return difference_days;
 }
 
@@ -4596,7 +4622,6 @@ Retailer.creditMemoDownload = function (req) {
 Retailer.downloadLimitUploadFile = function (req) {
   return new Promise(async (resolve, reject) => {
     const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-      // .where("cr_retailer_manu_scheme_mapping.retailer_upload_id", req.retailer_upload_id)
       .where("cr_retailer_manu_scheme_mapping.limit_status", 'Initiated')
       .whereRaw(`"cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NULL`)
       .where("cr_retailer.kyc_status", 1)
@@ -4623,18 +4648,7 @@ Retailer.downloadLimitUploadFile = function (req) {
         "cr_retailer_manu_scheme_mapping.loan_id as proposed_sanction_by_crm_with_average_sales_value",        
         "cr_manufacturer.manufacturer_name",
         "cr_schema.scheme_name",
-        "cr_retailer_manu_scheme_mapping.loan_id as pre_assigned_limit_this_manufacturer",
-        "cr_retailer_manu_scheme_mapping.loan_id as pre_assigned_limit_all_manufacturer",
-        "cr_retailer_manu_scheme_mapping.loan_id as avg_ticket_size",
-        "cr_retailer_manu_scheme_mapping.loan_id as highest_ticket_size",
-        "cr_retailer_manu_scheme_mapping.loan_id as avg_payment_period",
-        "cr_retailer_manu_scheme_mapping.loan_id as lowest_ticket_size",
-        "cr_retailer_manu_scheme_mapping.loan_id as relationship_tenor",
-        "cr_retailer_manu_scheme_mapping.loan_id as no_revolving_times",
-        "cr_retailer_manu_scheme_mapping.loan_id as current_overdue_amount",
-        "cr_retailer_manu_scheme_mapping.loan_id as historical_maximum_overdue_days",
-        "cr_retailer_manu_scheme_mapping.loan_id as current_maximum_overdue_days",
-        "cr_retailer.phone",
+        "cr_retailer.phone"
       )
       .innerJoin(
         "APSISIPDC.cr_retailer",
@@ -4725,68 +4739,71 @@ Retailer.downloadLimitUploadFile = function (req) {
       for (let i = 0; i < result.length; i++) {
         var col_add = 0;
         let e = result[i];
-        // let limit_info_details = retailerAvgByManufacturer(e.retailer_nid, e.manufacturer_id);        
-        // console.log('limit_info_details');
-        // console.log(limit_info_details);
-        worksheet.cell(row, col + col_add).number((i + 1));
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : "");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.retailer_nid ? e.retailer_nid : "");
-        col_add++;
-        worksheet.cell(row, col + col_add).number(e.date_of_birth ? await yearDifference(e.date_of_birth) : "0");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.retailer_code ? e.retailer_code : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.cib_status ? e.cib_status : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.total_outstanding ? e.total_outstanding : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.overdue_amount ? e.overdue_amount : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.default_history ? e.default_history : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.kyc_status ? e.kyc_status : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.avg_monthly_sales ? e.avg_monthly_sales : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).number(e.proposed_sanction_limit_by_system ? e.proposed_sanction_limit_by_system : 0);
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.proposed_sanction_with_avg_sales_value ? e.proposed_sanction_with_avg_sales_value : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(" ");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.proposed_sanction_by_crm_with_average_sales_value ? e.proposed_sanction_by_crm_with_average_sales_value : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.manufacturer_name ? e.manufacturer_name : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.scheme_name ? e.scheme_name : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.pre_assigned_limit_this_manufacturer ? e.pre_assigned_limit_this_manufacturer : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.pre_assigned_limit_all_manufacturer ? e.pre_assigned_limit_all_manufacturer : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.avg_ticket_size ? e.avg_ticket_size : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.highest_ticket_size ? e.highest_ticket_size : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.avg_payment_period ? e.avg_payment_period : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.lowest_ticket_size ? e.lowest_ticket_size : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.relationship_tenor ? e.relationship_tenor : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.no_revolving_times ? e.no_revolving_times : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.current_overdue_amount ? e.current_overdue_amount : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.historical_maximum_overdue_days ? e.historical_maximum_overdue_days : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.current_maximum_overdue_days ? e.current_maximum_overdue_days : "-");
-        col_add++;
-        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
-        col_add++;
-        row++;
+        let limit_info_details = await retailerAvgByManufacturer(e.retailer_nid, e.manufacturer_id);
+        if(limit_info_details != undefined){
+          worksheet.cell(row, col + col_add).number((i + 1));
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : "");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.retailer_nid ? e.retailer_nid : "");
+          col_add++;
+          worksheet.cell(row, col + col_add).number(e.date_of_birth ? await yearDifference(e.date_of_birth) : "0");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.retailer_code ? e.retailer_code : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.cib_status ? e.cib_status : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.total_outstanding ? e.total_outstanding : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.overdue_amount ? e.overdue_amount : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.default_history ? e.default_history : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.kyc_status ? e.kyc_status : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.avg_monthly_sales ? e.avg_monthly_sales : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).number(e.proposed_sanction_limit_by_system ? e.proposed_sanction_limit_by_system : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.proposed_sanction_with_avg_sales_value ? e.proposed_sanction_with_avg_sales_value : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(" ");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.proposed_sanction_by_crm_with_average_sales_value ? e.proposed_sanction_by_crm_with_average_sales_value : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.manufacturer_name ? e.manufacturer_name : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.scheme_name ? e.scheme_name : "-");
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.pre_assigned_limit_manufacturer ? limit_info_details.pre_assigned_limit_manufacturer : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.pre_assigned_limit_all_manufacturer ? limit_info_details.pre_assigned_limit_all_manufacturer : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.avg_ticket_size ? limit_info_details.avg_ticket_size : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.highest_ticket_size ? limit_info_details.highest_ticket_size : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.avg_payment_period ? limit_info_details.avg_payment_period : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.lowest_ticket_size ? limit_info_details.lowest_ticket_size : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.relationship_tenor ? limit_info_details.relationship_tenor : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.no_revolving_times ? limit_info_details.no_revolving_times : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.current_overdue_amount ? limit_info_details.current_overdue_amount : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.historical_maximum_overdue_days ? limit_info_details.historical_maximum_overdue_days : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).number(limit_info_details.current_maximum_overdue_days ? limit_info_details.current_maximum_overdue_days : 0);
+          col_add++;
+          worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
+          col_add++;
+          row++;
+        } else {
+          // console.log('undefined');
+          // console.log(e.retailer_nid + ' => ' +e.manufacturer_id);
+        }
       }
       const file_path = 'public/retailer/limit_upload/';
       if (!fs.existsSync(file_path)) {
@@ -4804,7 +4821,7 @@ const yearDifference = async function (dob){
   let date1 = new Date(dob);
   let currentdate = new Date();
   let today = currentdate.getFullYear() + "-" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "-" + ('0' + currentdate.getDate()).slice(-2);
-  let date2 = new Date(today);  
+  let date2 = new Date(today);
   let difference_time = date2.getTime() - date1.getTime();
   let difference_year = difference_time / (1000 * 3600 * 24 * 365);  
   return parseInt(difference_year);
@@ -4887,6 +4904,48 @@ Retailer.uploadCreditMemoFile = function (filename, req) {
   }).catch((error) => {
     console.log(error, 'Promise error');
   });
+}
+
+Retailer.creditMemoAction = function (req) {
+  return new Promise(async (resolve, reject) => {
+    await knex.transaction(async (trx) => {
+      const memo_id = req.memo_id;
+      const action_type = req.action_type;
+      switch(action_type) {
+        case 'Approve':
+          const credit_memo_approve = await creditMemoApprove(memo_id);
+          break;
+        case 'Reject':
+          const credit_memo_reject = await creditMemoReject(memo_id);
+          break;
+        case 'Release':
+          const credit_memo_release = await creditMemoRelease(memo_id);
+          break;
+        default:
+      }      
+      resolve(sendApiResult(true, "Credit Memo " + action_type + " Successfully.", action_type));      
+    })
+    .then((result) => {
+      //
+    })
+    .catch((error) => {
+      reject(sendApiResult(false, error.message));
+    });
+  }).catch((error) => {
+    console.log(error, 'Promise error');
+  });
+}
+
+const creditMemoApprove = async function (memo_id) {
+
+}
+
+const creditMemoReject = async function (memo_id) {
+
+}
+
+const creditMemoRelease = async function (memo_id) {
+
 }
 
 const amount_in_words = async function (numericValue) {	

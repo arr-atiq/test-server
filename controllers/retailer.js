@@ -941,3 +941,12 @@ exports.uploadCreditMemoFile = async (req, res) => {
   const result = await model.uploadCreditMemoFile(req.file.filename, req.body);
   res.status(200).send(result);
 };
+
+exports.creditMemoAction = async (req, res) => {
+  try {
+    const result = await model.creditMemoAction(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};

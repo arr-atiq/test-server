@@ -819,7 +819,6 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
        max_sanction_amount_allowed : retailerData?.crm_approve_limit ?? 0,
        proposed_sanction_amount_total_lifting_amount : propose_snaction_total_lift_amount ?? 0,
      }
-     console.log('responseValue',responseValue);
      // resolve(responseValue) ;
    })
    .catch((error) => {

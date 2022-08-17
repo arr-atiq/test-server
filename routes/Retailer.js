@@ -80,4 +80,6 @@ router.post(
     retailer.uploadCreditMemoFile
 );
 
+router.post("/credit-memo-action", retailer.creditMemoAction);
+
 module.exports = router;
