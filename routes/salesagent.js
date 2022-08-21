@@ -4,6 +4,7 @@ const router = express.Router();
 const salesagent = require("../controllers/salesAgent");
 
 router.get("/salesagents", salesagent.getSalesAgentList);
+router.get("/salesagnets-list-for-drop-down", salesagent.getSalesAgentListDropDown);
 router.get("/manufacturers", salesagent.getManufacturerListBySalesagent);
 router.get("/retailer-list/:salesagent_id", salesagent.getRetailerbySalesAgent);
 router.get("/retailers/:salesagent_id/:manufacturer_id", salesagent.retailersBySalesAgentAndManufacturer);
