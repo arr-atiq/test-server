@@ -279,6 +279,9 @@ Retailer.checkRetailerDataValidity = function (req) {
                     phone: value.phone
                   };                
                   const masterRetailerInsertLog = await trx("APSISIPDC.cr_retailer").insert(masterRetailerData).returning("id");
+                  
+                  // console.log('masterRetailerInsertLog');
+                  // console.log(parseInt(masterRetailerInsertLog[0]));
                                                           
                   const sales_agent_mapping = {
                     'retailer_id': parseInt(masterRetailerInsertLog[0]),
@@ -291,7 +294,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                   let retailerManuDistMappingInsert = {
                     retailer_upload_id: value.retailer_upload_id,
                     temp_upload_id : value.id,
-                    retailer_id: masterRetailerInsertLog[0],
+                    retailer_id: parseInt(masterRetailerInsertLog[0]),
                     retailer_nid: value.retailer_nid,
                     retailer_smart_nid: parseInt(value.retailer_smart_nid),
                     phone: value.phone,
@@ -308,7 +311,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                   
                   const detailsRetailerData = {
                     retailer_upload_id: value.retailer_upload_id,
-                    retailer_id: masterRetailerInsertLog[0],
+                    retailer_id: parseInt(masterRetailerInsertLog[0]),
                     manu_scheme_mapping_id : parseInt(mappingRetailerInsertLog[0]),
                     retailer_name: value.retailer_name,
                     phone: value.phone,
@@ -397,6 +400,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                     
                     const detailsRetailerData = {
                       retailer_upload_id: value.retailer_upload_id,
+                      retailer_id: parseInt(retailerInfo.retailer_id),
                       manu_scheme_mapping_id : parseInt(mappingRetailerInsertLog[0]),
                       retailer_name: value.retailer_name,
                       phone: value.phone,
@@ -4887,12 +4891,12 @@ Retailer.uploadCreditMemoFile = function (filename, req) {
   return new Promise(async (resolve, reject) => {
     await knex.transaction(async (trx) => {
       const limitUpdate = await trx("APSISIPDC.cr_credit_memo_log")
-      .where({id : req.memo_id})      
-      .update({
-        credit_memo_upload_status : 1,
-        credit_memo_upload_url : 'public/credit_memo/signed/' + filename,
-        credit_memo_upload_date : new Date()
-      });
+        .where({id : req.memo_id})      
+        .update({
+          credit_memo_upload_status : 1,
+          credit_memo_upload_url : 'public/credit_memo/signed/' + filename,
+          credit_memo_upload_date : new Date()
+        });
       resolve(sendApiResult(true, "Credit Memo Upload Successfully."));
     })
     .then((result) => {
@@ -4911,19 +4915,36 @@ Retailer.creditMemoAction = function (req) {
     await knex.transaction(async (trx) => {
       const memo_id = req.memo_id;
       const action_type = req.action_type;
-      switch(action_type) {
-        case 'Approve':
-          const credit_memo_approve = await creditMemoApprove(memo_id);
-          break;
-        case 'Reject':
-          const credit_memo_reject = await creditMemoReject(memo_id);
-          break;
-        case 'Release':
-          const credit_memo_release = await creditMemoRelease(memo_id);
-          break;
-        default:
-      }      
-      resolve(sendApiResult(true, "Credit Memo " + action_type + " Successfully.", action_type));      
+
+      const memo_log = await knex("APSISIPDC.cr_credit_memo_log")
+        .select("*")
+        .where("id", memo_id);
+
+      if (Object.keys(memo_log).length != 0) {
+        if(memo_log[0].credit_memo_action == null || memo_log[0].credit_memo_action_date == null){        
+          let credit_memo_action = false;
+          switch(action_type) {
+            case 'Approve':
+              credit_memo_action = await creditMemoApprove(memo_id, action_type);
+              break;
+            case 'Reject':
+              credit_memo_action = await creditMemoReject(memo_id, action_type);
+              break;
+            case 'Release':
+              credit_memo_action = await creditMemoRelease(memo_id, action_type);
+              break;
+            default:
+          }
+          if(credit_memo_action)
+            resolve(sendApiResult(true, "Credit Memo " + action_type + " Successfully."));
+          else 
+            reject(sendApiResult(false, "Credit Memo " + action_type + " Failed!"));
+        } else {
+          resolve(sendApiResult(false, "Credit Memo " + memo_log[0].credit_memo_action + " Already!"));          
+        }
+      } else {        
+        reject(sendApiResult(false, "Credit Memo Not Found!"));
+      }
     })
     .then((result) => {
       //
@@ -4936,15 +4957,106 @@ Retailer.creditMemoAction = function (req) {
   });
 }
 
-const creditMemoApprove = async function (memo_id) {
+const creditMemoApprove = async function (memo_id, action_type) {
+  const bulkRetailerList = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+    .select(
+      "cr_retailer_manu_scheme_mapping.id",
+      "cr_retailer_manu_scheme_mapping.manufacturer_id",
+      "cr_retailer_manu_scheme_mapping.distributor_id",
+      "cr_retailer_manu_scheme_mapping.retailer_nid"
+    )
+    .where("credit_memo_id", memo_id)
+    .where("cib_status", 1)
+    .where("credit_memo_status", 1)
+    .whereRaw(`"loan_id" IS NULL`)
+    .where("limit_status", 'Upload')
+    .where("status", 'Inactive');
+  
+  if (Object.keys(bulkRetailerList).length != 0) {
+    let retailer_nid_list = [];
+    for (const [key, value] of Object.entries(bulkRetailerList)) {
+
+      if (!retailer_nid_list.includes(value.retailer_nid)){
+        retailer_nid_list.push(value.retailer_nid);
+      }
+    
+      let loan_id_counter = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .select("id")
+          .where("manufacturer_id", value.manufacturer_id)
+          .where("distributor_id", value.distributor_id)
+          .whereRaw(`"loan_id" IS NOT NULL`)
+          .whereRaw(`"loan_id_acc_active_date" IS NOT NULL`);          
+      
+      let loan_id = '';
+      if (Object.keys(loan_id_counter).length == 0)
+        loan_id = '1001DN' + await addLeadingZeros(value.manufacturer_id, 2) + await addLeadingZeros(value.distributor_id, 3) + await addLeadingZeros(1, 5);
+      else
+        loan_id = '1001DN' + await addLeadingZeros(value.manufacturer_id, 2) + await addLeadingZeros(value.distributor_id, 3) + await addLeadingZeros(++(Object.keys(loan_id_counter).length), 5);
+      
+      await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+        .where({id : value.id})
+        .update({
+          ac_number_1rmn : loan_id,
+          loan_id : loan_id,
+          loan_id_acc_active_date : new Date(),
+          status : 'Active'
+        });
+    }
+
+    const masterRetailerList = await knex("APSISIPDC.cr_retailer")
+        .select("id")
+        .where("kyc_status", 1)
+        .whereIn("retailer_nid", retailer_nid_list)
+        .whereRaw(`"master_loan_id" IS NULL`)
+        .whereRaw(`"customer_id" IS NULL`)
+        .where("activation_status", 'Inactive');
+
+    if (Object.keys(masterRetailerList).length != 0) {
+      for (const [key, value] of Object.entries(masterRetailerList)) {
+        const customer_id_info = await knex("APSISIPDC.cr_retailer")
+                .select(
+                  knex.raw(`MAX("customer_id") AS max_customer_id`)
+                )
+                .where("customer_id", '>=', 10000000)
+                .whereRaw(`"customer_id" IS NOT NULL`);
+        
+        let max_customer_id = (customer_id_info[0].MAX_CUSTOMER_ID != null) ? customer_id_info[0].MAX_CUSTOMER_ID : 10000000;
+            
+        const max_master_loan_info = await knex("APSISIPDC.cr_retailer")
+          .select(
+            knex.raw(`COUNT("id") AS max_master_loan_id`)
+          )
+          .whereRaw(`"master_loan_id" IS NOT NULL`);
+
+        let max_master_loan_id = (max_master_loan_info[0].MAX_MASTER_LOAN_ID != null) ? max_master_loan_info[0].MAX_MASTER_LOAN_ID : 0;
+        let master_loan_id = '1001DANA' + await addLeadingZeros(++max_master_loan_id, 8);
+
+        let update = await knex("APSISIPDC.cr_retailer")
+          .where({id : value.id})
+          .update({
+            customer_id : parseInt(++max_customer_id),
+            ac_number_1rn : master_loan_id,
+            master_loan_id : master_loan_id,
+            master_loan_acc_active_date : new Date(),
+            activation_status : 'Active'
+          });
+      }
+    }
+    await knex("APSISIPDC.cr_credit_memo_log")
+      .where({id : memo_id})
+      .update({
+        credit_memo_action : action_type,
+        credit_memo_action_date : new Date(),
+      });
+    return true;
+  }
+}
+
+const creditMemoReject = async function (memo_id, action_type) {
 
 }
 
-const creditMemoReject = async function (memo_id) {
-
-}
-
-const creditMemoRelease = async function (memo_id) {
+const creditMemoRelease = async function (memo_id, action_type) {
 
 }
 
