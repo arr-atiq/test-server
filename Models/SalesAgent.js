@@ -1036,6 +1036,36 @@ FileUpload.getRetailerbySalesAgent = function (req) {
   });
 };
 
+FileUpload.getSalesAgentListDropDown = function (req) {
+  const { manufacturer_id } = req.query;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_sales_agent")
+        .leftJoin(
+          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+          "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+          "cr_sales_agent.id"
+        )
+        .select(
+          "cr_sales_agent.id",
+          "cr_sales_agent.agent_name"
+        )
+        .where(function () {
+          if (manufacturer_id) {
+            this.where("cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+          }
+        })
+        .orderBy("cr_sales_agent.id", "desc")
+        .distinct();
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 FileUpload.getSalesAgentListByManufacturerAndSupervisor = function (req) {
   const { manufacturer_id } = req.params;
   const { autho_supervisor_employee_code } = req.query;
