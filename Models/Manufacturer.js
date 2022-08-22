@@ -1732,32 +1732,4 @@ FileUpload.filterManufacturerAnnualView = async (req, res) => {
   });
 };
 
-FileUpload.createNewTable = async (req, res) => {
-
-  return new Promise(async (resolve, reject) => {
-    try {
-      knex.schema.createTable('cr_users_new', 'cr_users')
-        .then(() =>
-          resolve(sendReportApiResult(true, "create table test")));
-      // table.increments('id')
-      //   table.string('account_name')
-      //   table.string('age')
-      //   table.string('balance', 8, 2)
-      //   table.string('is_admin')
-      //   table.date('birthday')
-      //   table.date('created_at_test')
-      //   table.date('created_at').defaultTo(knex.fn.now())
-      // })
-      //   .then(() =>
-      //     resolve(sendReportApiResult(true, "create table test")));
-      //if (manufacturer_annual_performance_Arr == 0) reject(sendApiResult(false, "Not found."));
-
-
-
-    } catch (error) {
-      console.log(error);
-      reject(sendApiResult(false, error.message));
-    }
-  });
-};
 module.exports = FileUpload;
