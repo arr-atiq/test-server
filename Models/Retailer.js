@@ -5356,6 +5356,38 @@ const creditMemoRelease = async function (memo_id, action_type) {
 
 }
 
+Retailer.creditMemoList = function (req) {
+  return new Promise(async (resolve, reject) => {
+    await knex.transaction(async (trx) => {
+      const creditMemoList = await knex("APSISIPDC.cr_credit_memo_log")
+      .select("id",
+        "ref_no",
+        "count_sum",
+        "credit_memo_status",
+        "credit_memo_upload_status",
+        knex.raw('TO_CHAR("cr_credit_memo_log"."credit_memo_create_date", \'DD Mon YYYY\') AS "credit_memo_create_date"'),
+      );
+
+      let credit_memo_list = [];
+      if (Object.keys(creditMemoList).length != 0) {
+        for (const [key, value] of Object.entries(creditMemoList)) {
+          let temp = {};
+          temp.id = value.id;
+          temp.ref_no = value.ref_no;
+          temp.count_sum = await numberWithCommas(value.count_sum);
+          temp.credit_memo_status = value.credit_memo_status;
+          temp.credit_memo_create_date = value.credit_memo_create_date;
+          credit_memo_list.push(temp);
+        }
+        resolve(sendApiResult(true, "Credit Memo List Generated Successfully.", creditMemoList));
+      } else {
+        resolve(sendApiResult(true, "No Credit Memo Found.", credit_memo_list));
+      }
+      
+    });
+  });
+}
+
 const amount_in_words = async function (numericValue) {
   numericValue = parseFloat(numericValue).toFixed(2);
   var amount = numericValue.toString().split('.');
