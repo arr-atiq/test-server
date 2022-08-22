@@ -301,8 +301,8 @@ Retailer.checkRetailerDataValidity = function (req) {
 
                   let retailerManuDistMappingInsert = {
                     retailer_upload_id: value.retailer_upload_id,
-                    temp_upload_id: value.id,
-                    retailer_id: masterRetailerInsertLog[0],
+                    temp_upload_id : value.id,
+                    retailer_id: parseInt(masterRetailerInsertLog[0]),
                     retailer_nid: value.retailer_nid,
                     retailer_smart_nid: parseInt(value.retailer_smart_nid),
                     phone: value.phone,
@@ -319,8 +319,8 @@ Retailer.checkRetailerDataValidity = function (req) {
 
                   const detailsRetailerData = {
                     retailer_upload_id: value.retailer_upload_id,
-                    retailer_id: masterRetailerInsertLog[0],
-                    manu_scheme_mapping_id: parseInt(mappingRetailerInsertLog[0]),
+                    retailer_id: parseInt(masterRetailerInsertLog[0]),
+                    manu_scheme_mapping_id : parseInt(mappingRetailerInsertLog[0]),
                     retailer_name: value.retailer_name,
                     phone: value.phone,
                     email: value.email,
@@ -408,7 +408,8 @@ Retailer.checkRetailerDataValidity = function (req) {
 
                     const detailsRetailerData = {
                       retailer_upload_id: value.retailer_upload_id,
-                      manu_scheme_mapping_id: parseInt(mappingRetailerInsertLog[0]),
+                      retailer_id: parseInt(retailerInfo.retailer_id),
+                      manu_scheme_mapping_id : parseInt(mappingRetailerInsertLog[0]),
                       retailer_name: value.retailer_name,
                       phone: value.phone,
                       email: value.email,
@@ -5164,7 +5165,7 @@ Retailer.downloadLimitUploadFile = function (req) {
   })
 }
 
-const yearDifference = async function (dob) {
+const yearDifference = async function (dob){
   let date1 = new Date(dob);
   let currentdate = new Date();
   let today = currentdate.getFullYear() + "-" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "-" + ('0' + currentdate.getDate()).slice(-2);
@@ -5234,12 +5235,12 @@ Retailer.uploadCreditMemoFile = function (filename, req) {
   return new Promise(async (resolve, reject) => {
     await knex.transaction(async (trx) => {
       const limitUpdate = await trx("APSISIPDC.cr_credit_memo_log")
-        .where({ id: req.memo_id })
-        .update({
-          credit_memo_upload_status: 1,
-          credit_memo_upload_url: 'public/credit_memo/signed/' + filename,
-          credit_memo_upload_date: new Date()
-        });
+      .where({id : req.memo_id})
+      .update({
+        credit_memo_upload_status : 1,
+        credit_memo_upload_url : 'public/credit_memo/signed/' + filename,
+        credit_memo_upload_date : new Date()
+      });
       resolve(sendApiResult(true, "Credit Memo Upload Successfully."));
     })
       .then((result) => {
@@ -5258,7 +5259,7 @@ Retailer.creditMemoAction = function (req) {
     await knex.transaction(async (trx) => {
       const memo_id = req.memo_id;
       const action_type = req.action_type;
-      switch (action_type) {
+      switch(action_type) {
         case 'Approve':
           const credit_memo_approve = await creditMemoApprove(memo_id);
           break;
@@ -5287,11 +5288,11 @@ const creditMemoApprove = async function (memo_id) {
 
 }
 
-const creditMemoReject = async function (memo_id) {
+const creditMemoReject = async function (memo_id, action_type) {
 
 }
 
-const creditMemoRelease = async function (memo_id) {
+const creditMemoRelease = async function (memo_id, action_type) {
 
 }
 
