@@ -301,7 +301,7 @@ Retailer.checkRetailerDataValidity = function (req) {
 
                   let retailerManuDistMappingInsert = {
                     retailer_upload_id: value.retailer_upload_id,
-                    temp_upload_id : value.id,
+                    temp_upload_id: value.id,
                     retailer_id: parseInt(masterRetailerInsertLog[0]),
                     retailer_nid: value.retailer_nid,
                     retailer_smart_nid: parseInt(value.retailer_smart_nid),
@@ -320,7 +320,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                   const detailsRetailerData = {
                     retailer_upload_id: value.retailer_upload_id,
                     retailer_id: parseInt(masterRetailerInsertLog[0]),
-                    manu_scheme_mapping_id : parseInt(mappingRetailerInsertLog[0]),
+                    manu_scheme_mapping_id: parseInt(mappingRetailerInsertLog[0]),
                     retailer_name: value.retailer_name,
                     phone: value.phone,
                     email: value.email,
@@ -409,7 +409,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                     const detailsRetailerData = {
                       retailer_upload_id: value.retailer_upload_id,
                       retailer_id: parseInt(retailerInfo.retailer_id),
-                      manu_scheme_mapping_id : parseInt(mappingRetailerInsertLog[0]),
+                      manu_scheme_mapping_id: parseInt(mappingRetailerInsertLog[0]),
                       retailer_name: value.retailer_name,
                       phone: value.phone,
                       email: value.email,
@@ -1873,7 +1873,7 @@ Retailer.getRetailerDistrict = function (req) {
 
   return new Promise(async (resolve, reject) => {
     try {
-      const data = await knex("APSISIPDC.cr_retailer")
+      const data = await knex("APSISIPDC.cr_retailer_details_info")
         .select(
           "district"
         )
@@ -1914,9 +1914,14 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
           "cr_retailer.id",
           "cr_retailer_loan_calculation.retailer_id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_details_info",
+          "cr_retailer_details_info.retailer_id",
+          "cr_retailer.id"
+        )
         .where(function () {
           if (district) {
-            this.where("cr_retailer.district", district)
+            this.where("cr_retailer_details_info.district", district)
           }
           if (manufacturer_id) {
             this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -1960,11 +1965,16 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2002,11 +2012,16 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2044,11 +2059,16 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.transaction_cost as total_transaction_cost")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2086,13 +2106,18 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .select("cr_retailer_loan_calculation.total_outstanding")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .orderBy("cr_retailer_loan_calculation.id", "desc")
           .first()
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2130,10 +2155,15 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .select(
             "cr_retailer.retailer_name",
-            "cr_retailer.retailer_code",
-            "cr_retailer.district",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer_details_info.district",
             "cr_manufacturer.manufacturer_name",
             "cr_distributor.distributor_name",
             "cr_retailer_manu_scheme_mapping.crm_approve_limit",
@@ -2143,7 +2173,7 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2478,9 +2508,14 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
           "cr_retailer.id",
           "cr_retailer_loan_calculation.retailer_id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_details_info",
+          "cr_retailer_details_info.retailer_id",
+          "cr_retailer.id"
+        )
         .where(function () {
           if (district) {
-            this.where("cr_retailer.district", district)
+            this.where("cr_retailer_details_info.district", district)
           }
           if (manufacturer_id) {
             this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2524,11 +2559,16 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2566,11 +2606,16 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2608,11 +2653,16 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.transaction_cost as total_transaction_cost")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2650,13 +2700,18 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .select("cr_retailer_loan_calculation.total_outstanding")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .orderBy("cr_retailer_loan_calculation.id", "desc")
           .first()
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2694,10 +2749,15 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .select(
             "cr_retailer.retailer_name",
-            "cr_retailer.retailer_code",
-            "cr_retailer.district",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer_details_info.district",
             "cr_manufacturer.manufacturer_name",
             "cr_distributor.distributor_name",
             "cr_retailer_manu_scheme_mapping.crm_approve_limit",
@@ -2707,7 +2767,7 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -3413,10 +3473,15 @@ Retailer.generateRetailersMonthlyPerformanceDistributor = async (req, res) => {
             "cr_sales_agent.id",
             "cr_retailer_vs_sales_agent.sales_agent_id",
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .select(
             "cr_retailer.retailer_name",
-            "cr_retailer.retailer_code",
-            "cr_retailer.district",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer_details_info.district",
             "cr_manufacturer.manufacturer_name",
             "cr_distributor.distributor_name",
             // "cr_retailer_manu_scheme_mapping.crm_approve_limit",
@@ -3826,12 +3891,10 @@ Retailer.retailersMonthlyPerformanceDistributor = async (req, res) => {
           )
           .select(
             "cr_retailer.retailer_name",
-            //"cr_retailer.retailer_code",
-            //"cr_retailer.district",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer.district",
             "cr_manufacturer.manufacturer_name",
             "cr_distributor.distributor_name",
-            // "cr_retailer_manu_scheme_mapping.crm_approve_limit",
-            // "cr_retailer_loan_calculation.onermn_acc",
             "cr_sales_agent.agent_name"
           )
           .distinct()
@@ -3859,15 +3922,12 @@ Retailer.retailersMonthlyPerformanceDistributor = async (req, res) => {
           total_repayment_amount: repayment_amount[0].total_repayment_amount,
           total_outstanding: total_outstanding_amount.total_outstanding,
           total_amount_transaction_done: total_amount_transaction_done,
-          //total_transaction_cost: transaction_cost[0].total_transaction_cost,
           retailer_name: retailer_info[0].retailer_name,
           retailer_code: retailer_info[0].retailer_code,
           district: retailer_info[0].district,
           manufacturer_name: retailer_info[0].manufacturer_name,
           distributor_name: retailer_info[0].distributor_name,
-          salesagent: retailer_info[0].agent_name,
-          // crm_approve_limit: retailer_info[0].crm_approve_limit,
-          // onermn_acc: retailer_info[0].onermn_acc
+          salesagent: retailer_info[0].agent_name
         }
 
         retailer_performance_info_Arr.push(retailer_performance_info);
@@ -4083,7 +4143,7 @@ Retailer.downloadEkycReport = function (req) {
         col_add++;
         worksheet.cell(row, col + col_add).number(e.tin ? e.tin : 0);
         col_add++;
-        worksheet.cell(row, col + col_add).string(e.date_of_birth ? e.date_of_birth: " ");
+        worksheet.cell(row, col + col_add).string(e.date_of_birth ? e.date_of_birth : " ");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.gender ? e.gender : " ");
         col_add++;
@@ -4192,12 +4252,12 @@ Retailer.getRetailerInvalidData = function (req) {
 
         resolve(sendApiResult(true, "Retailer Data Found", retailer_info));
       })
-      .then((result) => {
-        //
-      })
-      .catch((error) => {
-        reject(sendApiResult(false, error.message));
-      });
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, error.message));
+        });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -4224,7 +4284,7 @@ Retailer.getRetailerInvalidDataById = function (req) {
             if (Object.keys(invalid_fields).length != 0) {
               let temp = {};
               for (const [index, field] of Object.entries(invalid_fields)) {
-                temp[field.field_name] =  value[field.field_name];
+                temp[field.field_name] = value[field.field_name];
               }
               fields_array[retailer_id] = temp;
             }
@@ -4234,12 +4294,12 @@ Retailer.getRetailerInvalidDataById = function (req) {
           reject(sendApiResult(false, "No Invalid Data."));
         }
       })
-      .then((result) => {
-        //
-      })
-      .catch((error) => {
-        reject(sendApiResult(false, error.message));
-      });
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, error.message));
+        });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -4252,20 +4312,20 @@ Retailer.updateRetailerInvalidDataById = function (request) {
       knex.transaction(async (trx) => {
         for (const [key, value] of Object.entries(request)) {
           for (const [index, data] of Object.entries(value)) {
-            await trx("APSISIPDC.cr_retailer_temp").where({ id : key })
+            await trx("APSISIPDC.cr_retailer_temp").where({ id: key })
               .update({
-                [index] : data
+                [index]: data
               });
           }
         }
         resolve(sendApiResult(true, "Retailer Data Updated Successfully"));
       })
-      .then((result) => {
-        //
-      })
-      .catch((error) => {
-        reject(sendApiResult(false, error.message));
-      });
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, error.message));
+        });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -4320,26 +4380,26 @@ Retailer.getDuplicateRetailerListById = function (req) {
                 "cr_manufacturer.id",
                 "cr_retailer_manu_scheme_mapping.manufacturer_id"
               );
-              let temp = {};
-              temp['mapping_id'] = value.id;
-              temp['retailer_name'] = value.retailer_name;
-              temp['phone'] = value.phone;
-              temp['requested_manufacturer_name'] = value.manufacturer_name;
-              temp['existing_manufacturer_name'] = mapping_info[0].manufacturer_name;
-              temp['scheme_name'] = value.scheme_name;
-              mapping_data.push(temp);
+            let temp = {};
+            temp['mapping_id'] = value.id;
+            temp['retailer_name'] = value.retailer_name;
+            temp['phone'] = value.phone;
+            temp['requested_manufacturer_name'] = value.manufacturer_name;
+            temp['existing_manufacturer_name'] = mapping_info[0].manufacturer_name;
+            temp['scheme_name'] = value.scheme_name;
+            mapping_data.push(temp);
           }
           resolve(sendApiResult(true, "Retailer Data Found Successfully", mapping_data));
         } else {
           reject(sendApiResult(false, 'No Retailer Found.'));
         }
       })
-      .then((result) => {
-        //
-      })
-      .catch((error) => {
-        reject(sendApiResult(false, error.message));
-      });
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, error.message));
+        });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -4357,7 +4417,7 @@ Retailer.createCreditMemo = function (req) {
           const createFrontPage = await preparePdfMemoFrontPage(uniqueMemoId, retailerList, memoReferenceNumber);
           const prepareRetailerListPage = await preparePdfRetailerListPage(uniqueMemoId, retailerList, memoReferenceNumber);
           const memo_log = await creditMemolog(req, uniqueMemoId, retailerList, memoReferenceNumber);
-          if(createFrontPage && prepareRetailerListPage && memo_log)
+          if (createFrontPage && prepareRetailerListPage && memo_log)
             resolve(sendApiResult(true, "Credit Memo Created Successfully", []));
           else
             reject(sendApiResult(false, 'Credit Memo Generate Failed!'));
@@ -4365,19 +4425,19 @@ Retailer.createCreditMemo = function (req) {
           reject(sendApiResult(false, 'No Retailer Found.'));
         }
       })
-      .then((result) => {
-        //
-      })
-      .catch((error) => {
-        reject(sendApiResult(false, error.message));
-      });
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, error.message));
+        });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   });
 };
 
-const creditMemoRetailerList = async function (){
+const creditMemoRetailerList = async function () {
   const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
     .where("cr_retailer_manu_scheme_mapping.limit_status", 'Upload')
     .whereRaw(`"cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NOT NULL`)
@@ -4414,14 +4474,14 @@ const creditMemoRetailerList = async function (){
   return result;
 }
 
-const prepareReferenceNumber = async function (){
+const prepareReferenceNumber = async function () {
   let currentdate = new Date();
   let today = currentdate.getFullYear() + "" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "" + ('0' + currentdate.getDate()).slice(-2);
   const memo_info = await knex("APSISIPDC.cr_credit_memo_log")
-      .select(
-        "cr_credit_memo_log.id"
-      );
-  const referenceNumber = 'IPDC/CM/DANA/' + today + '/APNL' + await addingExtraZeros(Object.keys(memo_info).length,4);
+    .select(
+      "cr_credit_memo_log.id"
+    );
+  const referenceNumber = 'IPDC/CM/DANA/' + today + '/APNL' + await addingExtraZeros(Object.keys(memo_info).length, 4);
   return referenceNumber;
 }
 
@@ -4430,51 +4490,51 @@ const addingExtraZeros = async function (str, max) {
   return str.length < max ? await addingExtraZeros('0' + str, max) : str;
 }
 
-const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memoReferenceNumber){
+const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memoReferenceNumber) {
   var fonts = {
     Roboto: {
-        normal: 'node_modules/font/roboto/Roboto-Regular.ttf',
-        bold: 'node_modules/font/roboto/Roboto-Medium.ttf',
-        italics: 'node_modules/font/roboto/Roboto-Italic.ttf',
-        bolditalics: 'node_modules/font/roboto/Roboto-MediumItalic.ttf'
+      normal: 'node_modules/font/roboto/Roboto-Regular.ttf',
+      bold: 'node_modules/font/roboto/Roboto-Medium.ttf',
+      italics: 'node_modules/font/roboto/Roboto-Italic.ttf',
+      bolditalics: 'node_modules/font/roboto/Roboto-MediumItalic.ttf'
     },
-  	Calibri: {
-			normal: 'node_modules/font/calibri/Calibri-Regular.ttf',
-			bold: 'node_modules/font/calibri/Calibri-Bold.ttf',
-			italics: 'node_modules/font/calibri/Calibri-Italic.ttf',
-		}
+    Calibri: {
+      normal: 'node_modules/font/calibri/Calibri-Regular.ttf',
+      bold: 'node_modules/font/calibri/Calibri-Bold.ttf',
+      italics: 'node_modules/font/calibri/Calibri-Italic.ttf',
+    }
   };
 
   let manufactureSummaryTable = await manufacture_summary_table(retailerList);
 
   let currentdate = new Date();
-  const options = {  year: 'numeric', month: 'short', day: 'numeric'};
+  const options = { year: 'numeric', month: 'short', day: 'numeric' };
   const today_event = new Date(Date.UTC(currentdate.getFullYear(), ('0' + (currentdate.getMonth() + 0)).slice(-2), (('0' + currentdate.getDate()).slice(-2)), 3, 0, 0));
   const today = today_event.toLocaleDateString('en-US', options);
   const add_five_year_event = new Date(Date.UTC((currentdate.getFullYear() + 5), ('0' + (currentdate.getMonth() + 0)).slice(-2), (('0' + currentdate.getDate()).slice(-2)), 3, 0, 0));
   const add_five_year = add_five_year_event.toLocaleDateString('en-US', options);
 
-	var pdfDocument = {
+  var pdfDocument = {
     pageOrientation: 'portrait',
     pageSize: 'Letter',
-    pageMargins:[ 55, 80, 55, 25 ],
+    pageMargins: [55, 80, 55, 25],
     defaultStyle: {
-        font: 'Calibri',
-        fontSize: 9,
-        bold: true
+      font: 'Calibri',
+      fontSize: 9,
+      bold: true
     },
     // margin: [left, top, right, bottom],
     header: {
       columns: [
         {
           text: 'MCC No. ' + memoReferenceNumber,
-          margin: [55, 40, 0, 0 ],
+          margin: [55, 40, 0, 0],
           alignment: 'left',
         },
         {
           image: 'public/credit_memo/ipdc_logo.png',
           width: 80,
-          margin: [50, 22, 0, 0 ],
+          margin: [50, 22, 0, 0],
           alignment: 'right',
         },
       ]
@@ -4485,7 +4545,7 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
     content: [
       {
         text: 'IPDC FINANCE LIMITED',
-        margin: [ 0, 0, 0, 7 ],
+        margin: [0, 0, 0, 7],
         alignment: 'center',
         fontSize: 10,
       },
@@ -4495,12 +4555,12 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
           widths: ['32.5%', '13.5%', '13.5%', '13.5%', '13.5%', '13.5%'],
           body: [
             [
-              {text: ' ▢  APPROVED\n ▢  CONDITIONALLY APPROVED\n ▢  DEFERRED\n ▢  DECLINED', fontSize: 9, lineHeight: 1.1, alignment: 'left', bold: false, margin: [ 7, 0, 0, 0 ]},
-              {text: 'APPROVER-1', fontSize: 9, alignment: 'center', bold: true},
-              {text: 'APPROVER-2', fontSize: 9, alignment: 'center', bold: true},
-              {text: 'APPROVER-3', fontSize: 9, alignment: 'center', bold: true},
-              {text: 'APPROVER-4', fontSize: 9, alignment: 'center', bold: true},
-              {text: 'APPROVER-5', fontSize: 9, alignment: 'center', bold: true}
+              { text: ' ▢  APPROVED\n ▢  CONDITIONALLY APPROVED\n ▢  DEFERRED\n ▢  DECLINED', fontSize: 9, lineHeight: 1.1, alignment: 'left', bold: false, margin: [7, 0, 0, 0] },
+              { text: 'APPROVER-1', fontSize: 9, alignment: 'center', bold: true },
+              { text: 'APPROVER-2', fontSize: 9, alignment: 'center', bold: true },
+              { text: 'APPROVER-3', fontSize: 9, alignment: 'center', bold: true },
+              { text: 'APPROVER-4', fontSize: 9, alignment: 'center', bold: true },
+              { text: 'APPROVER-5', fontSize: 9, alignment: 'center', bold: true }
             ]
           ]
         },
@@ -4512,22 +4572,22 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
             return 1;
           }
         }
-		  },
+      },
       {
         text: 'PROPOSAL FOR APPROVAL OF RETAILER FINANCING',
         alignment: 'center',
-        margin: [ 0, 10, 0, 0 ],
+        margin: [0, 10, 0, 0],
         fontSize: 10,
         bold: true,
       },
       {
         text: 'FACILITY FAVOURING RETAILERS UNDER DANA',
         alignment: 'center',
-        margin: [ 0, 2, 0, 0 ],
+        margin: [0, 2, 0, 0],
         fontSize: 10,
         bold: true,
       },
-		  {
+      {
         canvas: [
           {
             type: 'line',
@@ -4536,14 +4596,14 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
             x2: 600 - 3 * 50,
             y2: 5,
             lineWidth: 1.5,
-            color:'#C0C0C0'
+            color: '#C0C0C0'
           }
         ]
       },
       {
         text: 'PROPOSAL SUMMARY: ',
         alignment: 'left',
-        margin: [ 0, 10, 0, 0 ],
+        margin: [0, 10, 0, 0],
         fontSize: 9,
         bold: true,
         decoration: 'underline'
@@ -4552,40 +4612,40 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
         text: 'We propose for the approval of the Retailer Financing facility favouring Retailers of OEMs mentioned in the attached list. Major terms and conditions of the facility are as follows:',
         alignment: 'justify',
         lineHeight: 1.2,
-        margin: [ 0, 2, 0, 0 ],
+        margin: [0, 2, 0, 0],
         fontSize: 9,
         bold: false,
       },
       {
         style: 'tableExample',
-        margin: [ 0, 5, 0, 0 ],
+        margin: [0, 5, 0, 0],
         table: {
           widths: ['28%', '72%'],
           body: [
             [
-              {text: 'Particulars', margin: [ 5, 0 ], bold: true},
-              {text: 'Description', margin: [ 5, 0 ], bold: true},
+              { text: 'Particulars', margin: [5, 0], bold: true },
+              { text: 'Description', margin: [5, 0], bold: true },
             ],
             [
-              {text: 'Facility Type', margin: [ 5, 0 ], bold: true},
-              {text: 'Term Loan (Revolving)', margin: [ 5, 0 ], bold: false},
+              { text: 'Facility Type', margin: [5, 0], bold: true },
+              { text: 'Term Loan (Revolving)', margin: [5, 0], bold: false },
             ],
             [
-              {text: 'Sanction Tenor', margin: [ 5, 0 ], bold: true},
-              {text: '60 months (Renewable)', margin: [ 5, 0 ], bold: false},
+              { text: 'Sanction Tenor', margin: [5, 0], bold: true },
+              { text: '60 months (Renewable)', margin: [5, 0], bold: false },
             ],
             [
-              {text: 'Purpose', margin: [ 5, 0 ], bold: true},
-              {text: 'Term Loan (Revolving)', margin: [ 5, 0 ], bold: false},
+              { text: 'Purpose', margin: [5, 0], bold: true },
+              { text: 'Term Loan (Revolving)', margin: [5, 0], bold: false },
             ],
             [
-              {text: 'Credit Tenor', margin: [ 5, 0 ], bold: true},
+              { text: 'Credit Tenor', margin: [5, 0], bold: true },
               {
                 style: 'tableExample',
-                margin: [ 1, 1 ],
+                margin: [1, 1],
                 table: {
-                  widths : ['33%', '33%', '33%'],
-                  body : manufactureSummaryTable.table,
+                  widths: ['33%', '33%', '33%'],
+                  body: manufactureSummaryTable.table,
                 },
                 layout: {
                   hLineWidth: function (i, node) {
@@ -4598,29 +4658,29 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
               }
             ],
             [
-              {text: 'Payment Modality', margin: [ 5, 0 ], bold: true},
-              {text: 'Retailers make direct payments to IPDC’s bank account in multiple tranches until maturity. ', alignment: 'justify', fontSize: 9, margin: [ 5, 0 ], lineHeight: 1.2, bold: false},
+              { text: 'Payment Modality', margin: [5, 0], bold: true },
+              { text: 'Retailers make direct payments to IPDC’s bank account in multiple tranches until maturity. ', alignment: 'justify', fontSize: 9, margin: [5, 0], lineHeight: 1.2, bold: false },
             ],
             [
-              {text: 'Interest Rate', margin: [ 5, 0 ], bold: true},
-              {text: '11.00% p.a.', margin: [ 5, 0 ], bold: false},
+              { text: 'Interest Rate', margin: [5, 0], bold: true },
+              { text: '11.00% p.a.', margin: [5, 0], bold: false },
             ],
             [
-              {text: 'Total Proposed Limit under\n this proposal', margin: [ 5, 0 ], bold: true},
+              { text: 'Total Proposed Limit under\n this proposal', margin: [5, 0], bold: true },
               // {text: await amount_in_words(manufactureSummaryTable.sum), color: 'black', margin: [ 5, 0 ], bold: false},
-              {text: await numberWithCommas(manufactureSummaryTable.sum), color: 'black', margin: [ 5, 0 ], bold: false},
+              { text: await numberWithCommas(manufactureSummaryTable.sum), color: 'black', margin: [5, 0], bold: false },
             ],
             [
-              {text: 'Sanction Date', margin: [ 5, 0 ], bold: true},
-              {text: today, color: 'black', margin: [ 5, 0 ], bold: false},
+              { text: 'Sanction Date', margin: [5, 0], bold: true },
+              { text: today, color: 'black', margin: [5, 0], bold: false },
             ],
             [
-              {text: 'Sanction Expiry', margin: [ 5, 0 ], bold: true},
-              {text: add_five_year, color: 'black', margin: [ 5, 0 ], bold: false},
+              { text: 'Sanction Expiry', margin: [5, 0], bold: true },
+              { text: add_five_year, color: 'black', margin: [5, 0], bold: false },
             ],
             [
-              {text: 'Sanction Limit Parameters', margin: [ 5, 0 ], bold: true},
-              {text: 'Based on the latest 12 month\'s uninterrupted sales data of the Retailers of OEMs and as per already decided credit parameters set for the OEMs. Proposed sanction amounts per Retailer under this proposal are mentioned in the attached list.', alignment: 'justify', fontSize: 8.6, margin: [ 5, 0 ], lineHeight: 1.2, bold: false},
+              { text: 'Sanction Limit Parameters', margin: [5, 0], bold: true },
+              { text: 'Based on the latest 12 month\'s uninterrupted sales data of the Retailers of OEMs and as per already decided credit parameters set for the OEMs. Proposed sanction amounts per Retailer under this proposal are mentioned in the attached list.', alignment: 'justify', fontSize: 8.6, margin: [5, 0], lineHeight: 1.2, bold: false },
             ],
           ]
         },
@@ -4636,7 +4696,7 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
       {
         text: 'SUBMISSION: ',
         alignment: 'left',
-        margin: [ 0, 12, 0, 0 ],
+        margin: [0, 12, 0, 0],
         fontSize: 10,
         bold: true,
         decoration: 'underline'
@@ -4645,14 +4705,14 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
         text: 'Approval is sought for Retailer Financing facility favouring Retailers of OEMs cited in the attached list (<<Total No. of Retailers in Annexure>> Retailers) as per the above-mentioned terms subject to completion of appropriate documentation. ',
         alignment: 'justify',
         lineHeight: 1.2,
-        margin: [ 0, 2, 0, 0 ],
+        margin: [0, 2, 0, 0],
         fontSize: 9.2,
         bold: false,
       },
       {
         text: 'CIB Status Check, NID and Signature Verification: ',
         alignment: 'left',
-        margin: [ 0, 12, 0, 0 ],
+        margin: [0, 12, 0, 0],
         fontSize: 10,
         bold: true,
         decoration: 'underline'
@@ -4661,14 +4721,14 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
         text: 'CIB Status Check, NID and Signature Verification of the mentioned Retailers has been found okay.',
         alignment: 'left',
         lineHeight: 1.2,
-        margin: [ 0, 2, 0, 0 ],
+        margin: [0, 2, 0, 0],
         fontSize: 9.2,
         bold: false,
       },
       {
         text: 'REMARKS',
         alignment: 'left',
-        margin: [ 0, 12, 0, 0 ],
+        margin: [0, 12, 0, 0],
         fontSize: 10,
         bold: true,
         decoration: 'underline'
@@ -4677,14 +4737,14 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
         text: ' ',
         alignment: 'left',
         lineHeight: 1.2,
-        margin: [ 0, 2, 0, 0 ],
+        margin: [0, 2, 0, 0],
         fontSize: 10,
         bold: false,
       },
       {
         text: 'Annexure',
         alignment: 'left',
-        margin: [ 0, 12, 0, 0 ],
+        margin: [0, 12, 0, 0],
         fontSize: 10,
         bold: true,
         decoration: 'underline'
@@ -4693,28 +4753,28 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
         text: 'List of retailers proposed for retailer financing facility.  ',
         alignment: 'left',
         lineHeight: 1.2,
-        margin: [ 0, 2, 0, 0 ],
+        margin: [0, 2, 0, 0],
         fontSize: 9.2,
         italics: true,
         bold: false,
       },
       {
         style: 'tableExample',
-        margin: [ 0, 5, 0, 0 ],
+        margin: [0, 5, 0, 0],
         table: {
           widths: ['50%', '50%'],
           body: [
             [
-              {text: 'Proposed by:', alignment: 'center', margin: [ 5, 0 ], bold: true},
-              {text: 'Reviewed by:', alignment: 'center', margin: [ 5, 0 ], bold: true},
+              { text: 'Proposed by:', alignment: 'center', margin: [5, 0], bold: true },
+              { text: 'Reviewed by:', alignment: 'center', margin: [5, 0], bold: true },
             ],
             [
-              {text: ' \n \n ', margin: [ 5, 0 ], bold: true},
-              {text: ' \n \n ', margin: [ 5, 0 ], bold: false},
+              { text: ' \n \n ', margin: [5, 0], bold: true },
+              { text: ' \n \n ', margin: [5, 0], bold: false },
             ],
             [
-              {text: 'Head of Unit', alignment: 'center', margin: [ 5, 0 ], bold: false},
-              {text: 'Representative of CRM Department', alignment: 'center', margin: [ 5, 0 ], bold: false},
+              { text: 'Head of Unit', alignment: 'center', margin: [5, 0], bold: false },
+              { text: 'Representative of CRM Department', alignment: 'center', margin: [5, 0], bold: false },
             ],
           ]
         },
@@ -4728,7 +4788,7 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
         }
       },
     ],
-	};
+  };
 
   let pdfmake = new Pdfmake(fonts);
   const file_path = 'public/credit_memo/' + uniqueMemoId;
@@ -4737,40 +4797,40 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
   }
   var file_name = "page_1.pdf";
   let pdfDoc = pdfmake.createPdfKitDocument(pdfDocument, {});
-  pdfDoc.pipe(fs.createWriteStream(file_path + '/'+ file_name));
+  pdfDoc.pipe(fs.createWriteStream(file_path + '/' + file_name));
   pdfDoc.end();
   return true;
 }
 
-const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list, memoReferenceNumber){
+const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list, memoReferenceNumber) {
   const retailerList = await creditMemoRetailerListPrepare(retailer_list);
   var fonts = {
-  	Calibri: {
-			normal: 'node_modules/font/calibri/Calibri-Regular.ttf',
-			bold: 'node_modules/font/calibri/Calibri-Bold.ttf',
-			italics: 'node_modules/font/calibri/Calibri-Italic.ttf',
-		}
+    Calibri: {
+      normal: 'node_modules/font/calibri/Calibri-Regular.ttf',
+      bold: 'node_modules/font/calibri/Calibri-Bold.ttf',
+      italics: 'node_modules/font/calibri/Calibri-Italic.ttf',
+    }
   };
 
-	var pdfDocument = {
+  var pdfDocument = {
     pageOrientation: 'landscape',
-    pageMargins:[ 55, 80, 55, 25 ],
+    pageMargins: [55, 80, 55, 25],
     pageSize: { width: 900, height: 630 },
     defaultStyle: {
-        font: 'Calibri',
-        fontSize: 10,
+      font: 'Calibri',
+      fontSize: 10,
     },
     header: {
       columns: [
         {
           text: 'MCC No. ' + memoReferenceNumber,
-          margin: [55, 40, 0, 0 ],
+          margin: [55, 40, 0, 0],
           alignment: 'left',
         },
         {
           image: 'public/credit_memo/ipdc_logo.png',
           width: 80,
-          margin: [50, 22, 0, 0 ],
+          margin: [50, 22, 0, 0],
           alignment: 'right',
         },
       ]
@@ -4779,15 +4839,15 @@ const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list, 
       columns: []
     },
     content: [
-        {
-            table: {
-                headerRows: 1,
-                widths: [50, 45, 45, 45, 50, 50, 66, 70, 50, 62, 60, 55, 50],
-                body : retailerList
-            }
+      {
+        table: {
+          headerRows: 1,
+          widths: [50, 45, 45, 45, 50, 50, 66, 70, 50, 62, 60, 55, 50],
+          body: retailerList
         }
+      }
     ]
-	};
+  };
   let pdfmake = new Pdfmake(fonts);
   const file_path = 'public/credit_memo/' + uniqueMemoId;
   if (!fs.existsSync(file_path)) {
@@ -4795,12 +4855,12 @@ const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list, 
   }
   var file_name = "page_2.pdf";
   let pdfDoc = pdfmake.createPdfKitDocument(pdfDocument, {});
-  pdfDoc.pipe(fs.createWriteStream(file_path + '/'+ file_name));
+  pdfDoc.pipe(fs.createWriteStream(file_path + '/' + file_name));
   pdfDoc.end();
   return true;
 }
 
-const creditMemolog = async function (req, uniqueMemoId, retailerList, memoReferenceNumber){
+const creditMemolog = async function (req, uniqueMemoId, retailerList, memoReferenceNumber) {
   let id_list = [];
   let count_sum = 0;
   for (const [key, value] of Object.entries(retailerList)) {
@@ -4809,12 +4869,12 @@ const creditMemolog = async function (req, uniqueMemoId, retailerList, memoRefer
   }
 
   const cr_credit_memo_log = {
-    memo_id : uniqueMemoId,
-    ref_no : memoReferenceNumber,
-    count_retailer : Object.keys(retailerList).length,
-    count_sum : parseInt(count_sum),
-    credit_memo_status : null,
-    credit_memo_create_date : new Date(),
+    memo_id: uniqueMemoId,
+    ref_no: memoReferenceNumber,
+    count_retailer: Object.keys(retailerList).length,
+    count_sum: parseInt(count_sum),
+    credit_memo_status: null,
+    credit_memo_create_date: new Date(),
     created_by: parseInt(req.user_id)
   }
   const insert_log = await knex("APSISIPDC.cr_credit_memo_log").insert(cr_credit_memo_log).returning("id");
@@ -4822,104 +4882,104 @@ const creditMemolog = async function (req, uniqueMemoId, retailerList, memoRefer
   await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
     .whereIn("id", id_list)
     .update({
-      credit_memo_id : parseInt(insert_log[0]),
-      credit_memo_status : 1,
+      credit_memo_id: parseInt(insert_log[0]),
+      credit_memo_status: 1,
     });
 
   return true;
 }
 
-const manufacture_summary_table = async function (retailerList){
+const manufacture_summary_table = async function (retailerList) {
   let temp = [];
   let tableList = [];
-  temp.push({text: 'OEM', color: '#000', margin: [5, 0 ], alignment: 'center', bold: true});
-  temp.push({text: 'Credit Tenor (Days)', margin: [5, 0 ], alignment: 'center', bold: true});
-  temp.push({text: 'Grace Period (Days)', margin: [5, 0 ], alignment: 'center', bold: true});
+  temp.push({ text: 'OEM', color: '#000', margin: [5, 0], alignment: 'center', bold: true });
+  temp.push({ text: 'Credit Tenor (Days)', margin: [5, 0], alignment: 'center', bold: true });
+  temp.push({ text: 'Grace Period (Days)', margin: [5, 0], alignment: 'center', bold: true });
   tableList.push(temp);
 
   let check_array = [];
   let count_sum = 0;
   for (const [key, value] of Object.entries(retailerList)) {
-    if (!check_array.includes(value.manufacturer_name)){
+    if (!check_array.includes(value.manufacturer_name)) {
       let temp = [];
-      temp.push({text: value.manufacturer_name, margin: [5, 0 ], alignment: 'left', bold: false});
-      temp.push({text: '-', margin: [5, 0 ], alignment: 'center', bold: false});
-      temp.push({text: '-', margin: [5, 0 ], alignment: 'center', bold: false});
+      temp.push({ text: value.manufacturer_name, margin: [5, 0], alignment: 'left', bold: false });
+      temp.push({ text: '-', margin: [5, 0], alignment: 'center', bold: false });
+      temp.push({ text: '-', margin: [5, 0], alignment: 'center', bold: false });
       check_array.push(value.manufacturer_name);
       tableList.push(temp);
     }
     count_sum += value.crm_approve_limit;
   }
-  return {sum : count_sum, table : tableList};
+  return { sum: count_sum, table: tableList };
 }
 
-const creditMemoRetailerListPrepare = async function (result){
+const creditMemoRetailerListPrepare = async function (result) {
 
   let retailerList = [];
   let count = 0;
 
   let temp = [];
-  temp.push({text: 'Serial No.', color: '#000', margin: [0, 35 ], alignment: 'center', border: [true, true, true, true], bold: true});
-  temp.push({text: 'Retailer Name', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
-  temp.push({text: 'Unique Code of Retailer', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
-  temp.push({text: 'OEM', color: '#000', margin: [0, 35 ], alignment: 'center',  border: [false, true, true, true], bold: true});
-  temp.push({text: 'Processing Fee', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
-  temp.push({text: 'Existing Limit', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
-  temp.push({text: 'Existing Limit for All Manufacturers', color: '#000', margin: [0, 20 ], alignment: 'center', border: [false, true, true, true], bold: true});
-  temp.push({text: 'Max. Sanction Amount Allowed', color: '#000', margin: [0, 20 ], alignment: 'center', border: [false, true, true, true], bold: true});
-  temp.push({text: 'Proposed Limit', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
-  temp.push({text: 'Enhancement', color: '#000', margin: [0, 35 ], alignment: 'center', border: [false, true, true, true], bold: true});
-  temp.push({text: 'Proposed Sanction Amount as a % of total lifting amount of 12M', color: '#000', margin: [0, 2, 0, 1 ], alignment: 'center', border: [false, true, true, true], bold: true});
-  temp.push({text: 'Relationship Tenor', color: '#000', margin: [0, 25 ], alignment: 'center', border: [false, true, true, true], bold: true});
-  temp.push({text: 'Number of Times Revolved', color: '#000', margin: [0, 20 ], alignment: 'center', border: [false, true, true, true], bold: true});
+  temp.push({ text: 'Serial No.', color: '#000', margin: [0, 35], alignment: 'center', border: [true, true, true, true], bold: true });
+  temp.push({ text: 'Retailer Name', color: '#000', margin: [0, 25], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'Unique Code of Retailer', color: '#000', margin: [0, 25], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'OEM', color: '#000', margin: [0, 35], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'Processing Fee', color: '#000', margin: [0, 25], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'Existing Limit', color: '#000', margin: [0, 25], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'Existing Limit for All Manufacturers', color: '#000', margin: [0, 20], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'Max. Sanction Amount Allowed', color: '#000', margin: [0, 20], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'Proposed Limit', color: '#000', margin: [0, 25], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'Enhancement', color: '#000', margin: [0, 35], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'Proposed Sanction Amount as a % of total lifting amount of 12M', color: '#000', margin: [0, 2, 0, 1], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'Relationship Tenor', color: '#000', margin: [0, 25], alignment: 'center', border: [false, true, true, true], bold: true });
+  temp.push({ text: 'Number of Times Revolved', color: '#000', margin: [0, 20], alignment: 'center', border: [false, true, true, true], bold: true });
   retailerList.push(temp);
 
   for (const [key, value] of Object.entries(result)) {
     let limit_info_details = await retailerAvgByManufacturer(value.retailer_nid, value.manufacturer_id);
-    if(limit_info_details != undefined){
+    if (limit_info_details != undefined) {
       let temp = [];
-      temp.push({text: (++count) +' .', alignment: 'center'});
-      temp.push({text: value.retailer_name, alignment: 'center'});
-      temp.push({text: value.retailer_code, alignment: 'center'});
-      temp.push({text: value.manufacturer_name, alignment: 'center'});
-      temp.push({text: await numberWithCommas(value.processing_fee), alignment: 'center'});
-      temp.push({text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer), alignment: 'center'});
-      temp.push({text: await numberWithCommas(limit_info_details.pre_assigned_limit_all_manufacturer), alignment: 'center'});
-      temp.push({text: await numberWithCommas(limit_info_details.max_sanction_amount_allowed), alignment: 'center'});
-      temp.push({text: await numberWithCommas(value.crm_approve_limit), alignment: 'center'});
-      temp.push({text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer - value.crm_approve_limit), alignment: 'center'});
-      temp.push({text: await numberWithCommas(limit_info_details.proposed_sanction_amount_total_lifting_amount), alignment: 'center'});
-      temp.push({text: await dayDifference(value.created_date), alignment: 'center'});
-      temp.push({text: '-', alignment: 'center'});
+      temp.push({ text: (++count) + ' .', alignment: 'center' });
+      temp.push({ text: value.retailer_name, alignment: 'center' });
+      temp.push({ text: value.retailer_code, alignment: 'center' });
+      temp.push({ text: value.manufacturer_name, alignment: 'center' });
+      temp.push({ text: await numberWithCommas(value.processing_fee), alignment: 'center' });
+      temp.push({ text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer), alignment: 'center' });
+      temp.push({ text: await numberWithCommas(limit_info_details.pre_assigned_limit_all_manufacturer), alignment: 'center' });
+      temp.push({ text: await numberWithCommas(limit_info_details.max_sanction_amount_allowed), alignment: 'center' });
+      temp.push({ text: await numberWithCommas(value.crm_approve_limit), alignment: 'center' });
+      temp.push({ text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer - value.crm_approve_limit), alignment: 'center' });
+      temp.push({ text: await numberWithCommas(limit_info_details.proposed_sanction_amount_total_lifting_amount), alignment: 'center' });
+      temp.push({ text: await dayDifference(value.created_date), alignment: 'center' });
+      temp.push({ text: '-', alignment: 'center' });
       retailerList.push(temp);
     }
   }
   temp = [];
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
-  temp.push({text: ' ', alignment: 'center'});
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
+  temp.push({ text: ' ', alignment: 'center' });
   retailerList.push(temp);
   return retailerList;
 }
 
 const numberWithCommas = async function (num) {
-  if(num){
+  if (num) {
     var parts = num.toString().split('.');
     return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (parts[1] ? "." + parts[1] : "");
   }
 }
 
-const dayDifference = async function (created_date){
+const dayDifference = async function (created_date) {
   let date1 = new Date(created_date);
   let currentdate = new Date();
   let today = currentdate.getFullYear() + "/" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "/" + ('0' + currentdate.getDate()).slice(-2);
@@ -4929,14 +4989,14 @@ const dayDifference = async function (created_date){
   return difference_days;
 }
 
-const margePdf = async function (today, memo_id){
+const margePdf = async function (today, memo_id) {
   var merger = new PDFMerger();
   const file_path = 'public/credit_memo/' + memo_id;
 
   (async () => {
     await merger.add(file_path + '/' + 'page_1.pdf');
     await merger.add(file_path + '/' + 'page_2.pdf');
-    await merger.save(file_path + '/'+'Credit_Memo_' + memo_id + '_(' + today + ')' +'.pdf');
+    await merger.save(file_path + '/' + 'Credit_Memo_' + memo_id + '_(' + today + ')' + '.pdf');
   })();
 }
 
@@ -4952,14 +5012,14 @@ Retailer.creditMemoDownload = function (req) {
 
     var file_path = '';
     const today = moment(new Date()).format('YYYY-MM-DD');
-    if(result.credit_memo_url == null){
-      file_path = 'public/credit_memo/' + result.memo_id + '/'+'Credit_Memo_' + result.memo_id + '_(' + today + ')' +'.pdf';
+    if (result.credit_memo_url == null) {
+      file_path = 'public/credit_memo/' + result.memo_id + '/' + 'Credit_Memo_' + result.memo_id + '_(' + today + ')' + '.pdf';
       await margePdf(today, result.memo_id);
       await knex("APSISIPDC.cr_credit_memo_log")
         .where({ id: memo_id })
         .update({
-          credit_memo_url : file_path,
-          credit_memo_status : 1
+          credit_memo_url: file_path,
+          credit_memo_status: 1
         });
     }
     await timeout(1500);
@@ -5088,7 +5148,7 @@ Retailer.downloadLimitUploadFile = function (req) {
         var col_add = 0;
         let e = result[i];
         let limit_info_details = await retailerAvgByManufacturer(e.retailer_nid, e.manufacturer_id);
-        if(limit_info_details != undefined){
+        if (limit_info_details != undefined) {
           worksheet.cell(row, col + col_add).number((i + 1));
           col_add++;
           worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : "");
@@ -5165,7 +5225,7 @@ Retailer.downloadLimitUploadFile = function (req) {
   })
 }
 
-const yearDifference = async function (dob){
+const yearDifference = async function (dob) {
   let date1 = new Date(dob);
   let currentdate = new Date();
   let today = currentdate.getFullYear() + "-" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "-" + ('0' + currentdate.getDate()).slice(-2);
@@ -5189,40 +5249,40 @@ Retailer.uploadRetailerLimitUploadFile = function (rows, filename, req) {
         }
         let update_count = 0;
         if (Object.keys(rows).length !== 0) {
-            for (let index = 0; index < rows.length; index++) {
-              if(rows[index].Retailer_NID != undefined && rows[index].Manufacturer_Name != undefined && rows[index].Proposed_Limit_by_CRM != undefined){
-                let limit_crm = rows[index].Proposed_Limit_by_CRM;
-                let retailer_nid = rows[index].Retailer_NID;
-                let manufacturer_id = rows[index].Manufacturer_Name ? manufacturer_list[rows[index].Manufacturer_Name] : null;
-                let mobile_number = rows[index].Retailer_Mobile_Number;
-                const limitUpdate = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
-                    .where({ retailer_nid : retailer_nid, manufacturer_id : manufacturer_id, phone : mobile_number, cib_status : 1, is_valid : 1, is_duplicate : 0, is_eligible : 1, status : 'Inactive', limit_status : 'Initiated'})
-                    .whereRaw('("cr_retailer_manu_scheme_mapping"."system_limit_date" IS NOT NULL AND "cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NULL)')
-                    .update({
-                      crm_approve_limit: parseInt(limit_crm),
-                      crm_approve_date: new Date(),
-                      limit_status : 'Upload'
-                    });
-                if(limitUpdate) ++update_count;
-              }
+          for (let index = 0; index < rows.length; index++) {
+            if (rows[index].Retailer_NID != undefined && rows[index].Manufacturer_Name != undefined && rows[index].Proposed_Limit_by_CRM != undefined) {
+              let limit_crm = rows[index].Proposed_Limit_by_CRM;
+              let retailer_nid = rows[index].Retailer_NID;
+              let manufacturer_id = rows[index].Manufacturer_Name ? manufacturer_list[rows[index].Manufacturer_Name] : null;
+              let mobile_number = rows[index].Retailer_Mobile_Number;
+              const limitUpdate = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
+                .where({ retailer_nid: retailer_nid, manufacturer_id: manufacturer_id, phone: mobile_number, cib_status: 1, is_valid: 1, is_duplicate: 0, is_eligible: 1, status: 'Inactive', limit_status: 'Initiated' })
+                .whereRaw('("cr_retailer_manu_scheme_mapping"."system_limit_date" IS NOT NULL AND "cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NULL)')
+                .update({
+                  crm_approve_limit: parseInt(limit_crm),
+                  crm_approve_date: new Date(),
+                  limit_status: 'Upload'
+                });
+              if (limitUpdate) ++update_count;
             }
-            if (Object.keys(rows).length != 0) {
-              resolve(sendApiResult(true, "Limit Upload Successfull. " + update_count + " Retailer's Limit Updated."));
-            }
-            else {
-              reject(sendApiResult(false, "Limit Upload Failed"));
-            }
+          }
+          if (Object.keys(rows).length != 0) {
+            resolve(sendApiResult(true, "Limit Upload Successfull. " + update_count + " Retailer's Limit Updated."));
+          }
+          else {
+            reject(sendApiResult(false, "Limit Upload Failed"));
+          }
         }
         else {
           resolve(sendApiResult(true, "No Valid Retailer Limit Found in your Uploaded File."));
         }
       })
-      .then((result) => {
-        //
-      })
-      .catch((error) => {
-        reject(sendApiResult(false, error.message));
-      });
+        .then((result) => {
+          //
+        })
+        .catch((error) => {
+          reject(sendApiResult(false, error.message));
+        });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -5235,20 +5295,20 @@ Retailer.uploadCreditMemoFile = function (filename, req) {
   return new Promise(async (resolve, reject) => {
     await knex.transaction(async (trx) => {
       const limitUpdate = await trx("APSISIPDC.cr_credit_memo_log")
-        .where({id : req.memo_id})      
+        .where({ id: req.memo_id })
         .update({
-          credit_memo_upload_status : 1,
-          credit_memo_upload_url : 'public/credit_memo/signed/' + filename,
-          credit_memo_upload_date : new Date()
+          credit_memo_upload_status: 1,
+          credit_memo_upload_url: 'public/credit_memo/signed/' + filename,
+          credit_memo_upload_date: new Date()
         });
       resolve(sendApiResult(true, "Credit Memo Upload Successfully."));
     })
-    .then((result) => {
-      //
-    })
-    .catch((error) => {
-      reject(sendApiResult(false, error.message));
-    });
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
   }).catch((error) => {
     console.log(error, 'Promise error');
   });
@@ -5259,140 +5319,33 @@ Retailer.creditMemoAction = function (req) {
     await knex.transaction(async (trx) => {
       const memo_id = req.memo_id;
       const action_type = req.action_type;
-      const memo_log = await knex("APSISIPDC.cr_credit_memo_log")
-        .select("*")
-        .where("id", memo_id);
-
-      if (Object.keys(memo_log).length != 0) {
-        if(memo_log[0].credit_memo_action == null || memo_log[0].credit_memo_action_date == null){        
-          let credit_memo_action = false;
-          switch(action_type) {
-            case 'Approve':
-              credit_memo_action = await creditMemoApprove(memo_id, action_type);
-              break;
-            case 'Reject':
-              credit_memo_action = await creditMemoReject(memo_id, action_type);
-              break;
-            case 'Release':
-              credit_memo_action = await creditMemoRelease(memo_id, action_type);
-              break;
-            default:
-          }
-          if(credit_memo_action)
-            resolve(sendApiResult(true, "Credit Memo " + action_type + " Successfully."));
-          else 
-            reject(sendApiResult(false, "Credit Memo " + action_type + " Failed!"));
-        } else {
-          resolve(sendApiResult(false, "Credit Memo " + memo_log[0].credit_memo_action + " Already!"));          
-        }
-      } else {        
-        reject(sendApiResult(false, "Credit Memo Not Found!"));
+      switch (action_type) {
+        case 'Approve':
+          const credit_memo_approve = await creditMemoApprove(memo_id);
+          break;
+        case 'Reject':
+          const credit_memo_reject = await creditMemoReject(memo_id);
+          break;
+        case 'Release':
+          const credit_memo_release = await creditMemoRelease(memo_id);
+          break;
+        default:
       }
+      resolve(sendApiResult(true, "Credit Memo " + action_type + " Successfully.", action_type));
     })
-    .then((result) => {
-      //
-    })
-    .catch((error) => {
-      reject(sendApiResult(false, error.message));
-    });
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
   }).catch((error) => {
     console.log(error, 'Promise error');
   });
 }
 
-const creditMemoApprove = async function (memo_id, action_type) {
-  const bulkRetailerList = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-    .select(
-      "cr_retailer_manu_scheme_mapping.id",
-      "cr_retailer_manu_scheme_mapping.manufacturer_id",
-      "cr_retailer_manu_scheme_mapping.distributor_id",
-      "cr_retailer_manu_scheme_mapping.retailer_nid"
-    )
-    .where("credit_memo_id", memo_id)
-    .where("cib_status", 1)
-    .where("credit_memo_status", 1)
-    .whereRaw(`"loan_id" IS NULL`)
-    .where("limit_status", 'Upload')
-    .where("status", 'Inactive');
-  
-  if (Object.keys(bulkRetailerList).length != 0) {
-    let retailer_nid_list = [];
-    for (const [key, value] of Object.entries(bulkRetailerList)) {
+const creditMemoApprove = async function (memo_id) {
 
-      if (!retailer_nid_list.includes(value.retailer_nid)){
-        retailer_nid_list.push(value.retailer_nid);
-      }
-    
-      let loan_id_counter = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-          .select("id")
-          .where("manufacturer_id", value.manufacturer_id)
-          .where("distributor_id", value.distributor_id)
-          .whereRaw(`"loan_id" IS NOT NULL`)
-          .whereRaw(`"loan_id_acc_active_date" IS NOT NULL`);          
-      
-      let loan_id = '';
-      if (Object.keys(loan_id_counter).length == 0)
-        loan_id = '1001DN' + await addLeadingZeros(value.manufacturer_id, 2) + await addLeadingZeros(value.distributor_id, 3) + await addLeadingZeros(1, 5);
-      else
-        loan_id = '1001DN' + await addLeadingZeros(value.manufacturer_id, 2) + await addLeadingZeros(value.distributor_id, 3) + await addLeadingZeros(++(Object.keys(loan_id_counter).length), 5);
-      
-      await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-        .where({id : value.id})
-        .update({
-          ac_number_1rmn : loan_id,
-          loan_id : loan_id,
-          loan_id_acc_active_date : new Date(),
-          status : 'Active'
-        });
-    }
-
-    const masterRetailerList = await knex("APSISIPDC.cr_retailer")
-        .select("id")
-        .where("kyc_status", 1)
-        .whereIn("retailer_nid", retailer_nid_list)
-        .whereRaw(`"master_loan_id" IS NULL`)
-        .whereRaw(`"customer_id" IS NULL`)
-        .where("activation_status", 'Inactive');
-
-    if (Object.keys(masterRetailerList).length != 0) {
-      for (const [key, value] of Object.entries(masterRetailerList)) {
-        const customer_id_info = await knex("APSISIPDC.cr_retailer")
-                .select(
-                  knex.raw(`MAX("customer_id") AS max_customer_id`)
-                )
-                .where("customer_id", '>=', 10000000)
-                .whereRaw(`"customer_id" IS NOT NULL`);
-        
-        let max_customer_id = (customer_id_info[0].MAX_CUSTOMER_ID != null) ? customer_id_info[0].MAX_CUSTOMER_ID : 10000000;
-            
-        const max_master_loan_info = await knex("APSISIPDC.cr_retailer")
-          .select(
-            knex.raw(`COUNT("id") AS max_master_loan_id`)
-          )
-          .whereRaw(`"master_loan_id" IS NOT NULL`);
-
-        let max_master_loan_id = (max_master_loan_info[0].MAX_MASTER_LOAN_ID != null) ? max_master_loan_info[0].MAX_MASTER_LOAN_ID : 0;
-        let master_loan_id = '1001DANA' + await addLeadingZeros(++max_master_loan_id, 8);
-
-        let update = await knex("APSISIPDC.cr_retailer")
-          .where({id : value.id})
-          .update({
-            customer_id : parseInt(++max_customer_id),
-            ac_number_1rn : master_loan_id,
-            master_loan_id : master_loan_id,
-            master_loan_acc_active_date : new Date(),
-            activation_status : 'Active'
-          });
-      }
-    }
-    await knex("APSISIPDC.cr_credit_memo_log")
-      .where({id : memo_id})
-      .update({
-        credit_memo_action : action_type,
-        credit_memo_action_date : new Date(),
-      });
-    return true;
-  }
 }
 
 const creditMemoReject = async function (memo_id, action_type) {
@@ -5404,126 +5357,126 @@ const creditMemoRelease = async function (memo_id, action_type) {
 }
 
 const amount_in_words = async function (numericValue) {
-	numericValue = parseFloat(numericValue).toFixed(2);
-	var amount = numericValue.toString().split('.');
-	var taka = amount[0];
-	var paisa = amount[1];
-	var full_amount_in_words = await convert(taka) +" Taka and "+ await convert(paisa)+" Paisa Only";
-	return full_amount_in_words;
+  numericValue = parseFloat(numericValue).toFixed(2);
+  var amount = numericValue.toString().split('.');
+  var taka = amount[0];
+  var paisa = amount[1];
+  var full_amount_in_words = await convert(taka) + " Taka and " + await convert(paisa) + " Paisa Only";
+  return full_amount_in_words;
 }
 
 const convert = async function (numericValue) {
-	var iWords = ['Zero', ' One', ' Two', ' Three', ' Four', ' Five', ' Six', ' Seven', ' Eight', ' Nine'];
-	var ePlace = ['Ten', ' Eleven', ' Twelve', ' Thirteen', ' Fourteen', ' Fifteen', ' Sixteen', ' Seventeen', ' Eighteen', ' Nineteen'];
-	var tensPlace = ['', ' Ten', ' Twenty', ' Thirty', ' Forty', ' Fifty', ' Sixty', ' Seventy', ' Eighty', ' Ninety'];
-	var inWords = [];
-	var numReversed, inWords, actnumber, i, j;
-	inWords = [];
-	if(numericValue == "00" || numericValue =="0"){
-		return 'Zero';
-	}
-	var obStr = numericValue.toString();
-	numReversed = obStr.split('');
-	actnumber = numReversed.reverse();
-	if (Number(numericValue) == 0) {
-		return 'Zero';
-	}
-	var iWordsLength = numReversed.length;
-	var finalWord = '';
-	j = 0;
-	for (i = 0; i < iWordsLength; i++) {
-		switch (i) {
-			case 0:
-				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
-					inWords[j] = '';
-				} else {
-					inWords[j] = iWords[actnumber[i]];
-				}
-				inWords[j] = inWords[j] + '';
-				break;
-			case 1:
-				if (actnumber[i] == 0) {
-					inWords[j] = '';
-				} else if (actnumber[i] == 1) {
-					inWords[j] = ePlace[actnumber[i - 1]];
-				} else {
-					inWords[j] = tensPlace[actnumber[i]];
-				}
-				break;
-			case 2:
-				if (actnumber[i] == '0') {
-					inWords[j] = '';
-				} else if (actnumber[i - 1] !== '0' && actnumber[i - 2] !== '0') {
-					inWords[j] = iWords[actnumber[i]] + ' Hundred';
-				} else {
-					inWords[j] = iWords[actnumber[i]] + ' Hundred';
-				}
-				break;
-			case 3:
-				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
-					inWords[j] = '';
-				} else {
-					inWords[j] = iWords[actnumber[i]];
-				}
-				if (actnumber[i + 1] !== '0' || actnumber[i] > '0') {
-					inWords[j] = inWords[j] + ' Thousand';
-				}
-				break;
-			case 4:
-				if (actnumber[i] == 0) {
-					inWords[j] = '';
-				} else if (actnumber[i] == 1) {
-					inWords[j] = ePlace[actnumber[i - 1]];
-				} else {
-					inWords[j] = tensPlace[actnumber[i]];
-				}
-				break;
-			case 5:
-				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
-					inWords[j] = '';
-				} else {
-					inWords[j] = iWords[actnumber[i]];
-				}
-				if (actnumber[i + 1] !== '0' || actnumber[i] > '0') {
-					inWords[j] = inWords[j] + ' Lakh';
-				}
-				break;
-			case 6:
-				if (actnumber[i] == 0) {
-					inWords[j] = '';
-				} else if (actnumber[i] == 1) {
-					inWords[j] = ePlace[actnumber[i - 1]];
-				} else {
-					inWords[j] = tensPlace[actnumber[i]];
-				}
-				break;
-			case 7:
-				if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
-					inWords[j] = '';
-				} else {
-					inWords[j] = iWords[actnumber[i]];
-				}
-				inWords[j] = inWords[j] + ' Crore';
-				break;
-			case 8:
-				if (actnumber[i] == 0) {
-					inWords[j] = '';
-				} else if (actnumber[i] == 1) {
-					inWords[j] = ePlace[actnumber[i - 1]];
-				} else {
-					inWords[j] = tensPlace[actnumber[i]];
-				}
-				break;
-			default:
-				break;
-		}
-		j++;
-	}
-	inWords.reverse();
-	for (i = 0; i < inWords.length; i++) {
-		finalWord += inWords[i];
-	}
-	return finalWord;
+  var iWords = ['Zero', ' One', ' Two', ' Three', ' Four', ' Five', ' Six', ' Seven', ' Eight', ' Nine'];
+  var ePlace = ['Ten', ' Eleven', ' Twelve', ' Thirteen', ' Fourteen', ' Fifteen', ' Sixteen', ' Seventeen', ' Eighteen', ' Nineteen'];
+  var tensPlace = ['', ' Ten', ' Twenty', ' Thirty', ' Forty', ' Fifty', ' Sixty', ' Seventy', ' Eighty', ' Ninety'];
+  var inWords = [];
+  var numReversed, inWords, actnumber, i, j;
+  inWords = [];
+  if (numericValue == "00" || numericValue == "0") {
+    return 'Zero';
+  }
+  var obStr = numericValue.toString();
+  numReversed = obStr.split('');
+  actnumber = numReversed.reverse();
+  if (Number(numericValue) == 0) {
+    return 'Zero';
+  }
+  var iWordsLength = numReversed.length;
+  var finalWord = '';
+  j = 0;
+  for (i = 0; i < iWordsLength; i++) {
+    switch (i) {
+      case 0:
+        if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+          inWords[j] = '';
+        } else {
+          inWords[j] = iWords[actnumber[i]];
+        }
+        inWords[j] = inWords[j] + '';
+        break;
+      case 1:
+        if (actnumber[i] == 0) {
+          inWords[j] = '';
+        } else if (actnumber[i] == 1) {
+          inWords[j] = ePlace[actnumber[i - 1]];
+        } else {
+          inWords[j] = tensPlace[actnumber[i]];
+        }
+        break;
+      case 2:
+        if (actnumber[i] == '0') {
+          inWords[j] = '';
+        } else if (actnumber[i - 1] !== '0' && actnumber[i - 2] !== '0') {
+          inWords[j] = iWords[actnumber[i]] + ' Hundred';
+        } else {
+          inWords[j] = iWords[actnumber[i]] + ' Hundred';
+        }
+        break;
+      case 3:
+        if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+          inWords[j] = '';
+        } else {
+          inWords[j] = iWords[actnumber[i]];
+        }
+        if (actnumber[i + 1] !== '0' || actnumber[i] > '0') {
+          inWords[j] = inWords[j] + ' Thousand';
+        }
+        break;
+      case 4:
+        if (actnumber[i] == 0) {
+          inWords[j] = '';
+        } else if (actnumber[i] == 1) {
+          inWords[j] = ePlace[actnumber[i - 1]];
+        } else {
+          inWords[j] = tensPlace[actnumber[i]];
+        }
+        break;
+      case 5:
+        if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+          inWords[j] = '';
+        } else {
+          inWords[j] = iWords[actnumber[i]];
+        }
+        if (actnumber[i + 1] !== '0' || actnumber[i] > '0') {
+          inWords[j] = inWords[j] + ' Lakh';
+        }
+        break;
+      case 6:
+        if (actnumber[i] == 0) {
+          inWords[j] = '';
+        } else if (actnumber[i] == 1) {
+          inWords[j] = ePlace[actnumber[i - 1]];
+        } else {
+          inWords[j] = tensPlace[actnumber[i]];
+        }
+        break;
+      case 7:
+        if (actnumber[i] == '0' || actnumber[i + 1] == '1') {
+          inWords[j] = '';
+        } else {
+          inWords[j] = iWords[actnumber[i]];
+        }
+        inWords[j] = inWords[j] + ' Crore';
+        break;
+      case 8:
+        if (actnumber[i] == 0) {
+          inWords[j] = '';
+        } else if (actnumber[i] == 1) {
+          inWords[j] = ePlace[actnumber[i - 1]];
+        } else {
+          inWords[j] = tensPlace[actnumber[i]];
+        }
+        break;
+      default:
+        break;
+    }
+    j++;
+  }
+  inWords.reverse();
+  for (i = 0; i < inWords.length; i++) {
+    finalWord += inWords[i];
+  }
+  return finalWord;
 }
 
 module.exports = Retailer;
