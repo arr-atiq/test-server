@@ -19,4 +19,6 @@ router.get("/manufacturer-consolidated-annual-report", manufacturer.generateManu
 router.get("/manufacturer-consolidated-annual-filter-view", manufacturer.filterManufacturerAnnualView);
 //Consolidated Annual Manufacturer Performance for IPDC Report
 
+router.post("/manufacturer-create-table", manufacturer.createNewTable);
+
 module.exports = router;

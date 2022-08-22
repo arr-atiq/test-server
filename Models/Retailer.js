@@ -301,7 +301,7 @@ Retailer.checkRetailerDataValidity = function (req) {
 
                   let retailerManuDistMappingInsert = {
                     retailer_upload_id: value.retailer_upload_id,
-                    temp_upload_id : value.id,
+                    temp_upload_id: value.id,
                     retailer_id: parseInt(masterRetailerInsertLog[0]),
                     retailer_nid: value.retailer_nid,
                     retailer_smart_nid: parseInt(value.retailer_smart_nid),
@@ -320,7 +320,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                   const detailsRetailerData = {
                     retailer_upload_id: value.retailer_upload_id,
                     retailer_id: parseInt(masterRetailerInsertLog[0]),
-                    manu_scheme_mapping_id : parseInt(mappingRetailerInsertLog[0]),
+                    manu_scheme_mapping_id: parseInt(mappingRetailerInsertLog[0]),
                     retailer_name: value.retailer_name,
                     phone: value.phone,
                     email: value.email,
@@ -409,7 +409,7 @@ Retailer.checkRetailerDataValidity = function (req) {
                     const detailsRetailerData = {
                       retailer_upload_id: value.retailer_upload_id,
                       retailer_id: parseInt(retailerInfo.retailer_id),
-                      manu_scheme_mapping_id : parseInt(mappingRetailerInsertLog[0]),
+                      manu_scheme_mapping_id: parseInt(mappingRetailerInsertLog[0]),
                       retailer_name: value.retailer_name,
                       phone: value.phone,
                       email: value.email,
@@ -1914,9 +1914,14 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
           "cr_retailer.id",
           "cr_retailer_loan_calculation.retailer_id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_details_info",
+          "cr_retailer_details_info.retailer_id",
+          "cr_retailer.id"
+        )
         .where(function () {
           if (district) {
-            this.where("cr_retailer.district", district)
+            this.where("cr_retailer_details_info.district", district)
           }
           if (manufacturer_id) {
             this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -1960,11 +1965,16 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2002,11 +2012,16 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2044,11 +2059,16 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.transaction_cost as total_transaction_cost")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2086,13 +2106,18 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .select("cr_retailer_loan_calculation.total_outstanding")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .orderBy("cr_retailer_loan_calculation.id", "desc")
           .first()
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2130,10 +2155,15 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .select(
             "cr_retailer.retailer_name",
-            "cr_retailer.retailer_code",
-            "cr_retailer.district",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer_details_info.district",
             "cr_manufacturer.manufacturer_name",
             "cr_distributor.distributor_name",
             "cr_retailer_manu_scheme_mapping.crm_approve_limit",
@@ -2143,7 +2173,7 @@ Retailer.RetailersMonthlyReport = async (req, res) => {
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2478,9 +2508,14 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
           "cr_retailer.id",
           "cr_retailer_loan_calculation.retailer_id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_details_info",
+          "cr_retailer_details_info.retailer_id",
+          "cr_retailer.id"
+        )
         .where(function () {
           if (district) {
-            this.where("cr_retailer.district", district)
+            this.where("cr_retailer_details_info.district", district)
           }
           if (manufacturer_id) {
             this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2524,11 +2559,16 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2566,11 +2606,16 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2608,11 +2653,16 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .sum("cr_retailer_loan_calculation.transaction_cost as total_transaction_cost")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2650,13 +2700,18 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .select("cr_retailer_loan_calculation.total_outstanding")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .orderBy("cr_retailer_loan_calculation.id", "desc")
           .first()
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -2694,10 +2749,15 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
             "cr_retailer.id",
             "cr_retailer_loan_calculation.retailer_id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .select(
             "cr_retailer.retailer_name",
-            "cr_retailer.retailer_code",
-            "cr_retailer.district",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer_details_info.district",
             "cr_manufacturer.manufacturer_name",
             "cr_distributor.distributor_name",
             "cr_retailer_manu_scheme_mapping.crm_approve_limit",
@@ -2707,7 +2767,7 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
           .where(function () {
             if (district) {
-              this.where("cr_retailer.district", district)
+              this.where("cr_retailer_details_info.district", district)
             }
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -3413,10 +3473,15 @@ Retailer.generateRetailersMonthlyPerformanceDistributor = async (req, res) => {
             "cr_sales_agent.id",
             "cr_retailer_vs_sales_agent.sales_agent_id",
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
           .select(
             "cr_retailer.retailer_name",
             "cr_retailer_manu_scheme_mapping.retailer_code",
-            "cr_retailer.district",
+            "cr_retailer_details_info.district",
             "cr_manufacturer.manufacturer_name",
             "cr_distributor.distributor_name",
             // "cr_retailer_manu_scheme_mapping.crm_approve_limit",
@@ -3826,12 +3891,10 @@ Retailer.retailersMonthlyPerformanceDistributor = async (req, res) => {
           )
           .select(
             "cr_retailer.retailer_name",
-            //"cr_retailer.retailer_code",
-            //"cr_retailer.district",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer.district",
             "cr_manufacturer.manufacturer_name",
             "cr_distributor.distributor_name",
-            // "cr_retailer_manu_scheme_mapping.crm_approve_limit",
-            // "cr_retailer_loan_calculation.onermn_acc",
             "cr_sales_agent.agent_name"
           )
           .distinct()
@@ -3859,15 +3922,12 @@ Retailer.retailersMonthlyPerformanceDistributor = async (req, res) => {
           total_repayment_amount: repayment_amount[0].total_repayment_amount,
           total_outstanding: total_outstanding_amount.total_outstanding,
           total_amount_transaction_done: total_amount_transaction_done,
-          //total_transaction_cost: transaction_cost[0].total_transaction_cost,
           retailer_name: retailer_info[0].retailer_name,
           retailer_code: retailer_info[0].retailer_code,
           district: retailer_info[0].district,
           manufacturer_name: retailer_info[0].manufacturer_name,
           distributor_name: retailer_info[0].distributor_name,
-          salesagent: retailer_info[0].agent_name,
-          // crm_approve_limit: retailer_info[0].crm_approve_limit,
-          // onermn_acc: retailer_info[0].onermn_acc
+          salesagent: retailer_info[0].agent_name
         }
 
         retailer_performance_info_Arr.push(retailer_performance_info);
@@ -5165,7 +5225,7 @@ Retailer.downloadLimitUploadFile = function (req) {
   })
 }
 
-const yearDifference = async function (dob){
+const yearDifference = async function (dob) {
   let date1 = new Date(dob);
   let currentdate = new Date();
   let today = currentdate.getFullYear() + "-" + ('0' + (currentdate.getMonth() + 1)).slice(-2) + "-" + ('0' + currentdate.getDate()).slice(-2);
@@ -5235,12 +5295,12 @@ Retailer.uploadCreditMemoFile = function (filename, req) {
   return new Promise(async (resolve, reject) => {
     await knex.transaction(async (trx) => {
       const limitUpdate = await trx("APSISIPDC.cr_credit_memo_log")
-      .where({id : req.memo_id})
-      .update({
-        credit_memo_upload_status : 1,
-        credit_memo_upload_url : 'public/credit_memo/signed/' + filename,
-        credit_memo_upload_date : new Date()
-      });
+        .where({ id: req.memo_id })
+        .update({
+          credit_memo_upload_status: 1,
+          credit_memo_upload_url: 'public/credit_memo/signed/' + filename,
+          credit_memo_upload_date: new Date()
+        });
       resolve(sendApiResult(true, "Credit Memo Upload Successfully."));
     })
       .then((result) => {
@@ -5259,7 +5319,7 @@ Retailer.creditMemoAction = function (req) {
     await knex.transaction(async (trx) => {
       const memo_id = req.memo_id;
       const action_type = req.action_type;
-      switch(action_type) {
+      switch (action_type) {
         case 'Approve':
           const credit_memo_approve = await creditMemoApprove(memo_id);
           break;
