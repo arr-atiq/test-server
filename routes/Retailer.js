@@ -81,5 +81,6 @@ router.post(
 );
 
 router.post("/credit-memo-action", retailer.creditMemoAction);
+router.get("/credit-memo-list/", retailer.creditMemoList);
 
 module.exports = router;
