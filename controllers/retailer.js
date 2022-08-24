@@ -997,3 +997,12 @@ exports.updateRetailerDuplicateData = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.activeRetailerDuplicateData = async (req, res) => {
+  try {
+    const result = await model.activeRetailerDuplicateData(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};

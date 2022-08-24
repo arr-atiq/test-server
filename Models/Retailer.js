@@ -5013,38 +5013,56 @@ Retailer.getRetailerInvalidDataById = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       knex.transaction(async (trx) => {
-        const { retailer_mapping_id } = req.params;
+        const { temp_upload_id } = req.params;
         const retailer_info = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
           .select()
-          .where("id", retailer_mapping_id);
-
+          .where("is_valid", 0)
+          .where("temp_upload_id", temp_upload_id);
+        
         if (Object.keys(retailer_info).length != 0) {
           const fields_array = {};
+          let validation_fields = [];
           for (const [key, value] of Object.entries(retailer_info)) {
             const invalid_fields = await trx("APSISIPDC.cr_retailer_invalid_fields_log")
               .select("field_name")
-              .where("temp_upload_id", retailer_id)
+              .where("temp_upload_id", temp_upload_id)
               .where("status", 'Active');
 
             if (Object.keys(invalid_fields).length != 0) {
               let temp = {};
               for (const [index, field] of Object.entries(invalid_fields)) {
                 temp[field.field_name] = value[field.field_name];
+                if (!validation_fields.includes(field.field_name)) {
+                  validation_fields.push(field.field_name);
+                }
               }
-              fields_array[retailer_id] = temp;
+              fields_array[value.id] = temp;
             }
           }
-          resolve(sendApiResult(true, "Retailer Data Found", fields_array));
+
+          const fields_info = await trx("APSISIPDC.cr_retailer_fields_validation")
+              .select("field_name", "field_type", "operator", "field_length")
+              .whereIn("field_name", validation_fields)
+              .where("status", 'Active');
+
+          let validation_data = {};
+          if (Object.keys(fields_info).length != 0) {              
+            for (const [index, field] of Object.entries(fields_info)) {
+              validation_data[field.field_name] = {"field_type" : field.field_type, "operator" : field.operator, "field_length" : field.field_length}
+            }
+          }
+          
+          resolve(sendApiResult(true, "Retailer Data Found", {'fields_array' : fields_array, 'validation_fields' : validation_data}));
         } else {
           reject(sendApiResult(false, "No Invalid Data."));
         }
       })
-        .then((result) => {
-          //
-        })
-        .catch((error) => {
-          reject(sendApiResult(false, error.message));
-        });
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -5057,13 +5075,21 @@ Retailer.updateRetailerInvalidDataById = function (request) {
       knex.transaction(async (trx) => {
         for (const [key, value] of Object.entries(request)) {
           for (const [index, data] of Object.entries(value)) {
-            await trx("APSISIPDC.cr_retailer_temp").where({ id: key })
+            await trx("APSISIPDC.cr_retailer_manu_scheme_mapping").where({ id: key })
               .update({
-                [index]: data
+                [index]: data,
+                is_valid : 1                
               });
+                          
+            if (!['retailer_nid', 'retailer_smart_nid'].includes(index)) {
+              await trx("APSISIPDC.cr_retailer_details_info").where({ manu_scheme_mapping_id: key })
+              .update({
+                [index]: data                
+              });
+            }
           }
         }
-        resolve(sendApiResult(true, "Retailer Data Updated Successfully"));
+        resolve(sendApiResult(true, "Retailer Invalid Data Updated Successfully"));
       })
       .then((result) => {
         //
@@ -6333,6 +6359,28 @@ const updateRetailerCurrentData = async function (new_data_id, old_data_id, fiel
 
 const updateRetailerBothData = async function (new_data_id, old_data_id, field_name) {
   return true;
+}
+
+Retailer.activeRetailerDuplicateData = function (req) {
+  return new Promise(async (resolve, reject) => {
+    await knex.transaction(async (trx) => {
+      const new_data_id = req.new_data_id;      
+      await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+      .where({ id : new_data_id })
+      .update({
+        is_duplicate : 0,        
+      });
+      resolve(sendApiResult(true, "Retailer Data Activate Successfully."));
+    })
+    .then((result) => {
+      //
+    })
+    .catch((error) => {
+      reject(sendApiResult(false, error.message));
+    });
+  }).catch((error) => {
+    console.log(error, 'Promise error');
+  });
 }
 
 Retailer.creditMemoList = function (req) {
