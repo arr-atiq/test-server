@@ -39,6 +39,11 @@ router.get("/retailer-monthly-performance-report-for-distributor", retailer.gene
 router.get("/retailer-monthly-performance-for-distributor-view", retailer.retailersMonthlyPerformanceDistributor);
 //Monthly Retailer Performance report for Distributor (Supervisor)
 
+//Monthly Retailer Performance report for Distributor (Admin)
+router.get("/retailer-monthly-performance-report-for-distributor-admin", retailer.generateRetailersMonthlyPerformanceDistributorForAdmin);
+router.get("/retailer-monthly-performance-for-distributor-view-admin", retailer.retailersMonthlyPerformanceDistributorForAdmin);
+//Monthly Retailer Performance report for Distributor (Admin)
+
 router.post("/retailer-upload-list", retailer.retailerUploadList);
 
 router.post(
