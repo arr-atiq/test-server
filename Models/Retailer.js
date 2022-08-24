@@ -4976,7 +4976,6 @@ Retailer.getRetailerInvalidData = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       knex.transaction(async (trx) => {
-        const { retailer_upload_id } = req.params;
         const retailer_info = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
           .select(
             "cr_retailer_manu_scheme_mapping.id",
@@ -4992,7 +4991,6 @@ Retailer.getRetailerInvalidData = function (req) {
             "cr_retailer_manu_scheme_mapping.retailer_id",
             "cr_retailer.id"
           )
-          .where("cr_retailer_manu_scheme_mapping.retailer_upload_id", retailer_upload_id)
           .whereRaw(`"cr_retailer_manu_scheme_mapping"."is_valid" = 0 OR "cr_retailer_manu_scheme_mapping"."is_duplicate" = 1`)
           .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
           .orderBy("cr_retailer_manu_scheme_mapping.id", "asc");
@@ -5067,86 +5065,173 @@ Retailer.updateRetailerInvalidDataById = function (request) {
         }
         resolve(sendApiResult(true, "Retailer Data Updated Successfully"));
       })
-        .then((result) => {
-          //
-        })
-        .catch((error) => {
-          reject(sendApiResult(false, error.message));
-        });
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
   });
 };
 
-Retailer.getDuplicateRetailerListById = function (req) {
+Retailer.getDuplicateRetailerDataById = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       knex.transaction(async (trx) => {
-        const { retailer_upload_id } = req.params;
-        const data = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+        const { id } = req.params;     
+        const existing_data = await knex("APSISIPDC.cr_retailer_duplicate_log")
+          .where("new_retailer_info_id", id)
+          .where("solved_status", 0)
+          .where("status", "Active")          
+          .select(            
+            'old_retailer_info_id'
+          )
+          .first();
+        
+        const duplicate_data = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
           .innerJoin(
             "APSISIPDC.cr_schema",
             "cr_schema.id",
             "cr_retailer_manu_scheme_mapping.scheme_id"
           )
           .innerJoin(
-            "APSISIPDC.cr_retailer",
-            "cr_retailer.id",
-            "cr_retailer_manu_scheme_mapping.retailer_id"
-          )
-          .innerJoin(
             "APSISIPDC.cr_manufacturer",
             "cr_manufacturer.id",
             "cr_retailer_manu_scheme_mapping.manufacturer_id"
           )
-          .where("cr_retailer.retailer_upload_id", retailer_upload_id)
-          .where("cr_retailer.status", "Active")
-          .where("cr_retailer_manu_scheme_mapping.status", "Duplicate")
+          .innerJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.manu_scheme_mapping_id",
+            "cr_retailer_manu_scheme_mapping.id"
+          )
+          .whereIn("cr_retailer_manu_scheme_mapping.id", [id, parseInt(existing_data.old_retailer_info_id)])
           .select(
             'cr_retailer_manu_scheme_mapping.id',
-            'cr_schema.scheme_name',
-            'cr_retailer.retailer_name',
-            'cr_retailer.retailer_nid',
-            'cr_manufacturer.manufacturer_name',
+            'cr_retailer_details_info.retailer_name',
+            'cr_retailer_manu_scheme_mapping.retailer_nid',
+            'cr_retailer_manu_scheme_mapping.retailer_smart_nid',
+            'cr_retailer_manu_scheme_mapping.phone',
+            'cr_retailer_details_info.email',
+            'cr_retailer_manu_scheme_mapping.retailer_code',
             'cr_retailer_manu_scheme_mapping.manufacturer_id',
-            'cr_retailer.phone'
+            'cr_manufacturer.manufacturer_name',
+            'cr_retailer_manu_scheme_mapping.distributor_id',
+            'cr_retailer_details_info.region_operation',
+            'cr_schema.scheme_name',
+            'cr_retailer_details_info.onboarding',
+            'cr_retailer_details_info.order_placement',
+            'cr_retailer_details_info.repayment',
+            'cr_retailer_details_info.retailer_type',
+            'cr_retailer_details_info.type_of_entity',
+            'cr_retailer_details_info.retailer_tin',
+            'cr_retailer_details_info.trade_license_no',
+            'cr_retailer_details_info.trade_license_no',
+            'cr_retailer_details_info.outlet_address_1',
+            'cr_retailer_details_info.outlet_address_2',
+            'cr_retailer_details_info.postal_code',
+            'cr_retailer_details_info.post_office',
+            'cr_retailer_details_info.thana',
+            'cr_retailer_details_info.district',
+            'cr_retailer_details_info.division',
+            'cr_retailer_details_info.autho_rep_full_name',
+            'cr_retailer_details_info.autho_rep_nid',
+            'cr_retailer_details_info.autho_rep_phone',
+            'cr_retailer_details_info.autho_rep_email',
+            'cr_retailer_details_info.duration_sales_data',
+            'cr_retailer_manu_scheme_mapping.sales_array'
           );
 
-        if (Object.keys(data).length != 0) {
-          let mapping_data = [];
-          for (const [key, value] of Object.entries(data)) {
-            const mapping_info = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
-              .select(
-                knex.raw(`LISTAGG ("cr_manufacturer"."manufacturer_name", ', ') as "manufacturer_name"`)
-              )
-              .where("cr_retailer_manu_scheme_mapping.retailer_nid", value.retailer_nid)
-              .where("cr_retailer_manu_scheme_mapping.status", 'Active')
-              .innerJoin(
-                "APSISIPDC.cr_manufacturer",
-                "cr_manufacturer.id",
-                "cr_retailer_manu_scheme_mapping.manufacturer_id"
-              );
-            let temp = {};
-            temp['mapping_id'] = value.id;
-            temp['retailer_name'] = value.retailer_name;
-            temp['phone'] = value.phone;
-            temp['requested_manufacturer_name'] = value.manufacturer_name;
-            temp['existing_manufacturer_name'] = mapping_info[0].manufacturer_name;
-            temp['scheme_name'] = value.scheme_name;
-            mapping_data.push(temp);
+        if (Object.keys(duplicate_data).length != 0) {
+
+          const retailerTypeSql = await trx("APSISIPDC.cr_retailer_type")
+            .select("id", "name")
+            .where("status", "Active");
+
+          const retailerType = {};
+          for (const [key, value] of Object.entries(retailerTypeSql)) {
+            retailerType[value.id] = value.name;
           }
-          resolve(sendApiResult(true, "Retailer Data Found Successfully", mapping_data));
+
+          const retailerTypeEntitySql = await trx("APSISIPDC.cr_retailer_type_entity")
+            .select("id", "name")
+            .where("status", "Active");
+
+          const retailerTypeEntity = {};
+          for (const [key, val] of Object.entries(retailerTypeEntitySql)) {
+            retailerTypeEntity[val.id] = val.name;
+          }
+        
+          let duplicate_data_details = {};
+          for (const [key, value] of Object.entries(duplicate_data)) {
+            const distributorData = await trx("APSISIPDC.cr_manufacturer_vs_distributor")
+                        .select("distributor_code", "distributor_id")
+                        .where("manufacturer_id", parseInt(value.manufacturer_id))
+                        .where("distributor_id", parseInt(value.distributor_id))
+                        .where("status", 'Active')
+                        .first();
+
+            let temp = {};
+            temp['id'] = value.id;
+            temp['retailer_name'] = value.retailer_name;
+            temp['retailer_nid'] = value.retailer_nid;
+            temp['retailer_smart_nid'] = value.retailer_smart_nid;
+            temp['phone'] = value.phone;
+            temp['retailer_code'] = value.retailer_code;
+            temp['manufacturer_name'] = value.manufacturer_name;
+            temp['distributor_code'] = distributorData.distributor_code;
+            temp['region_operation'] = value.region_operation;
+            temp['scheme_name'] = value.scheme_name;
+            temp['onboarding'] = value.onboarding;
+            temp['order_placement'] = value.order_placement;
+            temp['repayment'] = value.repayment;
+            temp['retailer_type'] = retailerType[value.retailer_type];
+            temp['type_of_entity'] = retailerTypeEntity[value.type_of_entity];
+            temp['retailer_tin'] = value.retailer_tin;
+            temp['trade_license_no'] = value.trade_license_no;
+            temp['outlet_address_1'] = value.outlet_address_1;
+            temp['outlet_address_2'] = value.outlet_address_1;
+            temp['postal_code'] = value.postal_code;
+            temp['post_office'] = value.post_office;
+            temp['thana'] = value.thana;
+            temp['district'] = value.district;
+            temp['division'] = value.division;
+            temp['autho_rep_full_name'] = value.autho_rep_full_name;
+            temp['autho_rep_nid'] = value.autho_rep_nid;
+            temp['autho_rep_phone'] = value.autho_rep_phone;
+            temp['autho_rep_email'] = value.autho_rep_email;
+            temp['duration_sales_data'] = value.duration_sales_data;
+            for (let i = 0; i < 12; i++) {
+              temp['month_' + (i+1)] = JSON.parse(value.sales_array)[i];
+            }            
+            if(value.id != id)
+              duplicate_data_details['new_data'] = temp;
+            else
+              duplicate_data_details['existing_data'] = temp;
+          }
+
+          const fields_validation = await knex("APSISIPDC.cr_retailer_fields_validation")
+            .where("status", "Active")          
+            .select(
+              'field_name',
+              knex.raw(`CASE "editable" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "editable"`),
+            );
+          
+          duplicate_data_details['fields_validation'] = fields_validation;
+
+          resolve(sendApiResult(true, "Retailer Data Found Successfully", duplicate_data_details));
         } else {
-          reject(sendApiResult(false, 'No Retailer Found.'));
+          resolve(sendApiResult(true, "No Retailer Data Found"));
         }
       })
-        .then((result) => {
-          //
-        })
-        .catch((error) => {
-          reject(sendApiResult(false, error.message));
-        });
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -5228,7 +5313,8 @@ const prepareReferenceNumber = async function () {
     .select(
       "cr_credit_memo_log.id"
     );
-  const referenceNumber = 'IPDC/CM/DANA/' + today + '/APNL' + await addingExtraZeros(Object.keys(memo_info).length, 4);
+  let memo_length = parseInt(Object.keys(memo_info).length + 1);
+  const referenceNumber = 'IPDC/CM/DANA/' + today + '/APNL' + await addingExtraZeros(memo_length, 4);
   return referenceNumber;
 }
 
@@ -5239,16 +5325,10 @@ const addingExtraZeros = async function (str, max) {
 
 const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memoReferenceNumber) {
   var fonts = {
-    Roboto: {
-      normal: 'node_modules/font/roboto/Roboto-Regular.ttf',
-      bold: 'node_modules/font/roboto/Roboto-Medium.ttf',
-      italics: 'node_modules/font/roboto/Roboto-Italic.ttf',
-      bolditalics: 'node_modules/font/roboto/Roboto-MediumItalic.ttf'
-    },
     Calibri: {
-      normal: 'node_modules/font/calibri/Calibri-Regular.ttf',
-      bold: 'node_modules/font/calibri/Calibri-Bold.ttf',
-      italics: 'node_modules/font/calibri/Calibri-Italic.ttf',
+      normal: 'assets/font/calibri/Calibri-Regular.ttf',
+      bold: 'assets/font/calibri/Calibri-Bold.ttf',
+      italics: 'assets/font/calibri/Calibri-Italic.ttf',
     }
   };
 
@@ -5279,7 +5359,7 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
           alignment: 'left',
         },
         {
-          image: 'public/credit_memo/ipdc_logo.png',
+          image: 'assets/logo/ipdc_logo.png',
           width: 80,
           margin: [50, 22, 0, 0],
           alignment: 'right',
@@ -5553,9 +5633,9 @@ const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list, 
   const retailerList = await creditMemoRetailerListPrepare(retailer_list);
   var fonts = {
     Calibri: {
-      normal: 'node_modules/font/calibri/Calibri-Regular.ttf',
-      bold: 'node_modules/font/calibri/Calibri-Bold.ttf',
-      italics: 'node_modules/font/calibri/Calibri-Italic.ttf',
+      normal: 'assets/font/calibri/Calibri-Regular.ttf',
+      bold: 'assets/font/calibri/Calibri-Bold.ttf',
+      italics: 'assets/font/calibri/Calibri-Italic.ttf',
     }
   };
 
@@ -6068,13 +6148,13 @@ Retailer.creditMemoAction = function (req) {
       const action_type = req.action_type;
       switch (action_type) {
         case 'Approve':
-          const credit_memo_approve = await creditMemoApprove(memo_id);
+          const credit_memo_approve = await creditMemoApprove(memo_id, action_type);
           break;
         case 'Reject':
-          const credit_memo_reject = await creditMemoReject(memo_id);
+          const credit_memo_reject = await creditMemoReject(memo_id, action_type);
           break;
         case 'Release':
-          const credit_memo_release = await creditMemoRelease(memo_id);
+          const credit_memo_release = await creditMemoRelease(memo_id, action_type);
           break;
         default:
       }
@@ -6091,8 +6171,91 @@ Retailer.creditMemoAction = function (req) {
   });
 }
 
-const creditMemoApprove = async function (memo_id) {
+const creditMemoApprove = async function (memo_id, action_type) {
+  const bulkRetailerList = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+    .select(
+      "cr_retailer_manu_scheme_mapping.id",
+      "cr_retailer_manu_scheme_mapping.manufacturer_id",
+      "cr_retailer_manu_scheme_mapping.distributor_id",
+      "cr_retailer_manu_scheme_mapping.retailer_nid"
+    )
+    .where("credit_memo_id", memo_id)
+    .where("cib_status", 1)
+    .where("credit_memo_status", 1)
+    .whereRaw(`"loan_id" IS NULL`)
+    .where("limit_status", 'Upload')
+    .where("status", 'Inactive');
 
+  if (Object.keys(bulkRetailerList).length != 0) {
+    let retailer_nid_list = [];
+    for (const [key, value] of Object.entries(bulkRetailerList)) {
+      if (!retailer_nid_list.includes(value.retailer_nid)){
+        retailer_nid_list.push(value.retailer_nid);
+      }
+      let loan_id_counter = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+          .select("id")
+          .where("manufacturer_id", value.manufacturer_id)
+          .where("distributor_id", value.distributor_id)
+          .whereRaw(`"loan_id" IS NOT NULL`)
+          .whereRaw(`"loan_id_acc_active_date" IS NOT NULL`);          
+      let loan_id = '';
+      if (Object.keys(loan_id_counter).length == 0)
+        loan_id = '1001DN' + await addLeadingZeros(value.manufacturer_id, 2) + await addLeadingZeros(value.distributor_id, 3) + await addLeadingZeros(1, 5);
+      else
+        loan_id = '1001DN' + await addLeadingZeros(value.manufacturer_id, 2) + await addLeadingZeros(value.distributor_id, 3) + await addLeadingZeros(++(Object.keys(loan_id_counter).length), 5);
+      await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+        .where({id : value.id})
+        .update({
+          ac_number_1rmn : loan_id,
+          loan_id : loan_id,
+          loan_id_acc_active_date : new Date(),
+          status : 'Active'
+        });
+    }
+    const masterRetailerList = await knex("APSISIPDC.cr_retailer")
+        .select("id")
+        .where("kyc_status", 1)
+        .whereIn("retailer_nid", retailer_nid_list)
+        .whereRaw(`"master_loan_id" IS NULL`)
+        .whereRaw(`"customer_id" IS NULL`)
+        .where("activation_status", 'Inactive');
+
+    if (Object.keys(masterRetailerList).length != 0) {
+      for (const [key, value] of Object.entries(masterRetailerList)) {
+        const customer_id_info = await knex("APSISIPDC.cr_retailer")
+          .select(
+            knex.raw(`MAX("customer_id") AS max_customer_id`)
+          )
+          .where("customer_id", '>=', 10000000)
+          .whereRaw(`"customer_id" IS NOT NULL`);
+
+        let max_customer_id = (customer_id_info[0].MAX_CUSTOMER_ID != null) ? customer_id_info[0].MAX_CUSTOMER_ID : 10000000;
+        const max_master_loan_info = await knex("APSISIPDC.cr_retailer")
+          .select(
+            knex.raw(`COUNT("id") AS max_master_loan_id`)
+          )
+          .whereRaw(`"master_loan_id" IS NOT NULL`);
+        let max_master_loan_id = (max_master_loan_info[0].MAX_MASTER_LOAN_ID != null) ? max_master_loan_info[0].MAX_MASTER_LOAN_ID : 0;
+        let master_loan_id = '1001DANA' + await addLeadingZeros(++max_master_loan_id, 8);
+        let update = await knex("APSISIPDC.cr_retailer")
+          .where({id : value.id})
+          .update({
+            customer_id : parseInt(++max_customer_id),
+            ac_number_1rn : master_loan_id,
+            master_loan_id : master_loan_id,
+            master_loan_acc_active_date : new Date(),
+            activation_status : 'Active'
+          });
+      }
+    }
+    await knex("APSISIPDC.cr_credit_memo_log")
+      .where({id : memo_id})
+      .update({
+        credit_memo_action : action_type,
+        credit_memo_action_date : new Date(),
+      });
+    return true;
+  }
 }
 
 const creditMemoReject = async function (memo_id, action_type) {
@@ -6103,15 +6266,86 @@ const creditMemoRelease = async function (memo_id, action_type) {
 
 }
 
+Retailer.updateRetailerDuplicateData = function (req) {
+  return new Promise(async (resolve, reject) => {
+    await knex.transaction(async (trx) => {
+      const new_data_id = req.new_data_id;
+      const old_data_id = req.old_data_id;
+      const field_name = req.field_name;
+      const action = req.action;
+      let response = '';
+      switch (action) {
+        case 'previous':
+          response = await updateRetailerPreviousData(new_data_id, old_data_id, field_name);
+          break;
+        case 'current':
+          response = await updateRetailerCurrentData(new_data_id, old_data_id, field_name);
+          break;
+        case 'both':
+          response = await updateRetailerBothData(new_data_id, old_data_id, field_name);
+          break;
+        default:
+      }
+      if(response){
+        resolve(sendApiResult(true, "Retailer Duplicate Data Update Successfully."));
+      } else {
+        resolve(sendApiResult(true, "Retailer Duplicate Data Update Failed!."));
+      }      
+    })
+    .then((result) => {
+      //
+    })
+    .catch((error) => {
+      reject(sendApiResult(false, error.message));
+    });
+  }).catch((error) => {
+    console.log(error, 'Promise error');
+  });
+}
+
+const updateRetailerPreviousData = async function (new_data_id, old_data_id, field_name) {
+  const retailerInfo = await knex("APSISIPDC.cr_retailer_details_info")
+    .select(field_name)
+    .where("manu_scheme_mapping_id", old_data_id)
+    .first();
+  
+  await knex("APSISIPDC.cr_retailer_details_info")
+    .where({ manu_scheme_mapping_id: new_data_id })
+    .update({
+      [field_name]: retailerInfo[field_name],
+    });
+  return true;
+}
+
+const updateRetailerCurrentData = async function (new_data_id, old_data_id, field_name) {
+  const retailerInfo = await knex("APSISIPDC.cr_retailer_details_info")
+    .select(field_name)
+    .where("manu_scheme_mapping_id", new_data_id)
+    .first();
+  
+  await knex("APSISIPDC.cr_retailer_details_info")
+    .where({ manu_scheme_mapping_id: old_data_id })
+    .update({
+      [field_name]: retailerInfo[field_name],
+    });
+  return true;
+}
+
+const updateRetailerBothData = async function (new_data_id, old_data_id, field_name) {
+  return true;
+}
+
 Retailer.creditMemoList = function (req) {
   return new Promise(async (resolve, reject) => {
     await knex.transaction(async (trx) => {
       const creditMemoList = await knex("APSISIPDC.cr_credit_memo_log")
-        .select("id",
+        .select(
+          "id",
           "ref_no",
           "count_sum",
           "credit_memo_status",
           "credit_memo_upload_status",
+          "credit_memo_action",
           knex.raw('TO_CHAR("cr_credit_memo_log"."credit_memo_create_date", \'DD Mon YYYY\') AS "credit_memo_create_date"'),
         );
 
@@ -6121,7 +6355,7 @@ Retailer.creditMemoList = function (req) {
           let temp = {};
           temp.id = value.id;
           temp.ref_no = value.ref_no;
-          temp.count_sum = await numberWithCommas(value.count_sum);
+          temp.count_sum = await numberWithCommas(parseInt(value.count_sum));
           temp.credit_memo_status = value.credit_memo_status;
           temp.credit_memo_create_date = value.credit_memo_create_date;
           credit_memo_list.push(temp);
@@ -6130,7 +6364,6 @@ Retailer.creditMemoList = function (req) {
       } else {
         resolve(sendApiResult(true, "No Credit Memo Found.", credit_memo_list));
       }
-
     });
   });
 }

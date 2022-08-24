@@ -893,9 +893,18 @@ exports.updateRetailerInvalidDataById = async (req, res) => {
   }
 };
 
-exports.getDuplicateRetailerListById = async (req, res) => {
+// exports.getDuplicateRetailerListById = async (req, res) => {
+//   try {
+//     const result = await model.getDuplicateRetailerListById(req);
+//     res.status(200).send(result);
+//   } catch (error) {
+//     res.send(sendApiResult(false, error.message));
+//   }
+// };
+
+exports.getDuplicateRetailerDataById = async (req, res) => {
   try {
-    const result = await model.getDuplicateRetailerListById(req);
+    const result = await model.getDuplicateRetailerDataById(req);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
@@ -974,6 +983,15 @@ exports.creditMemoAction = async (req, res) => {
 exports.creditMemoList = async (req, res) => {
   try {
     const result = await model.creditMemoList(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.updateRetailerDuplicateData = async (req, res) => {
+  try {
+    const result = await model.updateRetailerDuplicateData(req.body);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
