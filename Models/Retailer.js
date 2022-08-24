@@ -3942,6 +3942,753 @@ Retailer.retailersMonthlyPerformanceDistributor = async (req, res) => {
   });
 };
 
+Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
+  return new Promise(async (resolve, reject) => {
+
+    const { month, supervisor_id, manufacturer_id, sales_agent_id, district, page, per_page } = req.query;
+    const previousYearLastDate = moment().subtract(1, 'years').endOf('year').format('YYYY-MM-DD');
+
+    try {
+
+      const distributor = await knex("APSISIPDC.cr_supervisor")
+        .select("distributor_id")
+        .where("cr_supervisor.id", supervisor_id);
+
+      const distributor_id = distributor[0]?.distributor_id ?? 0;
+
+      const filter_report_data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_retailer_manu_scheme_mapping.distributor_id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_loan_calculation",
+          "cr_retailer_loan_calculation.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_vs_sales_agent",
+          "cr_retailer_vs_sales_agent.retailer_id",
+          "cr_retailer.id"
+        )
+        .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+        .where(function () {
+
+          if (manufacturer_id) {
+            this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+          }
+          if (sales_agent_id) {
+            this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+          }
+          if (month) {
+            const monthNum = parseInt(month);
+            const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+            const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+          }
+        })
+        .select(
+          "cr_retailer_loan_calculation.onermn_acc"
+        ).distinct();
+
+      const retailer_performance_info_Arr = [];
+
+      for (let i = 0; i < filter_report_data.length; i++) {
+        const disbursement_amount = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_retailer_manu_scheme_mapping.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_loan_calculation",
+            "cr_retailer_loan_calculation.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
+          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (sales_agent_id) {
+              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+            }
+            if (month) {
+              const monthNum = parseInt(month);
+              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const repayment_amount = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_retailer_manu_scheme_mapping.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_loan_calculation",
+            "cr_retailer_loan_calculation.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
+          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          .where(function () {
+
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (sales_agent_id) {
+              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+            }
+            if (month) {
+              const monthNum = parseInt(month);
+              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const transaction_cost = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_retailer_manu_scheme_mapping.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_loan_calculation",
+            "cr_retailer_loan_calculation.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .sum("cr_retailer_loan_calculation.transaction_cost as total_transaction_cost")
+          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (sales_agent_id) {
+              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+            }
+            if (month) {
+              const monthNum = parseInt(month);
+              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_outstanding_amount = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_retailer_manu_scheme_mapping.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_loan_calculation",
+            "cr_retailer_loan_calculation.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .select("cr_retailer_loan_calculation.total_outstanding")
+          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          .orderBy("cr_retailer_loan_calculation.id", "desc")
+          .first()
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (sales_agent_id) {
+              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+            }
+            if (month) {
+              const monthNum = parseInt(month);
+              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const retailer_info = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_retailer_manu_scheme_mapping.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_loan_calculation",
+            "cr_retailer.id",
+            "cr_retailer_loan_calculation.retailer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_sales_agent",
+            "cr_sales_agent.id",
+            "cr_retailer_vs_sales_agent.sales_agent_id",
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
+          .select(
+            "cr_retailer.retailer_name",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer_details_info.district",
+            "cr_manufacturer.manufacturer_name",
+            "cr_distributor.distributor_name",
+            // "cr_retailer_manu_scheme_mapping.crm_approve_limit",
+            // "cr_retailer_loan_calculation.onermn_acc",
+            "cr_sales_agent.agent_name"
+          )
+          .distinct()
+          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (sales_agent_id) {
+              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+            }
+            if (month) {
+              const monthNum = parseInt(month);
+              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+          });
+        const total_amount_transaction_done = disbursement_amount[0].total_disbursement_amount + repayment_amount[0].total_repayment_amount;
+
+        const retailer_performance_info = {
+          total_disbursement_amount: disbursement_amount[0].total_disbursement_amount,
+          total_repayment_amount: repayment_amount[0].total_repayment_amount,
+          total_outstanding: total_outstanding_amount.total_outstanding,
+          total_amount_transaction_done: total_amount_transaction_done,
+          //total_transaction_cost: transaction_cost[0].total_transaction_cost,
+          retailer_name: retailer_info[0].retailer_name,
+          retailer_code: retailer_info[0].retailer_code,
+          district: retailer_info[0].district,
+          manufacturer_name: retailer_info[0].manufacturer_name,
+          distributor_name: retailer_info[0].distributor_name,
+          salesagent: retailer_info[0].agent_name,
+          // crm_approve_limit: retailer_info[0].crm_approve_limit,
+          // onermn_acc: retailer_info[0].onermn_acc
+        }
+
+        retailer_performance_info_Arr.push(retailer_performance_info);
+      }
+
+      const headers = [
+        "Sr.",
+        "Retailer name",
+        "Retailer code",
+        "Manufacturer name",
+        "Sales agent name",
+        "No of orders placed",
+        //"Total_transaction_cost",
+        "Total amount of transaction done(BDT)",
+        "Total amount of loan requested(BDT)",
+        "Total amount of repayment(BDT)",
+        "Total outstanding amount(BDT)",
+        // "Total_amount_of_disbursement"
+      ];
+      const workbook = new excel.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet 1");
+      const headerStyle = workbook.createStyle({
+        fill: {
+          type: "pattern",
+          patternType: "solid",
+          bgColor: "#E1F0FF",
+          fgColor: "#E1F0FF",
+        },
+        font: {
+          color: "#000000",
+          size: "10",
+          bold: true,
+        },
+      });
+      const col = 1;
+      let row = 1;
+      let col_addH = 0;
+      headers.forEach((e) => {
+        worksheet
+          .cell(row, col + col_addH)
+          .string(e)
+          .style(headerStyle);
+        col_addH++;
+      });
+      row++;
+      for (let i = 0; i < retailer_performance_info_Arr.length; i++) {
+        var col_add = 0;
+        let e = retailer_performance_info_Arr[i];
+        worksheet.cell(row, col + col_add).number(i + 1);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.retailer_name ? e.retailer_name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.retailer_code ? e.retailer_code : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.manufacturer_name ? e.manufacturer_name : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.salesagent ? e.salesagent : "");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.no_of_orders_placed ? e.no_of_orders_placed : "-");
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.total_amount_transaction_done ? e.total_amount_transaction_done : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.total_disbursement_amount ? e.total_disbursement_amount : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.total_repayment_amount ? e.total_repayment_amount : 0);
+        col_add++;
+        worksheet.cell(row, col + col_add).number(e.total_outstanding ? e.total_outstanding : 0);
+        col_add++;
+
+        // worksheet.cell(row, col + col_add).number(0);
+        // col_add++;
+        row++;
+      }
+      await workbook.write("public/reports_retailer/retailer-monthly-performance-report-for-distributor_supervisor.xlsx");
+      const fileName = "./reports_retailer/retailer-monthly-performance-report-for-distributor_supervisor.xlsx";
+      setTimeout(() => {
+        resolve(sendApiResult(true, "File Generated", fileName));
+      }, 1500);
+    } catch (error) {
+      console.log(error);
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
+  return new Promise(async (resolve, reject) => {
+
+    const { month, supervisor_id, manufacturer_id, district, sales_agent_id, page, per_page } = req.query;
+    const previousYearLastDate = moment().subtract(1, 'years').endOf('year').format('YYYY-MM-DD');
+
+    try {
+
+      const distributor = await knex("APSISIPDC.cr_supervisor")
+        .select("distributor_id")
+        .where("cr_supervisor.id", supervisor_id);
+
+      const distributor_id = distributor[0]?.distributor_id ?? 0;
+
+      const filter_report_data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer",
+          "cr_manufacturer.id",
+          "cr_retailer_manu_scheme_mapping.manufacturer_id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_retailer_manu_scheme_mapping.distributor_id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_loan_calculation",
+          "cr_retailer_loan_calculation.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_vs_sales_agent",
+          "cr_retailer_vs_sales_agent.retailer_id",
+          "cr_retailer.id"
+        )
+        .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+        .where(function () {
+
+          if (manufacturer_id) {
+            this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+          }
+          if (sales_agent_id) {
+            this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+          }
+          if (month) {
+            const monthNum = parseInt(month);
+            const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+            const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+          }
+        })
+        .select(
+          "cr_retailer_loan_calculation.onermn_acc"
+        ).distinct();
+
+      const retailer_performance_info_Arr = [];
+
+      for (let i = 0; i < filter_report_data.length; i++) {
+        const disbursement_amount = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_retailer_manu_scheme_mapping.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_loan_calculation",
+            "cr_retailer_loan_calculation.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
+          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (sales_agent_id) {
+              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+            }
+            if (month) {
+              const monthNum = parseInt(month);
+              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const repayment_amount = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_retailer_manu_scheme_mapping.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_loan_calculation",
+            "cr_retailer_loan_calculation.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
+          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          .where(function () {
+
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (sales_agent_id) {
+              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+            }
+            if (month) {
+              const monthNum = parseInt(month);
+              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const transaction_cost = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_retailer_manu_scheme_mapping.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_loan_calculation",
+            "cr_retailer_loan_calculation.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .sum("cr_retailer_loan_calculation.transaction_cost as total_transaction_cost")
+          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (sales_agent_id) {
+              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+            }
+            if (month) {
+              const monthNum = parseInt(month);
+              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const total_outstanding_amount = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_retailer_manu_scheme_mapping.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_loan_calculation",
+            "cr_retailer_loan_calculation.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .select("cr_retailer_loan_calculation.total_outstanding")
+          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          .orderBy("cr_retailer_loan_calculation.id", "desc")
+          .first()
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (sales_agent_id) {
+              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+            }
+            if (month) {
+              const monthNum = parseInt(month);
+              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+          });
+
+        const retailer_info = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer",
+            "cr_manufacturer.id",
+            "cr_retailer_manu_scheme_mapping.manufacturer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_retailer_manu_scheme_mapping.distributor_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_loan_calculation",
+            "cr_retailer.id",
+            "cr_retailer_loan_calculation.retailer_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_vs_sales_agent",
+            "cr_retailer_vs_sales_agent.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_sales_agent",
+            "cr_sales_agent.id",
+            "cr_retailer_vs_sales_agent.sales_agent_id",
+          )
+          .select(
+            "cr_retailer.retailer_name",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer.district",
+            "cr_manufacturer.manufacturer_name",
+            "cr_distributor.distributor_name",
+            "cr_sales_agent.agent_name"
+          )
+          .distinct()
+          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
+          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+          .where(function () {
+            if (manufacturer_id) {
+              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (sales_agent_id) {
+              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+            }
+            if (month) {
+              const monthNum = parseInt(month);
+              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+          });
+        const total_amount_transaction_done = disbursement_amount[0].total_disbursement_amount + repayment_amount[0].total_repayment_amount;
+
+        const retailer_performance_info = {
+          total_disbursement_amount: disbursement_amount[0].total_disbursement_amount,
+          total_repayment_amount: repayment_amount[0].total_repayment_amount,
+          total_outstanding: total_outstanding_amount.total_outstanding,
+          total_amount_transaction_done: total_amount_transaction_done,
+          retailer_name: retailer_info[0].retailer_name,
+          retailer_code: retailer_info[0].retailer_code,
+          district: retailer_info[0].district,
+          manufacturer_name: retailer_info[0].manufacturer_name,
+          distributor_name: retailer_info[0].distributor_name,
+          salesagent: retailer_info[0].agent_name
+        }
+
+        retailer_performance_info_Arr.push(retailer_performance_info);
+      }
+      if (retailer_performance_info_Arr == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendReportApiResult(true, "Retailer Performance filter successfully", retailer_performance_info_Arr));
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 Retailer.downloadEkycReport = function (req) {
   return new Promise(async (resolve, reject) => {
     const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
@@ -5360,13 +6107,13 @@ Retailer.creditMemoList = function (req) {
   return new Promise(async (resolve, reject) => {
     await knex.transaction(async (trx) => {
       const creditMemoList = await knex("APSISIPDC.cr_credit_memo_log")
-      .select("id",
-        "ref_no",
-        "count_sum",
-        "credit_memo_status",
-        "credit_memo_upload_status",
-        knex.raw('TO_CHAR("cr_credit_memo_log"."credit_memo_create_date", \'DD Mon YYYY\') AS "credit_memo_create_date"'),
-      );
+        .select("id",
+          "ref_no",
+          "count_sum",
+          "credit_memo_status",
+          "credit_memo_upload_status",
+          knex.raw('TO_CHAR("cr_credit_memo_log"."credit_memo_create_date", \'DD Mon YYYY\') AS "credit_memo_create_date"'),
+        );
 
       let credit_memo_list = [];
       if (Object.keys(creditMemoList).length != 0) {
@@ -5383,7 +6130,7 @@ Retailer.creditMemoList = function (req) {
       } else {
         resolve(sendApiResult(true, "No Credit Memo Found.", credit_memo_list));
       }
-      
+
     });
   });
 }
