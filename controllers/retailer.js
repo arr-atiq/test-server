@@ -283,6 +283,26 @@ exports.retailersMonthlyPerformanceDistributor = async (req, res) => {
 };
 //Monthly Retailer Performance report for Distributor (Supervisor)
 
+//Monthly Retailer Performance report for Distributor (Admin)
+exports.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
+  try {
+    const result = await model.generateRetailersMonthlyPerformanceDistributorForAdmin(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
+  try {
+    const result = await model.retailersMonthlyPerformanceDistributorForAdmin(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+//Monthly Retailer Performance report for Distributor (Admin)
+
 exports.generateRetailersIndividualReport = async (req, res) => {
   const previousMonthStartDate = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD');
   const previousMonthEndDate = moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD');
@@ -972,6 +992,15 @@ exports.creditMemoList = async (req, res) => {
 exports.updateRetailerDuplicateData = async (req, res) => {
   try {
     const result = await model.updateRetailerDuplicateData(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.activeRetailerDuplicateData = async (req, res) => {
+  try {
+    const result = await model.activeRetailerDuplicateData(req.body);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));

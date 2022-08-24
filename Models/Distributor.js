@@ -1612,7 +1612,6 @@ FileUpload.filterDistributorAnnualView = async (req, res) => {
   const previousYearJuly = moment(select_date).startOf('year').add(6, 'months').subtract(1, 'years').format('YYYY-MM-DD');
   const currentMonth = 1 + moment(selectDate, 'YYYY-MM-DD').month();
   const comparison_financial_year = currentMonth > 6 ? currentYearJuly : previousYearJuly;
-  console.log("financial year", comparison_financial_year);
 
   return new Promise(async (resolve, reject) => {
     try {
