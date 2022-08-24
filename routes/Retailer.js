@@ -60,8 +60,8 @@ router.post("/retailer-list-excel-download", retailer.retailerListExcelDownload)
 router.get("/retailer-ineligible-excel-download", retailer.retailerIneligibleExcelDownload);
 router.post("/download-ekyc-report", retailer.downloadEkycReport);
 router.get("/check-retailer-data-validity-by-id/:retailer_upload_id", retailer.checkRetailerDataValidityById);
-router.get("/get-retailer-invalid-data/", retailer.getRetailerInvalidData);
-router.get("/get-retailer-invalid-data-by-id/:retailer_id", retailer.getRetailerInvalidDataById);
+// router.get("/get-retailer-invalid-data/", retailer.getRetailerInvalidData);
+router.get("/get-retailer-invalid-data-by-id/:temp_upload_id", retailer.getRetailerInvalidDataById);
 router.post("/update-retailer-invalid-data-by-id/", retailer.updateRetailerInvalidDataById);
 // router.get("/get-duplicate-retailer-list-by-id/:retailer_upload_id", retailer.getDuplicateRetailerListById);
 router.get("/get-duplicate-retailer-data-by-id/:id", retailer.getDuplicateRetailerDataById);
@@ -83,6 +83,7 @@ router.post(
 );
 
 router.post("/credit-memo-action", retailer.creditMemoAction);
+router.post("/active-retailer-duplicate-data", retailer.activeRetailerDuplicateData);
 router.get("/credit-memo-list/", retailer.creditMemoList);
 
 module.exports = router;
