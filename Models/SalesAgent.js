@@ -1242,6 +1242,9 @@ FileUpload.getSalesagentDropdownList = function (req) {
         .orderBy("cr_sales_agent.id")
         .distinct();
 
+      if (salesagent == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data feteched successfully", salesagent));
+
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }

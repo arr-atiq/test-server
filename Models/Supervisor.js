@@ -1177,7 +1177,7 @@ FileUpload.getSupervisorDropdownList = function (req) {
         )
         .select(
           "cr_supervisor.id",
-          "cr_supervisor.supervsor_name"
+          "cr_supervisor.supervisor_name"
         )
         .where(function () {
           if (manufacturer_id) {
