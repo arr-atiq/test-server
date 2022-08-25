@@ -141,7 +141,7 @@ exports.editSalesAgent = async (req, res) => {
 
 exports.getSalesagentDropdownList = async (req, res) => {
   try {
-    const result = await model.getSalesagentdropdownList(req);
+    const result = await model.getSalesagentDropdownList(req);
     res.status(200).send(result);
 
   } catch (error) {
