@@ -18,6 +18,7 @@ router.put("/updatesequence", loan.updateSequence);
 router.get("/loanDashboard/:salesAgentID", loan.loanDashboard);
 
 
+
 // router.post("/totalLoan", loan.totalLoan);
 
 
