@@ -4,6 +4,7 @@ const { sendApiResult, getSettingsValue } = require("../controllers/helper");
 const { ValidateNID, ValidatePhoneNumber, ValidateEmail, generateUserIDMidDigitForLogin, randomPasswordGenerator, r } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
+const { resolve } = require("path");
 
 const FileUpload = function () { };
 
@@ -551,7 +552,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}
                     Regards,
                     IPDC Finance`;
-                    
+
                 const { SMS_URL, MASKING, SMS_USERNAME, SMS_PASSWORD, MSGTYPE } = process.env;
                 const response = await axios.get(`${SMS_URL}?masking=${MASKING}&userName=${SMS_USERNAME}&password=${SMS_PASSWORD}&MsgType=${MSGTYPE}&receiver=${temp_user.phone}&message=${sms_body}`);
                 if (response) {
@@ -1161,6 +1162,42 @@ FileUpload.getSupervisorListByManufacturerAndDistributor = function (req) {
       reject(sendApiResult(false, error.message));
     }
   });
+};
+
+FileUpload.getSupervisorDropdownList = function (req) {
+
+  const { manufacturer_id, distributor_id } = req.query;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const supervisor = await knex("APSISIPDC.cr_supervisor")
+        .leftJoin(
+          "APSISIPDC.cr_supervisor_distributor_manufacturer_map",
+          "cr_supervisor_distributor_manufacturer_map.supervisor_id",
+          "cr_supervisor.id"
+        )
+        .select(
+          "cr_supervisor.id",
+          "cr_supervisor.supervsor_name"
+        )
+        .where(function () {
+          if (manufacturer_id) {
+            this.where("cr_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+          }
+          if (distributor_id) {
+            this.where("cr_supervisor_distributor_manufacturer_map.distributor_id", distributor_id)
+          }
+        })
+        .orderBy("cr_supervisor.id")
+        .distinct();
+
+      if (supervisor == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data feteched successfully", supervisor));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+
+  });
+
 };
 
 FileUpload.getSalesAgentListByManufacturerAndSupervisor = function (req) {

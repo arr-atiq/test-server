@@ -543,6 +543,15 @@ exports.GetAdminDisbursement = async (req, res) => {
   }
 };
 
+exports.getSupervisorDropdownList = async (req, res) => {
+  try {
+    const result = await superModel.getSupervisorDropdownList(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.GetAdminAmount = async (req, res) => {
   try {
     const result = await superModel.GetAdminAmount(req);
