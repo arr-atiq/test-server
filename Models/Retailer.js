@@ -5013,11 +5013,11 @@ Retailer.getRetailerInvalidDataById = function (req) {
   return new Promise(async (resolve, reject) => {
     try {
       knex.transaction(async (trx) => {
-        const { temp_upload_id } = req.params;
+        const { mapping_id } = req.params;
         const retailer_info = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
           .select()
           .where("is_valid", 0)
-          .where("temp_upload_id", temp_upload_id);
+          .where("id", mapping_id);
         
         if (Object.keys(retailer_info).length != 0) {
           const fields_array = {};
@@ -5025,7 +5025,7 @@ Retailer.getRetailerInvalidDataById = function (req) {
           for (const [key, value] of Object.entries(retailer_info)) {
             const invalid_fields = await trx("APSISIPDC.cr_retailer_invalid_fields_log")
               .select("field_name")
-              .where("temp_upload_id", temp_upload_id)
+              .where("temp_upload_id", value.temp_upload_id)
               .where("status", 'Active');
 
             if (Object.keys(invalid_fields).length != 0) {
@@ -5075,6 +5075,21 @@ Retailer.updateRetailerInvalidDataById = function (request) {
       knex.transaction(async (trx) => {
         for (const [key, value] of Object.entries(request)) {
           for (const [index, data] of Object.entries(value)) {
+
+            if (['retailer_nid', 'retailer_smart_nid', 'phone'].includes(index)) {
+              const temp_upload_data = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+              .where("id", key)        
+              .select(            
+                'temp_upload_id'
+              )
+              .first();
+
+              await trx("APSISIPDC.cr_retailer").where({ temp_upload_id : temp_upload_data.temp_upload_id })
+              .update({
+                [index]: data                
+              });
+            }
+
             await trx("APSISIPDC.cr_retailer_manu_scheme_mapping").where({ id: key })
               .update({
                 [index]: data,
@@ -5278,7 +5293,7 @@ Retailer.createCreditMemo = function (req) {
           if (createFrontPage && prepareRetailerListPage && memo_log)
             resolve(sendApiResult(true, "Credit Memo Created Successfully", []));
           else
-            reject(sendApiResult(false, 'Credit Memo Generate Failed!'));
+            resolve(sendApiResult(false, 'Credit Memo Generate Failed!'));            
         } else {
           reject(sendApiResult(false, 'No Retailer Found.'));
         }
@@ -5350,6 +5365,8 @@ const addingExtraZeros = async function (str, max) {
 }
 
 const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memoReferenceNumber) {
+  
+  const logoPath = "assets/logo/ipdc_logo.png";
   var fonts = {
     Calibri: {
       normal: 'assets/font/calibri/Calibri-Regular.ttf',
@@ -5385,7 +5402,7 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
           alignment: 'left',
         },
         {
-          image: 'assets/logo/ipdc_logo.png',
+          image: logoPath,
           width: 80,
           margin: [50, 22, 0, 0],
           alignment: 'right',
@@ -5656,6 +5673,8 @@ const preparePdfMemoFrontPage = async function (uniqueMemoId, retailerList, memo
 }
 
 const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list, memoReferenceNumber) {
+
+  const logoPath = "assets/logo/ipdc_logo.png";
   const retailerList = await creditMemoRetailerListPrepare(retailer_list);
   var fonts = {
     Calibri: {
@@ -5681,7 +5700,7 @@ const preparePdfRetailerListPage = async function (uniqueMemoId, retailer_list, 
           alignment: 'left',
         },
         {
-          image: 'public/credit_memo/ipdc_logo.png',
+          image: logoPath,
           width: 80,
           margin: [50, 22, 0, 0],
           alignment: 'right',
@@ -5796,11 +5815,12 @@ const creditMemoRetailerListPrepare = async function (result) {
       temp.push({ text: value.retailer_code, alignment: 'center' });
       temp.push({ text: value.manufacturer_name, alignment: 'center' });
       temp.push({ text: await numberWithCommas(value.processing_fee), alignment: 'center' });
-      temp.push({ text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer), alignment: 'center' });
+      // temp.push({ text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer), alignment: 'center' });
+      temp.push({ text: await numberWithCommas(value.propose_limit), alignment: 'center' });
       temp.push({ text: await numberWithCommas(limit_info_details.pre_assigned_limit_all_manufacturer), alignment: 'center' });
       temp.push({ text: await numberWithCommas(limit_info_details.max_sanction_amount_allowed), alignment: 'center' });
       temp.push({ text: await numberWithCommas(value.crm_approve_limit), alignment: 'center' });
-      temp.push({ text: await numberWithCommas(limit_info_details.pre_assigned_limit_manufacturer - value.crm_approve_limit), alignment: 'center' });
+      temp.push({ text: await numberWithCommas(value.crm_approve_limit - value.propose_limit), alignment: 'center' });
       temp.push({ text: await numberWithCommas(limit_info_details.proposed_sanction_amount_total_lifting_amount), alignment: 'center' });
       temp.push({ text: await dayDifference(value.created_date), alignment: 'center' });
       temp.push({ text: '-', alignment: 'center' });
@@ -5874,6 +5894,8 @@ Retailer.creditMemoDownload = function (req) {
           credit_memo_url: file_path,
           credit_memo_status: 1
         });
+    } else {
+      file_path = result.credit_memo_url;
     }
     await timeout(1500);
     resolve(sendApiResult(true, "Credit Memo Download Successfully", file_path));
@@ -6172,26 +6194,30 @@ Retailer.creditMemoAction = function (req) {
     await knex.transaction(async (trx) => {
       const memo_id = req.memo_id;
       const action_type = req.action_type;
+      let credit_memo_action = '';
       switch (action_type) {
         case 'Approve':
-          const credit_memo_approve = await creditMemoApprove(memo_id, action_type);
+          credit_memo_action = await creditMemoApprove(memo_id, action_type);
           break;
         case 'Reject':
-          const credit_memo_reject = await creditMemoReject(memo_id, action_type);
+          credit_memo_action = await creditMemoReject(memo_id, action_type);
           break;
         case 'Release':
-          const credit_memo_release = await creditMemoRelease(memo_id, action_type);
+          credit_memo_action = await creditMemoRelease(memo_id, action_type);
           break;
         default:
       }
-      resolve(sendApiResult(true, "Credit Memo " + action_type + " Successfully.", action_type));
+      if(credit_memo_action)
+        resolve(sendApiResult(true, "Credit Memo " + action_type + " Successfully."));
+      else
+        resolve(sendApiResult(true, "Credit Memo " + action_type + " Failed!"));
     })
-      .then((result) => {
-        //
-      })
-      .catch((error) => {
-        reject(sendApiResult(false, error.message));
-      });
+    .then((result) => {
+      //
+    })
+    .catch((error) => {
+      reject(sendApiResult(false, error.message));
+    });
   }).catch((error) => {
     console.log(error, 'Promise error');
   });
@@ -6229,6 +6255,7 @@ const creditMemoApprove = async function (memo_id, action_type) {
         loan_id = '1001DN' + await addLeadingZeros(value.manufacturer_id, 2) + await addLeadingZeros(value.distributor_id, 3) + await addLeadingZeros(1, 5);
       else
         loan_id = '1001DN' + await addLeadingZeros(value.manufacturer_id, 2) + await addLeadingZeros(value.distributor_id, 3) + await addLeadingZeros(++(Object.keys(loan_id_counter).length), 5);
+      
       await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
         .where({id : value.id})
         .update({
@@ -6285,11 +6312,66 @@ const creditMemoApprove = async function (memo_id, action_type) {
 }
 
 const creditMemoReject = async function (memo_id, action_type) {
+  await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")            
+    .where({credit_memo_id : memo_id})
+    .update({
+      credit_memo_status : 0,
+      status : 'Inactive'
+    });
 
+  await knex("APSISIPDC.cr_credit_memo_log")
+    .where({id : memo_id})
+    .update({
+      credit_memo_action : action_type,
+      credit_memo_action_date : new Date(),
+    });
+  return true;  
 }
 
 const creditMemoRelease = async function (memo_id, action_type) {
+  const bulkRetailerList = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
+    .select(
+      "cr_retailer_manu_scheme_mapping.id"
+    )
+    .where("credit_memo_id", memo_id)
+    .where("cib_status", 1)    
+    .whereRaw(`"loan_id" IS NULL`)
+    .where("limit_status", 'Upload')
+    .where("status", 'Inactive');
 
+    let retailer_release_list = [];
+    let id_list = [];
+    if (Object.keys(bulkRetailerList).length != 0) {
+      for (const [key, value] of Object.entries(bulkRetailerList)) {
+        let temp = {};
+        temp['memo_id'] = memo_id;
+        temp['manu_scheme_mapping_id'] = value.id;
+        temp['action'] = action_type;
+        temp['status'] = 'Active';
+        retailer_release_list.push(temp);
+        id_list.push(value.id);
+      }
+      if (Object.keys(retailer_release_list).length != 0) {
+        await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")          
+          .whereIn("id", id_list)
+          .update({
+            limit_status : 'Initiated',
+            crm_approve_date : null,
+            credit_memo_id : null,
+            credit_memo_status : null
+          });
+        await knex("APSISIPDC.cr_credit_memo_action_log").insert(retailer_release_list);
+      }
+      await knex("APSISIPDC.cr_credit_memo_log")
+        .where({id : memo_id})
+        .update({
+          credit_memo_action : action_type,
+          credit_memo_action_date : new Date(),
+        });
+      return true;
+    } else {
+      return false;
+    }
 }
 
 Retailer.updateRetailerDuplicateData = function (req) {
@@ -6395,7 +6477,8 @@ Retailer.creditMemoList = function (req) {
           "credit_memo_upload_status",
           "credit_memo_action",
           knex.raw('TO_CHAR("cr_credit_memo_log"."credit_memo_create_date", \'DD Mon YYYY\') AS "credit_memo_create_date"'),
-        );
+        )
+        .orderBy("id", "desc");
 
       let credit_memo_list = [];
       if (Object.keys(creditMemoList).length != 0) {
