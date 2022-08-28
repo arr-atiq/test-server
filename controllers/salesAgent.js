@@ -139,6 +139,17 @@ exports.editSalesAgent = async (req, res) => {
   }
 };
 
+exports.getSalesagentDropdownList = async (req, res) => {
+  try {
+    const result = await model.getSalesagentDropdownList(req);
+    res.status(200).send(result);
+
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+
+};
+
 exports.generateSalesagentUnuploadedReport = async (req, res) => {
   try {
     const limit_data = await knex("APSISIPDC.cr_salesagent_unuploaded_data")
