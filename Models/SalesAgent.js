@@ -5,6 +5,7 @@ const { ValidateNID, ValidatePhoneNumber, ValidateEmail, generateUserIDMidDigitF
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 const { check } = require("prettier");
+const { resolve } = require("path");
 
 const FileUpload = function () { };
 
@@ -1213,4 +1214,41 @@ FileUpload.retailersBySalesAgentAndManufacturer = function (req) {
   });
 };
 
+FileUpload.getSalesagentDropdownList = function (req) {
+  const { manufacturer_id, distributor_id, supervisor_id } = req.query;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const salesagent = await knex("APSISIPDC.cr_sales_agent")
+        .leftJoin(
+          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+          "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+          "cr_sales_agent.id"
+        )
+        .select(
+          "cr_sales_agent.id",
+          "cr_sales_agent.agent_name"
+        )
+        .where(function () {
+          if (manufacturer_id) {
+            this.where("cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id", manufacturer_id)
+          }
+          if (distributor_id) {
+            this.where("cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id", distributor_id)
+          }
+          if (supervisor_id) {
+            this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
+          }
+        })
+        .orderBy("cr_sales_agent.id")
+        .distinct();
+
+      if (salesagent == 0) reject(sendApiResult(false, "Not found."));
+      resolve(sendApiResult(true, "Data feteched successfully", salesagent));
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+
+  });
+};
 module.exports = FileUpload;

@@ -278,7 +278,7 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
         "distributor_id",
         "remarks_duplications"
       );
-    console.log(limit_data);
+
     const headers = [
       "Sr.",
       "Supervisor_Name",
@@ -538,6 +538,15 @@ exports.GetAdminDisbursement = async (req, res) => {
   try {
     const result = await superModel.GetAdminDisbursement(req);
     res.status(200).send(result)
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getSupervisorDropdownList = async (req, res) => {
+  try {
+    const result = await superModel.getSupervisorDropdownList(req);
+    res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
