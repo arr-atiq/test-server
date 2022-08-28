@@ -278,7 +278,7 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
         "distributor_id",
         "remarks_duplications"
       );
-    console.log(limit_data);
+
     const headers = [
       "Sr.",
       "Supervisor_Name",
