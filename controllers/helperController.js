@@ -973,6 +973,6 @@ var getTotalOverdueAmount =async (onermn_acc) =>{
   .from("APSISIPDC.cr_disbursement")
   .select(knex.raw('SUM("cr_disbursement"."overdue_amount") AS total_amount') , )
   .where("dis_status", 0)
-  .where("onermn_acc", oneRmn).first();
+  .where("onermn_acc", onermn_acc).first();
 }
 // @Ashik RETAILER AVERAGE END
