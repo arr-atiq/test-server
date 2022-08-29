@@ -754,7 +754,9 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
     const allRepData = await getAllRepData (retailerData.ac_number_1rmn)
     const total_outstanding_value = await getTotalOutstanding(retailerData?.ac_number_1rmn) 
     const overdue_amount_total  = await getTotalOverdueAmount (retailerData?.ac_number_1rmn)
-    
+    const number_of_time_revolved  = await numberOfTimeRevolved (retailerData?.ac_number_1rmn)
+
+
     let sales_array = retailerData.sales_array
     let totalSales = getTotal(JSON.parse(sales_array));
     let totalRepDays = 0
@@ -813,7 +815,6 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
        avg_payment_period : (parseInt(totalRepDays) / parseInt(values[0].length)) ?? 0,
        lowest_ticket_size :  (Math.min(...values[1])) ?? 0,
        relationship_tenor : days ?? 0,
-       no_revolving_time : totalClosedLoan?.count ?? 0,
        current_overdue_amount : currOverDueAmount?.overdue_amount ?? 0,
        historical_maximum_overdue : currMaxHisOverdue?.MAXAMOUNT ?? 0,
        current_maximum_overdue : currMaxOverdue?.MAXAMOUNT ?? 0,
@@ -822,7 +823,10 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
        total_outstanding : total_outstanding_value.total_outstanding ?? 0,
        avg_monthly_sales: avgSalarySales,
        overdue_amount : overdue_amount_total?.TOTAL_AMOUNT ?? 0 ,
-       proposed_sanction_limit_by_system:retailerData.propose_limit ?? 0
+       proposed_sanction_limit_by_system:retailerData.propose_limit ?? 0,
+       proposed_sanction_with_avg_sales_value : (retailerData.propose_limit / avgSalarySales ) * 100,
+       proposed_sanction_by_crm_with_average_sales_value : 0.0,
+       no_revolving_time : totalClosedLoan?.count ?? 0,
      }
      // resolve(responseValue) ;
    })
@@ -839,7 +843,6 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
     avg_payment_period :  0,
     lowest_ticket_size :  0,
     relationship_tenor :  0,
-    no_revolving_time :  0,
     current_overdue_amount : 0,
     historical_maximum_overdue :  0,
     current_maximum_overdue :  0,
@@ -848,7 +851,10 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
     total_outstanding : 0,
     avg_monthly_sales: 0,
     overdue_amount : 0 ,
-    proposed_sanction_limit_by_system:0
+    proposed_sanction_limit_by_system:0,
+    proposed_sanction_with_avg_sales_value : 0,
+    proposed_sanction_by_crm_with_average_sales_value : 0.0,
+    no_revolving_time : 0,
     }
 
    return data ?? responseValue
@@ -864,7 +870,6 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
       avg_payment_period :  0,
       lowest_ticket_size :  0,
       relationship_tenor :  0,
-      no_revolving_time :  0,
       current_overdue_amount : 0,
       historical_maximum_overdue :  0,
       current_maximum_overdue :  0,
@@ -873,7 +878,10 @@ exports.retailerAvgByManufacturer = async (nid , manuId)=> {
       total_outstanding : 0,
       avg_monthly_sales: 0,
       overdue_amount : 0 ,
-      proposed_sanction_limit_by_system:0
+      proposed_sanction_limit_by_system:0,
+      proposed_sanction_with_avg_sales_value : 0,
+      proposed_sanction_by_crm_with_average_sales_value : 0.0,
+      no_revolving_time : 0
     }
    }
    return responseValue
@@ -975,4 +983,3 @@ var getTotalOverdueAmount =async (onermn_acc) =>{
   .where("dis_status", 0)
   .where("onermn_acc", onermn_acc).first();
 }
-// @Ashik RETAILER AVERAGE END
