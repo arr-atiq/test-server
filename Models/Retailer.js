@@ -4043,7 +4043,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           )
           .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -4104,7 +4103,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           )
           .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -4165,7 +4163,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           )
           .select("cr_retailer_loan_calculation.total_outstanding")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .orderBy("cr_retailer_loan_calculation.id", "desc")
           .first()
           .where(function () {
@@ -4247,7 +4244,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           )
           .distinct()
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -4384,13 +4380,12 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
 
     try {
 
-      const distributor = await knex("APSISIPDC.cr_supervisor")
-        .select("distributor_id")
-        .where("cr_supervisor.id", supervisor_id);
-
-      const distributor_id = distributor[0]?.distributor_id ?? 0;
-
       const filter_report_data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_details_info",
+          "cr_retailer_details_info.retailer_id",
+          "cr_retailer.id"
+        )
         .leftJoin(
           "APSISIPDC.cr_retailer_manu_scheme_mapping",
           "cr_retailer_manu_scheme_mapping.retailer_id",
@@ -4416,11 +4411,18 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
           "cr_retailer_vs_sales_agent.retailer_id",
           "cr_retailer.id"
         )
-        .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+        .leftJoin(
+          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+          "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+          "cr_retailer_vs_sales_agent.sales_agent_id"
+        )
         .where(function () {
 
           if (manufacturer_id) {
             this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+          }
+          if (supervisor_id) {
+            this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
           }
           if (sales_agent_id) {
             this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
@@ -4432,6 +4434,9 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
             this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
             this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
           }
+          if (district) {
+            this.where("cr_retailer_details_info.district", district)
+          }
         })
         .select(
           "cr_retailer_loan_calculation.onermn_acc"
@@ -4442,6 +4447,11 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
       for (let i = 0; i < filter_report_data.length; i++) {
         const disbursement_amount = await knex("APSISIPDC.cr_retailer")
           .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
             "APSISIPDC.cr_retailer_manu_scheme_mapping",
             "cr_retailer_manu_scheme_mapping.retailer_id",
             "cr_retailer.id"
@@ -4466,15 +4476,22 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
             "cr_retailer_vs_sales_agent.retailer_id",
             "cr_retailer.id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_retailer_vs_sales_agent.sales_agent_id"
+          )
           .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
             }
+            if (supervisor_id) {
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
+            }
             if (sales_agent_id) {
-              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
             }
             if (month) {
               const monthNum = parseInt(month);
@@ -4482,11 +4499,19 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
               const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+            if (district) {
+              this.where("cr_retailer_details_info.district", district)
             }
           });
 
         const repayment_amount = await knex("APSISIPDC.cr_retailer")
           .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
             "APSISIPDC.cr_retailer_manu_scheme_mapping",
             "cr_retailer_manu_scheme_mapping.retailer_id",
             "cr_retailer.id"
@@ -4510,14 +4535,20 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
             "APSISIPDC.cr_retailer_vs_sales_agent",
             "cr_retailer_vs_sales_agent.retailer_id",
             "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_retailer_vs_sales_agent.sales_agent_id"
           )
           .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
-
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (supervisor_id) {
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
             }
             if (sales_agent_id) {
               this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
@@ -4529,55 +4560,18 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
             }
-          });
-
-        const transaction_cost = await knex("APSISIPDC.cr_retailer")
-          .leftJoin(
-            "APSISIPDC.cr_retailer_manu_scheme_mapping",
-            "cr_retailer_manu_scheme_mapping.retailer_id",
-            "cr_retailer.id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_manufacturer",
-            "cr_manufacturer.id",
-            "cr_retailer_manu_scheme_mapping.manufacturer_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_distributor",
-            "cr_distributor.id",
-            "cr_retailer_manu_scheme_mapping.distributor_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_retailer_loan_calculation",
-            "cr_retailer_loan_calculation.retailer_id",
-            "cr_retailer.id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_retailer_vs_sales_agent",
-            "cr_retailer_vs_sales_agent.retailer_id",
-            "cr_retailer.id"
-          )
-          .sum("cr_retailer_loan_calculation.transaction_cost as total_transaction_cost")
-          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
-          .where(function () {
-            if (manufacturer_id) {
-              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
-            }
-            if (sales_agent_id) {
-              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
-            }
-            if (month) {
-              const monthNum = parseInt(month);
-              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            if (district) {
+              this.where("cr_retailer_details_info.district", district)
             }
           });
 
         const total_outstanding_amount = await knex("APSISIPDC.cr_retailer")
           .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
             "APSISIPDC.cr_retailer_manu_scheme_mapping",
             "cr_retailer_manu_scheme_mapping.retailer_id",
             "cr_retailer.id"
@@ -4602,15 +4596,22 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
             "cr_retailer_vs_sales_agent.retailer_id",
             "cr_retailer.id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_retailer_vs_sales_agent.sales_agent_id"
+          )
           .select("cr_retailer_loan_calculation.total_outstanding")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .orderBy("cr_retailer_loan_calculation.id", "desc")
           .first()
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
             }
+            if (supervisor_id) {
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
+            }
             if (sales_agent_id) {
               this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
             }
@@ -4619,7 +4620,10 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
               const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
               const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+            if (district) {
+              this.where("cr_retailer_details_info.district", district)
             }
           });
 
@@ -4654,20 +4658,38 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
             "cr_sales_agent.id",
             "cr_retailer_vs_sales_agent.sales_agent_id",
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_retailer_vs_sales_agent.sales_agent_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_supervisor",
+            "cr_supervisor.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id"
+          )
           .select(
             "cr_retailer.retailer_name",
             "cr_retailer_manu_scheme_mapping.retailer_code",
-            "cr_retailer.district",
+            "cr_retailer_details_info.district",
             "cr_manufacturer.manufacturer_name",
             "cr_distributor.distributor_name",
-            "cr_sales_agent.agent_name"
+            "cr_sales_agent.agent_name",
+            "cr_supervisor.supervisor_name"
           )
           .distinct()
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (supervisor_id) {
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
             }
             if (sales_agent_id) {
               this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
@@ -4678,6 +4700,9 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
               const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+            if (district) {
+              this.where("cr_retailer_details_info.district", district)
             }
           });
         const total_amount_transaction_done = disbursement_amount[0].total_disbursement_amount + repayment_amount[0].total_repayment_amount;
@@ -4692,7 +4717,8 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
           district: retailer_info[0].district,
           manufacturer_name: retailer_info[0].manufacturer_name,
           distributor_name: retailer_info[0].distributor_name,
-          salesagent: retailer_info[0].agent_name
+          salesagent: retailer_info[0].agent_name,
+          supervisor: retailer_info[0].supervisor_name
         }
 
         retailer_performance_info_Arr.push(retailer_performance_info);
