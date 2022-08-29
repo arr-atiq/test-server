@@ -27,7 +27,7 @@ Kindly connect with Team Lead.
 3. See Logs = `docker-compose logs -f`
 
 ## Run project on Ngnix
-localhost:80
+localhost:8080
 
 ## Deploy Backend without Docker and Nginx
 `pm2 start npm --name "IPDC-DANA-BACKEND" -- start`
