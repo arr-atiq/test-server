@@ -25,6 +25,7 @@ router.get("/retailer-district", retailer.getRetailerDistrict);
 
 //retailer-report-2-comprehensive
 router.get("/retailer-individual-report-monthly", retailer.generateRetailersMonthlyIndividualReport);
+router.get("/retailer-individual-view-monthly", retailer.retailersMonthlyIndividualView);
 router.get("/retailer-individual-report-total", retailer.generateRetailersIndividualTotalReport);
 router.get("/retailer-outstanding-report", retailer.generateRetailerOutstandingReport)
 //retailer-report-2-comprehensive
@@ -91,5 +92,15 @@ router.post(
 router.post("/credit-memo-action", retailer.creditMemoAction);
 router.post("/active-retailer-duplicate-data", retailer.activeRetailerDuplicateData);
 router.get("/credit-memo-list/", retailer.creditMemoList);
+
+router.post("/download-eligible-retailer-list", retailer.downloadEligibleRetailerList);
+router.post("/download-ekyc-eligible-retailer-list", retailer.downloadeKycEligibleRetailerList);
+router.post("/download-retailer-crm-limit-excel", retailer.downloadRetailerCrmLimitExcel);
+
+router.get("/count-pending-eligibility/", retailer.countPendingEligibility);
+router.get("/count-pending-ekyc/", retailer.countPendingEkyc);
+router.get("/count-pending-cib/", retailer.countPendingCib);
+router.get("/count-pending-limit-upload/", retailer.countPendingLimitUpload);
+// router.get("/count-pending-cib/", retailer.countPendingCib);
 
 module.exports = router;

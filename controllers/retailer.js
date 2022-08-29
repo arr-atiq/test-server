@@ -304,13 +304,21 @@ exports.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
 
 exports.generateRetailersMonthlyIndividualReport = async (req, res) => {
   try {
-    const result = await model.generateRetailersMonthlyIndividualReport(req);
+    const result = await model.generateRetailersMonthlyIndividualReport(req, res);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
 };
 
+exports.retailersMonthlyIndividualView = async (req, res) => {
+  try {
+    const result = await model.retailersMonthlyIndividualView(req, res);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
 exports.retailerUploadList = async (req, res) => {
   try {
     const result = await model.retailerUploadList(req);
@@ -495,6 +503,69 @@ exports.updateRetailerDuplicateData = async (req, res) => {
 exports.activeRetailerDuplicateData = async (req, res) => {
   try {
     const result = await model.activeRetailerDuplicateData(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.downloadEligibleRetailerList = async (req, res) => {
+  try {
+    const result = await model.downloadEligibleRetailerList(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.downloadRetailerCrmLimitExcel = async (req, res) => {
+  try {
+    const result = await model.downloadRetailerCrmLimitExcel(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.downloadeKycEligibleRetailerList = async (req, res) => {
+  try {
+    const result = await model.downloadeKycEligibleRetailerList(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.countPendingEligibility = async (req, res) => {
+  try {
+    const result = await model.countPendingEligibility(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.countPendingEkyc = async (req, res) => {
+  try {
+    const result = await model.countPendingEkyc(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.countPendingCib = async (req, res) => {
+  try {
+    const result = await model.countPendingCib(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.countPendingLimitUpload = async (req, res) => {
+  try {
+    const result = await model.countPendingLimitUpload(req);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
