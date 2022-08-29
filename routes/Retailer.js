@@ -25,6 +25,7 @@ router.get("/retailer-district", retailer.getRetailerDistrict);
 
 //retailer-report-2-comprehensive
 router.get("/retailer-individual-report-monthly", retailer.generateRetailersMonthlyIndividualReport);
+router.get("/retailer-individual-view-monthly", retailer.retailersMonthlyIndividualView);
 router.get("/retailer-individual-report-total", retailer.generateRetailersIndividualTotalReport);
 router.get("/retailer-outstanding-report", retailer.generateRetailerOutstandingReport)
 //retailer-report-2-comprehensive
