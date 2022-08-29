@@ -3928,18 +3928,14 @@ Retailer.retailersMonthlyPerformanceDistributor = async (req, res) => {
 
 Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
   const { month, supervisor_id, manufacturer_id, sales_agent_id, district, page, per_page } = req.query;
+  const monthNum = parseInt(month);
+  const previousYearLastDate = moment().subtract(1, 'years').endOf('year').format('YYYY-MM-DD');
+  const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+  const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
 
   return new Promise(async (resolve, reject) => {
-    const previousYearLastDate = moment().subtract(1, 'years').endOf('year').format('YYYY-MM-DD');
 
     try {
-
-      // const distributor = await knex("APSISIPDC.cr_supervisor")
-      //   .select("distributor_id")
-      //   .where("cr_supervisor.id", supervisor_id);
-
-      // const distributor_id = distributor[0]?.distributor_id ?? 0;
-
       const filter_report_data = await knex("APSISIPDC.cr_retailer")
         .leftJoin(
           "APSISIPDC.cr_retailer_details_info",
@@ -3976,6 +3972,8 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
           "cr_retailer_vs_sales_agent.sales_agent_id"
         )
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
         .where(function () {
 
           if (manufacturer_id) {
@@ -3986,13 +3984,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           }
           if (sales_agent_id) {
             this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
-          }
-          if (month) {
-            const monthNum = parseInt(month);
-            const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-            const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
           }
           if (district) {
             this.where("cr_retailer_details_info.district", district)
@@ -4377,6 +4368,9 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
 
     const { month, supervisor_id, manufacturer_id, district, sales_agent_id, page, per_page } = req.query;
     const previousYearLastDate = moment().subtract(1, 'years').endOf('year').format('YYYY-MM-DD');
+    const monthNum = parseInt(month);
+    const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+    const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
 
     try {
 
@@ -4416,6 +4410,8 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
           "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
           "cr_retailer_vs_sales_agent.sales_agent_id"
         )
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
         .where(function () {
 
           if (manufacturer_id) {
@@ -4426,13 +4422,6 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
           }
           if (sales_agent_id) {
             this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
-          }
-          if (month) {
-            const monthNum = parseInt(month);
-            const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-            const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
           }
           if (district) {
             this.where("cr_retailer_details_info.district", district)
@@ -5956,9 +5945,9 @@ Retailer.downloadLimitUploadFile = function (req) {
         knex.raw(`TO_CHAR("cr_retailer_kyc_information"."date_of_birth", 'YYYY-MM-DD') AS "date_of_birth"`),
         "cr_retailer_manu_scheme_mapping.retailer_code",
         knex.raw(`CASE "cr_retailer_manu_scheme_mapping"."cib_status" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "cib_status"`),
-        knex.raw(`CASE "cr_retailer"."kyc_status" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "kyc_status"`),        
+        knex.raw(`CASE "cr_retailer"."kyc_status" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "kyc_status"`),
         "cr_retailer_manu_scheme_mapping.system_limit as proposed_sanction_limit_by_system",
-        "cr_retailer_manu_scheme_mapping.loan_id as proposed_sanction_with_avg_sales_value",        
+        "cr_retailer_manu_scheme_mapping.loan_id as proposed_sanction_with_avg_sales_value",
         "cr_retailer_manu_scheme_mapping.loan_id as proposed_sanction_by_crm_with_average_sales_value",
         "cr_manufacturer.manufacturer_name",
         "cr_schema.scheme_name",
@@ -6532,7 +6521,7 @@ Retailer.downloadEligibleRetailerList = function (req) {
     const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
       .select(
         "cr_retailer_temp.sales_agent_id",
-        "cr_retailer_details_info.retailer_name",      
+        "cr_retailer_details_info.retailer_name",
         "cr_retailer_manu_scheme_mapping.retailer_nid",
         "cr_retailer_manu_scheme_mapping.retailer_smart_nid",
         "cr_retailer_manu_scheme_mapping.phone",
@@ -6541,7 +6530,7 @@ Retailer.downloadEligibleRetailerList = function (req) {
         "cr_retailer_manu_scheme_mapping.manufacturer_id",
         "cr_retailer_manu_scheme_mapping.distributor_id",
         "cr_retailer_details_info.retailer_type",
-        "cr_retailer_details_info.type_of_entity",      
+        "cr_retailer_details_info.type_of_entity",
         "cr_retailer_details_info.onboarding",
         "cr_retailer_details_info.order_placement",
         "cr_retailer_details_info.repayment",
@@ -6681,8 +6670,8 @@ Retailer.downloadEligibleRetailerList = function (req) {
       });
 
       const retailerTypeSql = await knex("APSISIPDC.cr_retailer_type")
-            .select("id", "name")
-            .where("status", "Active");
+        .select("id", "name")
+        .where("status", "Active");
 
       const retailerType = {};
       for (const [key, value] of Object.entries(retailerTypeSql)) {
@@ -6699,18 +6688,18 @@ Retailer.downloadEligibleRetailerList = function (req) {
       }
 
       const distributorCodeInfo = await knex("APSISIPDC.cr_manufacturer_vs_distributor")
-          .select("manufacturer_id", "distributor_id", "distributor_code")
-          .where("status", 'Active')
-          .groupBy("manufacturer_id", "distributor_id", "distributor_code");
+        .select("manufacturer_id", "distributor_id", "distributor_code")
+        .where("status", 'Active')
+        .groupBy("manufacturer_id", "distributor_id", "distributor_code");
 
       const distributorCodeObject = {};
-      for (const [key, value] of Object.entries(distributorCodeInfo)) {        
+      for (const [key, value] of Object.entries(distributorCodeInfo)) {
         let temp = {};
-        distributorCodeObject[value.manufacturer_id +'-'+value.distributor_id] = value.distributor_code;
+        distributorCodeObject[value.manufacturer_id + '-' + value.distributor_id] = value.distributor_code;
       }
 
       row = 2;
-      for (let i = 0; i < result.length; i++) {       
+      for (let i = 0; i < result.length; i++) {
         var col_add = 0;
         let e = result[i];
         worksheet.cell(row, col + col_add).number((i + 1));
@@ -6731,7 +6720,7 @@ Retailer.downloadEligibleRetailerList = function (req) {
         col_add++;
         worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : 0);
         col_add++;
-        worksheet.cell(row, col + col_add).string(distributorCodeObject[e.manufacturer_id +'-'+e.distributor_id] ? distributorCodeObject[e.manufacturer_id +'-'+e.distributor_id] : "-");
+        worksheet.cell(row, col + col_add).string(distributorCodeObject[e.manufacturer_id + '-' + e.distributor_id] ? distributorCodeObject[e.manufacturer_id + '-' + e.distributor_id] : "-");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.retailer_type ? retailerType[e.retailer_type] : "-");
         col_add++;
@@ -6826,7 +6815,7 @@ Retailer.downloadEligibleRetailerList = function (req) {
 Retailer.downloadRetailerCrmLimitExcel = function (req) {
   return new Promise(async (resolve, reject) => {
     const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-      .where("cr_retailer_manu_scheme_mapping.limit_status", 'Upload')      
+      .where("cr_retailer_manu_scheme_mapping.limit_status", 'Upload')
       .where("cr_retailer.kyc_status", 1)
       .where("cr_retailer_manu_scheme_mapping.cib_status", 1)
       .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
@@ -7022,20 +7011,20 @@ Retailer.countPendingEligibility = function (req) {
     try {
       knex.transaction(async (trx) => {
         const result = await knex("APSISIPDC.cr_retailer")
-        .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NULL`)
-        .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_status" IS NULL`)
-        .where("cr_retailer_manu_scheme_mapping.is_eligible", 0)
-        .where("cr_retailer.activation_status", 'Inactive')
-        .where("cr_retailer.status", 'Active')
-        .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')        
-        .select(
-          knex.raw(`COUNT("cr_retailer"."id") AS "check_pending_eligibility"`)
-        )
-        .innerJoin(
-          "APSISIPDC.cr_retailer_manu_scheme_mapping",
-          "cr_retailer.id",
-          "cr_retailer_manu_scheme_mapping.retailer_id"
-        );
+          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NULL`)
+          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_status" IS NULL`)
+          .where("cr_retailer_manu_scheme_mapping.is_eligible", 0)
+          .where("cr_retailer.activation_status", 'Inactive')
+          .where("cr_retailer.status", 'Active')
+          .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
+          .select(
+            knex.raw(`COUNT("cr_retailer"."id") AS "check_pending_eligibility"`)
+          )
+          .innerJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer.id",
+            "cr_retailer_manu_scheme_mapping.retailer_id"
+          );
         resolve(sendApiResult(true, "Count Pending Eligibility Found Successfully.", result));
       });
     } catch (error) {
@@ -7290,22 +7279,22 @@ Retailer.countPendingCib = function (req) {
     try {
       knex.transaction(async (trx) => {
         const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-        .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NULL`)
-        .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_status" IS NULL`)
-        .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
-        .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
-        .where("cr_retailer_manu_scheme_mapping.is_eligible", 1)
-        .where("cr_retailer.activation_status", 'Inactive')
-        .where("cr_retailer.status", 'Active')
-        .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
-        .select(
-          knex.raw(`COUNT("cr_retailer"."id") AS "check_pending_cib"`)
-        )
-        .innerJoin(
-          "APSISIPDC.cr_retailer",
-          "cr_retailer.id",
-          "cr_retailer_manu_scheme_mapping.retailer_id"
-        );
+          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NULL`)
+          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_status" IS NULL`)
+          .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
+          .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
+          .where("cr_retailer_manu_scheme_mapping.is_eligible", 1)
+          .where("cr_retailer.activation_status", 'Inactive')
+          .where("cr_retailer.status", 'Active')
+          .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
+          .select(
+            knex.raw(`COUNT("cr_retailer"."id") AS "check_pending_cib"`)
+          )
+          .innerJoin(
+            "APSISIPDC.cr_retailer",
+            "cr_retailer.id",
+            "cr_retailer_manu_scheme_mapping.retailer_id"
+          );
         resolve(sendApiResult(true, "Count Pending CIB Found Successfully.", result));
       });
     } catch (error) {
@@ -7320,7 +7309,7 @@ Retailer.countPendingLimitUpload = function (req) {
       knex.transaction(async (trx) => {
         const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
           .where("cr_retailer_manu_scheme_mapping.cib_status", 1)
-          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NOT NULL`)  
+          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NOT NULL`)
           .where("cr_retailer_manu_scheme_mapping.crm_approve_limit", 0)
           .whereRaw(`"cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NULL`)
           .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
