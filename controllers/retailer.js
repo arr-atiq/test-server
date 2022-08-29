@@ -349,14 +349,25 @@ exports.retailerIneligibleExcelDownload = async (req, res) => {
 };
 
 //reporting 
-exports.generateRetailersIndividualTotalReport = async (req, res) => {
+exports.generateRetailersTotalIndividualReport = async (req, res) => {
   try {
-    const result = await model.generateRetailersIndividualTotalReport(req);
+    const result = await model.generateRetailersTotalIndividualReport(req);
     res.status(200).send(result);
 
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
+};
+
+exports.retailersTotalIndividualView = async (req, res) => {
+  try {
+    const result = await model.retailersTotalIndividualView(req);
+    res.status(200).send(result);
+
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+
 };
 
 exports.downloadEkycReport = async (req, res) => {

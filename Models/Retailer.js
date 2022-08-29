@@ -7666,11 +7666,11 @@ Retailer.retailersMonthlyIndividualView = async (req, res) => {
   });
 };
 
-Retailer.generateRetailersIndividualTotalReport = async (req, res) => {
+Retailer.generateRetailersTotalIndividualReport = async (req, res) => {
 
   const { startDate, endDate } = req.query;
-  const previousMonthStartDate = moment(startDate).format('YYYY-MM-DD');
-  const previousMonthEndDate = moment(endDate).format('YYYY-MM-DD');
+  const start_date = moment(startDate).format('YYYY-MM-DD');
+  const end_date = moment(endDate).format('YYYY-MM-DD');
 
   return new Promise(async (resolve, reject) => {
     try {
@@ -7690,8 +7690,8 @@ Retailer.generateRetailersIndividualTotalReport = async (req, res) => {
           "cr_distributor.id",
           "cr_retailer_manu_scheme_mapping.distributor_id"
         )
-        .whereRaw(`"cr_retailer"."master_loan_acc_active_date" >= TO_DATE('${previousMonthStartDate}', 'YYYY-MM-DD')`)
-        .whereRaw(`"cr_retailer"."master_loan_acc_active_date" <= TO_DATE('${previousMonthEndDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer"."master_loan_acc_active_date" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer"."master_loan_acc_active_date" <= TO_DATE('${end_date}', 'YYYY-MM-DD')`)
         .select(
           "cr_retailer_manu_scheme_mapping.retailer_code",
           "cr_retailer.ac_number_1rn",
@@ -7721,8 +7721,8 @@ Retailer.generateRetailersIndividualTotalReport = async (req, res) => {
           "cr_retailer.phone",
           "cr_retailer_kyc_information.sector_code",
           "cr_distributor.distributor_name"
-
-        );
+        )
+        .distinct();
       const headers = [
         "Sr.",
         "Retailer_Code",
@@ -7930,6 +7930,73 @@ Retailer.generateRetailersIndividualTotalReport = async (req, res) => {
       reject(sendApiResult(false, error.message));
     }
 
+  });
+};
+
+Retailer.retailersTotalIndividualView = async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const start_date = moment(startDate).format('YYYY-MM-DD');
+  const end_date = moment(endDate).format('YYYY-MM-DD');
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const retailer_data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_kyc_information",
+          "cr_retailer_kyc_information.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_retailer_manu_scheme_mapping.distributor_id"
+        )
+        .whereRaw(`"cr_retailer"."master_loan_acc_active_date" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer"."master_loan_acc_active_date" <= TO_DATE('${end_date}', 'YYYY-MM-DD')`)
+        .select(
+          "cr_retailer_manu_scheme_mapping.retailer_code",
+          "cr_retailer.ac_number_1rn",
+          "cr_retailer.created_at",
+          "cr_retailer_kyc_information.title",
+          "cr_retailer_kyc_information.name",
+          "cr_retailer_kyc_information.father_title",
+          "cr_retailer_kyc_information.father_name",
+          "cr_retailer_kyc_information.mother_title",
+          "cr_retailer_kyc_information.mother_name",
+          "cr_retailer_kyc_information.spouse_title",
+          "cr_retailer_kyc_information.spouse_name",
+          "cr_retailer_kyc_information.gender",
+          "cr_retailer_kyc_information.date_of_birth",
+          "cr_retailer_kyc_information.district_of_birth",
+          "cr_retailer_kyc_information.country_of_birth",
+          "cr_retailer_kyc_information.nid",
+          "cr_retailer_kyc_information.tin",
+          "cr_retailer_kyc_information.permanent_street_name_and_number",
+          "cr_retailer_kyc_information.permanent_postal_code",
+          "cr_retailer_kyc_information.permanent_district",
+          "cr_retailer_kyc_information.permanent_country",
+          "cr_retailer_kyc_information.present_street_name_and_number",
+          "cr_retailer_kyc_information.present_postal_code",
+          "cr_retailer_kyc_information.present_district",
+          "cr_retailer_kyc_information.present_country",
+          "cr_retailer.phone",
+          "cr_retailer_kyc_information.sector_code",
+          "cr_distributor.distributor_name"
+        )
+        .distinct();
+
+      if (retailer_data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendReportApiResult(true, "Retailers Monthly Individual filter successfully", retailer_data));
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
   });
 };
 
