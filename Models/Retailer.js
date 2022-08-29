@@ -7562,7 +7562,7 @@ Retailer.generateRetailersMonthlyIndividualReport = async (req, res) => {
         col_add++;
         worksheet
           .cell(row, col + col_add)
-          .string(e.telephone_number ? e.telephone_number : "");
+          .string(e.phone ? e.phone : "");
         col_add++;
         worksheet
           .cell(row, col + col_add)
