@@ -7992,7 +7992,7 @@ Retailer.retailersTotalIndividualView = async (req, res) => {
 
       if (retailer_data == 0) reject(sendApiResult(false, "Not found."));
 
-      resolve(sendReportApiResult(true, "Retailers Monthly Individual filter successfully", retailer_data));
+      resolve(sendReportApiResult(true, "Retailers Total Individual filter successfully", retailer_data));
 
     } catch (error) {
       reject(sendApiResult(false, error.message));
