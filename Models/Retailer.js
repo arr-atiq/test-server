@@ -7657,6 +7657,14 @@ Retailer.retailersMonthlyIndividualView = async (req, res) => {
         .distinct();
 
       if (retailer_data == 0) reject(sendApiResult(false, "Not found."));
+      
+      retailer_data.map(value => {
+        let modify_date = moment(value.created_at).format('YYYY-MM-DD');
+        let modify_date_of_birth = moment(value.date_of_birth).format('YYYY-MM-DD');
+        value.created_at = modify_date;
+        value.date_of_birth = modify_date_of_birth;
+        return value;
+      });
 
       resolve(sendReportApiResult(true, "Retailers Monthly Individual filter successfully", retailer_data));
 
@@ -7991,6 +7999,14 @@ Retailer.retailersTotalIndividualView = async (req, res) => {
         .distinct();
 
       if (retailer_data == 0) reject(sendApiResult(false, "Not found."));
+
+      retailer_data.map(value => {
+        let modify_date = moment(value.created_at).format('YYYY-MM-DD');
+        let modify_date_of_birth = moment(value.date_of_birth).format('YYYY-MM-DD');
+        value.created_at = modify_date;
+        value.date_of_birth = modify_date_of_birth;
+        return value;
+      });
 
       resolve(sendReportApiResult(true, "Retailers Total Individual filter successfully", retailer_data));
 
