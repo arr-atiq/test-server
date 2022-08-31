@@ -107,7 +107,7 @@ exports.sendOtp = async (req, res) => {
   try {
     const { sales_agent_id, retailer_onermn_account, disbursement_amount, repayment_amount, retailer_phone_number } = req.body;
     var four_digit_otp = (Math.floor(100000 + Math.random() * 900000)).toString();
-    console.log("........",four_digit_otp)
+    console.log("........", four_digit_otp)
     four_digit_otp = four_digit_otp.substring(-2);
     let sms_body = `You have requested loan of BDT ${disbursement_amount} and repaid BDT ${repayment_amount}. Please share OTP with the agent ID <${sales_agent_id}> if agreed: - ${four_digit_otp}`;
     const { SMS_URL, MASKING, SMS_USERNAME, SMS_PASSWORD, MSGTYPE } = process.env;
@@ -145,7 +145,7 @@ exports.sendOtp = async (req, res) => {
             retailer_onermn_account.toString())
           .delete();
         await knex("APSISIPDC.cr_otp").insert(object);
-        
+
       }
       res.send(sendApiResult(true, "OTP Sent!", 300000));
 
@@ -155,6 +155,14 @@ exports.sendOtp = async (req, res) => {
     }
   }
   catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.getSearchResultView = async (req, res) => {
+  try {
+    const result = await User.getSearchResultView(req);
+  } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
 };
