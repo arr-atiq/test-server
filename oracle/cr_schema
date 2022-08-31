@@ -61,6 +61,9 @@ CREATE TABLE "cr_push_notification" ( "id" NUMBER generated AS identity, "reatil
 CREATE TABLE "cr_repayment_sequence" ( "id" NUMBER generated AS identity, "name"  VARCHAR ( 250 ) NOT NULL, 
 "sequence" NUMBER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
 
+CREATE TABLE "cr_loan_principal_repayment_sequence" ( "id" NUMBER generated AS identity, "disbursement_id"  NUMBER NOT NULL, 
+"repayent_amount" NUMBER NOT NULL, "rest_of_principal_amount" NUMBER NOT NULL, "one_rmn_account" VARCHAR ( 250 ) NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
 
 
 

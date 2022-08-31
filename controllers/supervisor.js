@@ -272,6 +272,7 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
         "supervisor_name",
         "supervisor_nid",
         "phone",
+        "supervisor_email_id",
         "manufacturer_id",
         "supervisor_employee_code",
         "region_of_operation",
@@ -284,10 +285,11 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
       "Supervisor_Name",
       "Supervisor_NID",
       "Phone",
+      "Supervisor_Email_ID",
       "Manufacturer",
+      "Distributor",
       "Supervisor_Employee_Code",
       "Region_of_Operation",
-      "Distributor",
       "Duplications Remarked"
     ];
     const workbook = new excel.Workbook();
@@ -364,7 +366,16 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
         worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
         col_add++;
       }
+      if (duplication_arr.includes("Supervisor_Email_ID")) {
+        worksheet.cell(row, col + col_add).string(e.supervisor_email_id ? e.supervisor_email_id : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
+        col_add++;
+      }
       worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
       col_add++;
       if (duplication_arr.includes("Supervisor_Employee_Code") || duplication_arr.includes("Supervisor_Employee_Code already used by another user")) {
         worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "").style(errorStyle);
@@ -374,8 +385,6 @@ exports.generateSupervisorUnuploadedReport = async (req, res) => {
         col_add++;
       }
       worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : "");
       col_add++;
       worksheet.cell(row, col + col_add).string(e.remarks_duplications ? e.remarks_duplications : "").style(remarksStyle);
       col_add++;
@@ -402,6 +411,7 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
         "supervisor_name",
         "supervisor_nid",
         "phone",
+        "supervisor_email_id",
         "manufacturer_id",
         "supervisor_employee_code",
         "region_of_operation",
@@ -413,10 +423,11 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
       "Supervisor_Name",
       "Supervisor_NID",
       "Phone",
+      "Supervisor_Email_ID",
       "Manufacturer",
+      "Distributor",
       "Supervisor_Employee_Code",
       "Region_of_Operation",
-      "Distributor",
       "Invalidated Remarked",
     ];
     const workbook = new excel.Workbook();
@@ -489,6 +500,13 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
         worksheet.cell(row, col + col_add).string(e.phone ? e.phone : "");
         col_add++;
       }
+      if (e.remarks_invalidated.includes("Supervisor_Email_ID")) {
+        worksheet.cell(row, col + col_add).string(e.supervisor_email_id ? e.supervisor_email_id : "").style(errorStyle);
+        col_add++;
+      } else {
+        worksheet.cell(row, col + col_add).string(e.supervisor_email_id ? e.supervisor_email_id : "");
+        col_add++;
+      }
       if (e.remarks_invalidated.includes("mapping")) {
         worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : 0).style(errorStyle);
         col_add++;
@@ -496,10 +514,6 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
         worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : 0);
         col_add++;
       }
-      worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
-      col_add++;
       if (e.remarks_invalidated.includes("mapping")) {
         worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : 0).style(errorStyle);
         col_add++;
@@ -507,6 +521,10 @@ exports.generateSupervisorInvalidatedReport = async (req, res) => {
         worksheet.cell(row, col + col_add).number(e.distributor_id ? e.distributor_id : 0);
         col_add++;
       }
+      worksheet.cell(row, col + col_add).string(e.supervisor_employee_code ? e.supervisor_employee_code : "");
+      col_add++;
+      worksheet.cell(row, col + col_add).string(e.region_of_operation ? e.region_of_operation : "");
+      col_add++;
       worksheet.cell(row, col + col_add).string(e.remarks_invalidated ? e.remarks_invalidated : "").style(remarksStyle);
       col_add++;
       // worksheet.cell(row, col + col_add).number(0);

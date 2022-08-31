@@ -8,6 +8,7 @@ const { getSchemeDetailsById } = require("../controllers/scheme");
 const { creditLimit } = require("../controllers/credit_limit");
 const Pdfmake = require("pdfmake");
 const PDFMerger = require("pdf-merger-js");
+const { resolve } = require("path");
 
 const Retailer = function () { };
 
@@ -3962,18 +3963,13 @@ Retailer.retailersMonthlyPerformanceDistributor = async (req, res) => {
 
 Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
   const { month, supervisor_id, manufacturer_id, sales_agent_id, district, page, per_page } = req.query;
+  const monthNum = parseInt(month);
+  const previousYearLastDate = moment().subtract(1, 'years').endOf('year').format('YYYY-MM-DD');
+  const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+  const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
 
   return new Promise(async (resolve, reject) => {
-    const previousYearLastDate = moment().subtract(1, 'years').endOf('year').format('YYYY-MM-DD');
-
     try {
-
-      // const distributor = await knex("APSISIPDC.cr_supervisor")
-      //   .select("distributor_id")
-      //   .where("cr_supervisor.id", supervisor_id);
-
-      // const distributor_id = distributor[0]?.distributor_id ?? 0;
-
       const filter_report_data = await knex("APSISIPDC.cr_retailer")
         .leftJoin(
           "APSISIPDC.cr_retailer_details_info",
@@ -4010,6 +4006,8 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
           "cr_retailer_vs_sales_agent.sales_agent_id"
         )
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
         .where(function () {
 
           if (manufacturer_id) {
@@ -4020,13 +4018,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           }
           if (sales_agent_id) {
             this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
-          }
-          if (month) {
-            const monthNum = parseInt(month);
-            const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-            const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
           }
           if (district) {
             this.where("cr_retailer_details_info.district", district)
@@ -4077,7 +4068,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           )
           .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -4138,7 +4128,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           )
           .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -4199,7 +4188,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           )
           .select("cr_retailer_loan_calculation.total_outstanding")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .orderBy("cr_retailer_loan_calculation.id", "desc")
           .first()
           .where(function () {
@@ -4281,7 +4269,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
           )
           .distinct()
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
@@ -4415,16 +4402,18 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
 
     const { month, supervisor_id, manufacturer_id, district, sales_agent_id, page, per_page } = req.query;
     const previousYearLastDate = moment().subtract(1, 'years').endOf('year').format('YYYY-MM-DD');
+    const monthNum = parseInt(month);
+    const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
+    const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
 
     try {
 
-      const distributor = await knex("APSISIPDC.cr_supervisor")
-        .select("distributor_id")
-        .where("cr_supervisor.id", supervisor_id);
-
-      const distributor_id = distributor[0]?.distributor_id ?? 0;
-
       const filter_report_data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_details_info",
+          "cr_retailer_details_info.retailer_id",
+          "cr_retailer.id"
+        )
         .leftJoin(
           "APSISIPDC.cr_retailer_manu_scheme_mapping",
           "cr_retailer_manu_scheme_mapping.retailer_id",
@@ -4450,21 +4439,26 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
           "cr_retailer_vs_sales_agent.retailer_id",
           "cr_retailer.id"
         )
-        .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
+        .leftJoin(
+          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+          "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+          "cr_retailer_vs_sales_agent.sales_agent_id"
+        )
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
         .where(function () {
 
           if (manufacturer_id) {
             this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
           }
+          if (supervisor_id) {
+            this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
+          }
           if (sales_agent_id) {
             this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
           }
-          if (month) {
-            const monthNum = parseInt(month);
-            const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-            const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-            this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+          if (district) {
+            this.where("cr_retailer_details_info.district", district)
           }
         })
         .select(
@@ -4476,6 +4470,11 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
       for (let i = 0; i < filter_report_data.length; i++) {
         const disbursement_amount = await knex("APSISIPDC.cr_retailer")
           .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
             "APSISIPDC.cr_retailer_manu_scheme_mapping",
             "cr_retailer_manu_scheme_mapping.retailer_id",
             "cr_retailer.id"
@@ -4500,15 +4499,22 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
             "cr_retailer_vs_sales_agent.retailer_id",
             "cr_retailer.id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_retailer_vs_sales_agent.sales_agent_id"
+          )
           .sum("cr_retailer_loan_calculation.disburshment as total_disbursement_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
             }
+            if (supervisor_id) {
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
+            }
             if (sales_agent_id) {
-              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
             }
             if (month) {
               const monthNum = parseInt(month);
@@ -4516,11 +4522,19 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
               const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+            if (district) {
+              this.where("cr_retailer_details_info.district", district)
             }
           });
 
         const repayment_amount = await knex("APSISIPDC.cr_retailer")
           .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
             "APSISIPDC.cr_retailer_manu_scheme_mapping",
             "cr_retailer_manu_scheme_mapping.retailer_id",
             "cr_retailer.id"
@@ -4544,14 +4558,20 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
             "APSISIPDC.cr_retailer_vs_sales_agent",
             "cr_retailer_vs_sales_agent.retailer_id",
             "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_retailer_vs_sales_agent.sales_agent_id"
           )
           .sum("cr_retailer_loan_calculation.repayment as total_repayment_amount")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
-
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (supervisor_id) {
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
             }
             if (sales_agent_id) {
               this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
@@ -4563,55 +4583,18 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
             }
-          });
-
-        const transaction_cost = await knex("APSISIPDC.cr_retailer")
-          .leftJoin(
-            "APSISIPDC.cr_retailer_manu_scheme_mapping",
-            "cr_retailer_manu_scheme_mapping.retailer_id",
-            "cr_retailer.id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_manufacturer",
-            "cr_manufacturer.id",
-            "cr_retailer_manu_scheme_mapping.manufacturer_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_distributor",
-            "cr_distributor.id",
-            "cr_retailer_manu_scheme_mapping.distributor_id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_retailer_loan_calculation",
-            "cr_retailer_loan_calculation.retailer_id",
-            "cr_retailer.id"
-          )
-          .leftJoin(
-            "APSISIPDC.cr_retailer_vs_sales_agent",
-            "cr_retailer_vs_sales_agent.retailer_id",
-            "cr_retailer.id"
-          )
-          .sum("cr_retailer_loan_calculation.transaction_cost as total_transaction_cost")
-          .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
-          .where(function () {
-            if (manufacturer_id) {
-              this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
-            }
-            if (sales_agent_id) {
-              this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
-            }
-            if (month) {
-              const monthNum = parseInt(month);
-              const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
-              const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            if (district) {
+              this.where("cr_retailer_details_info.district", district)
             }
           });
 
         const total_outstanding_amount = await knex("APSISIPDC.cr_retailer")
           .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
             "APSISIPDC.cr_retailer_manu_scheme_mapping",
             "cr_retailer_manu_scheme_mapping.retailer_id",
             "cr_retailer.id"
@@ -4636,15 +4619,22 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
             "cr_retailer_vs_sales_agent.retailer_id",
             "cr_retailer.id"
           )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_retailer_vs_sales_agent.sales_agent_id"
+          )
           .select("cr_retailer_loan_calculation.total_outstanding")
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .orderBy("cr_retailer_loan_calculation.id", "desc")
           .first()
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
             }
+            if (supervisor_id) {
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
+            }
             if (sales_agent_id) {
               this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
             }
@@ -4653,7 +4643,10 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
               const monthStartDate = moment(previousYearLastDate).add(monthNum, 'months').startOf('month').format('YYYY-MM-DD');
               const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
-              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+              this.whereRaw(`"cr_retailer_loan_calculation"."created_at" < TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+            if (district) {
+              this.where("cr_retailer_details_info.district", district)
             }
           });
 
@@ -4688,20 +4681,38 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
             "cr_sales_agent.id",
             "cr_retailer_vs_sales_agent.sales_agent_id",
           )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_retailer_vs_sales_agent.sales_agent_id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_supervisor",
+            "cr_supervisor.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id"
+          )
           .select(
             "cr_retailer.retailer_name",
             "cr_retailer_manu_scheme_mapping.retailer_code",
-            "cr_retailer.district",
+            "cr_retailer_details_info.district",
             "cr_manufacturer.manufacturer_name",
             "cr_distributor.distributor_name",
-            "cr_sales_agent.agent_name"
+            "cr_sales_agent.agent_name",
+            "cr_supervisor.supervisor_name"
           )
           .distinct()
           .where("cr_retailer_loan_calculation.onermn_acc", filter_report_data[i].onermn_acc)
-          .where("cr_retailer_manu_scheme_mapping.distributor_id", distributor_id)
           .where(function () {
             if (manufacturer_id) {
               this.where("cr_retailer_manu_scheme_mapping.manufacturer_id", manufacturer_id)
+            }
+            if (supervisor_id) {
+              this.where("cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id", supervisor_id)
             }
             if (sales_agent_id) {
               this.where("cr_retailer_vs_sales_agent.sales_agent_id", sales_agent_id)
@@ -4712,6 +4723,9 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
               const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" >= TO_DATE('${monthStartDate}', 'YYYY-MM-DD')`)
               this.whereRaw(`"cr_retailer_loan_calculation"."created_at" <= TO_DATE('${monthEndDate}', 'YYYY-MM-DD')`)
+            }
+            if (district) {
+              this.where("cr_retailer_details_info.district", district)
             }
           });
         const total_amount_transaction_done = disbursement_amount[0].total_disbursement_amount + repayment_amount[0].total_repayment_amount;
@@ -4726,7 +4740,8 @@ Retailer.retailersMonthlyPerformanceDistributorForAdmin = async (req, res) => {
           district: retailer_info[0].district,
           manufacturer_name: retailer_info[0].manufacturer_name,
           distributor_name: retailer_info[0].distributor_name,
-          salesagent: retailer_info[0].agent_name
+          salesagent: retailer_info[0].agent_name,
+          supervisor: retailer_info[0].supervisor_name
         }
 
         retailer_performance_info_Arr.push(retailer_performance_info);
@@ -5969,9 +5984,9 @@ Retailer.downloadLimitUploadFile = function (req) {
         knex.raw(`TO_CHAR("cr_retailer_kyc_information"."date_of_birth", 'YYYY-MM-DD') AS "date_of_birth"`),
         "cr_retailer_manu_scheme_mapping.retailer_code",
         knex.raw(`CASE "cr_retailer_manu_scheme_mapping"."cib_status" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "cib_status"`),
-        knex.raw(`CASE "cr_retailer"."kyc_status" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "kyc_status"`),        
+        knex.raw(`CASE "cr_retailer"."kyc_status" WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END AS "kyc_status"`),
         "cr_retailer_manu_scheme_mapping.system_limit as proposed_sanction_limit_by_system",
-        "cr_retailer_manu_scheme_mapping.loan_id as proposed_sanction_with_avg_sales_value",        
+        "cr_retailer_manu_scheme_mapping.loan_id as proposed_sanction_with_avg_sales_value",
         "cr_retailer_manu_scheme_mapping.loan_id as proposed_sanction_by_crm_with_average_sales_value",
         "cr_manufacturer.manufacturer_name",
         "cr_schema.scheme_name",
@@ -6545,7 +6560,7 @@ Retailer.downloadPendingEligibleRetailerList = function (req) {
     const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
       .select(
         "cr_retailer_temp.sales_agent_id",
-        "cr_retailer_details_info.retailer_name",      
+        "cr_retailer_details_info.retailer_name",
         "cr_retailer_manu_scheme_mapping.retailer_nid",
         "cr_retailer_manu_scheme_mapping.retailer_smart_nid",
         "cr_retailer_manu_scheme_mapping.phone",
@@ -6554,7 +6569,7 @@ Retailer.downloadPendingEligibleRetailerList = function (req) {
         "cr_retailer_manu_scheme_mapping.manufacturer_id",
         "cr_retailer_manu_scheme_mapping.distributor_id",
         "cr_retailer_details_info.retailer_type",
-        "cr_retailer_details_info.type_of_entity",      
+        "cr_retailer_details_info.type_of_entity",
         "cr_retailer_details_info.onboarding",
         "cr_retailer_details_info.order_placement",
         "cr_retailer_details_info.repayment",
@@ -6707,8 +6722,8 @@ Retailer.downloadPendingEligibleRetailerList = function (req) {
       });
 
       const retailerTypeSql = await knex("APSISIPDC.cr_retailer_type")
-            .select("id", "name")
-            .where("status", "Active");
+        .select("id", "name")
+        .where("status", "Active");
 
       const retailerType = {};
       for (const [key, value] of Object.entries(retailerTypeSql)) {
@@ -6725,18 +6740,18 @@ Retailer.downloadPendingEligibleRetailerList = function (req) {
       }
 
       const distributorCodeInfo = await knex("APSISIPDC.cr_manufacturer_vs_distributor")
-          .select("manufacturer_id", "distributor_id", "distributor_code")
-          .where("status", 'Active')
-          .groupBy("manufacturer_id", "distributor_id", "distributor_code");
+        .select("manufacturer_id", "distributor_id", "distributor_code")
+        .where("status", 'Active')
+        .groupBy("manufacturer_id", "distributor_id", "distributor_code");
 
       const distributorCodeObject = {};
-      for (const [key, value] of Object.entries(distributorCodeInfo)) {        
+      for (const [key, value] of Object.entries(distributorCodeInfo)) {
         let temp = {};
-        distributorCodeObject[value.manufacturer_id +'-'+value.distributor_id] = value.distributor_code;
+        distributorCodeObject[value.manufacturer_id + '-' + value.distributor_id] = value.distributor_code;
       }
 
       row = 2;
-      for (let i = 0; i < result.length; i++) {       
+      for (let i = 0; i < result.length; i++) {
         var col_add = 0;
         let e = result[i];
         worksheet.cell(row, col + col_add).number((i + 1));
@@ -6757,7 +6772,7 @@ Retailer.downloadPendingEligibleRetailerList = function (req) {
         col_add++;
         worksheet.cell(row, col + col_add).number(e.manufacturer_id ? e.manufacturer_id : 0);
         col_add++;
-        worksheet.cell(row, col + col_add).string(distributorCodeObject[e.manufacturer_id +'-'+e.distributor_id] ? distributorCodeObject[e.manufacturer_id +'-'+e.distributor_id] : "-");
+        worksheet.cell(row, col + col_add).string(distributorCodeObject[e.manufacturer_id + '-' + e.distributor_id] ? distributorCodeObject[e.manufacturer_id + '-' + e.distributor_id] : "-");
         col_add++;
         worksheet.cell(row, col + col_add).string(e.retailer_type ? retailerType[e.retailer_type] : "-");
         col_add++;
@@ -6852,7 +6867,7 @@ Retailer.downloadPendingEligibleRetailerList = function (req) {
 Retailer.downloadRetailerCrmLimitExcel = function (req) {
   return new Promise(async (resolve, reject) => {
     const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-      .where("cr_retailer_manu_scheme_mapping.limit_status", 'Upload')      
+      .where("cr_retailer_manu_scheme_mapping.limit_status", 'Upload')
       .where("cr_retailer.kyc_status", 1)
       .where("cr_retailer_manu_scheme_mapping.cib_status", 1)
       .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
@@ -7336,22 +7351,22 @@ Retailer.countPendingCib = function (req) {
     try {
       knex.transaction(async (trx) => {
         const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
-        .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NULL`)
-        .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_status" IS NULL`)
-        .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
-        .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
-        .where("cr_retailer_manu_scheme_mapping.is_eligible", 1)
-        .where("cr_retailer.activation_status", 'Inactive')
-        .where("cr_retailer.status", 'Active')
-        .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
-        .select(
-          knex.raw(`COUNT("cr_retailer"."id") AS "check_pending_cib"`)
-        )
-        .innerJoin(
-          "APSISIPDC.cr_retailer",
-          "cr_retailer.id",
-          "cr_retailer_manu_scheme_mapping.retailer_id"
-        );
+          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NULL`)
+          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_status" IS NULL`)
+          .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
+          .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
+          .where("cr_retailer_manu_scheme_mapping.is_eligible", 1)
+          .where("cr_retailer.activation_status", 'Inactive')
+          .where("cr_retailer.status", 'Active')
+          .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
+          .select(
+            knex.raw(`COUNT("cr_retailer"."id") AS "check_pending_cib"`)
+          )
+          .innerJoin(
+            "APSISIPDC.cr_retailer",
+            "cr_retailer.id",
+            "cr_retailer_manu_scheme_mapping.retailer_id"
+          );
         resolve(sendApiResult(true, "Count Pending CIB Found Successfully.", result));
       });
     } catch (error) {
@@ -7366,7 +7381,7 @@ Retailer.countPendingLimitUpload = function (req) {
       knex.transaction(async (trx) => {
         const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
           .where("cr_retailer_manu_scheme_mapping.cib_status", 1)
-          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NOT NULL`)  
+          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NOT NULL`)
           .where("cr_retailer_manu_scheme_mapping.crm_approve_limit", 0)
           .whereRaw(`"cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NULL`)
           .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
@@ -7394,460 +7409,680 @@ Retailer.countPendingLimitUpload = function (req) {
 Retailer.generateRetailersMonthlyIndividualReport = async (req, res) => {
   const previousMonthStartDate = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD');
   const previousMonthEndDate = moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD');
-  try {
-    const limit_data = await knex("APSISIPDC.cr_retailer")
-      .leftJoin(
-        "APSISIPDC.cr_retailer_kyc_information",
-        "cr_retailer_kyc_information.retailer_id",
-        "cr_retailer.id"
-      )
-      .leftJoin(
-        "APSISIPDC.cr_retailer_manu_scheme_mapping",
-        "cr_retailer_manu_scheme_mapping.retailer_id",
-        "cr_retailer.id"
-      )
-      .leftJoin(
-        "APSISIPDC.cr_distributor",
-        "cr_distributor.id",
-        "cr_retailer_manu_scheme_mapping.distributor_id"
-      )
-      .whereRaw(`"cr_retailer"."created_at" >= TO_DATE('${previousMonthStartDate}', 'YYYY-MM-DD')`)
-      .whereRaw(`"cr_retailer"."created_at" <= TO_DATE('${previousMonthEndDate}', 'YYYY-MM-DD')`)
-      .select(
-        "cr_retailer_manu_scheme_mapping.retailer_code",
-        "cr_retailer.ac_number_1rn",
-        "cr_retailer.created_at",
-        "cr_retailer_kyc_information.title",
-        "cr_retailer_kyc_information.name",
-        "cr_retailer_kyc_information.father_title",
-        "cr_retailer_kyc_information.father_name",
-        "cr_retailer_kyc_information.mother_title",
-        "cr_retailer_kyc_information.mother_name",
-        "cr_retailer_kyc_information.spouse_title",
-        "cr_retailer_kyc_information.spouse_name",
-        "cr_retailer_kyc_information.gender",
-        "cr_retailer_kyc_information.date_of_birth",
-        "cr_retailer_kyc_information.district_of_birth",
-        "cr_retailer_kyc_information.country_of_birth",
-        "cr_retailer_kyc_information.nid",
-        "cr_retailer_kyc_information.tin",
-        "cr_retailer_kyc_information.permanent_street_name_and_number",
-        "cr_retailer_kyc_information.permanent_postal_code",
-        "cr_retailer_kyc_information.permanent_district",
-        "cr_retailer_kyc_information.permanent_country",
-        "cr_retailer_kyc_information.present_street_name_and_number",
-        "cr_retailer_kyc_information.present_postal_code",
-        "cr_retailer_kyc_information.present_district",
-        "cr_retailer_kyc_information.present_country",
-        "cr_retailer_kyc_information.telephone_number",
-        "cr_retailer_kyc_information.sector_code",
-        "cr_distributor.distributor_name"
-      )
-      .distinct();
-    const headers = [
-      "Sr.",
-      "Retailer_Code",
-      "Master Loan Account Number",
-      "Client ID",
-      "Branch",
-      "Title",
-      "Name",
-      "Father_Title",
-      "Father_Name",
-      "Mother_Title",
-      "Mother_Name",
-      "Spouse_Title",
-      "Spouse_Name",
-      "Gender",
-      "Date_of_Birth",
-      "Birth_District",
-      "Birth_Country",
-      "NID",
-      "TIN_Number",
-      "Permanent_Address",
-      "Permanent_Address_Post_Code",
-      "Permanent_Address_District",
-      "Country_of_Permanent_Address",
-      "Business_Address",
-      "Business_Address_Code",
-      "Business_Address_District",
-      "Country_of_Business",
-      "Phone",
-      "Distributor Name",
-      "Point Name",
-      "Limit",
-      "Open Date",
-      "Expiry Date"
-    ];
-    const workbook = new excel.Workbook();
-    const worksheet = workbook.addWorksheet("Individual Report (Monthly)");
-    const headerStyle = workbook.createStyle({
-      fill: {
-        type: "pattern",
-        patternType: "solid",
-        bgColor: "#E1F0FF",
-        fgColor: "#E1F0FF",
-      },
-      font: {
-        color: "#000000",
-        size: "10",
-        bold: true,
-      },
-    });
-    const col = 1;
-    let row = 1;
-    let col_addH = 0;
-    headers.forEach((e) => {
-      worksheet
-        .cell(row, col + col_addH)
-        .string(e)
-        .style(headerStyle);
-      col_addH++;
-    });
-    row++;
-    for (let i = 0; i < limit_data.length; i++) {
-      var col_add = 0;
-      let e = limit_data[i];
-      worksheet.cell(row, col + col_add).number(i + 1);
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.retailer_code ? e.retailer_code : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.ac_number_1rn ? e.ac_number_1rn : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.client_id ? e.client_id : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.branch ? e.branch : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.title ? e.title : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.name ? e.name : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.father_title ? e.father_title : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.father_name ? e.father_name : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.mother_title ? e.mother_title : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.mother_name ? e.mother_name : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.spouse_title ? e.spouse_title : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.spouse_name ? e.spouse_name : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.gender ? e.gender : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.date_of_birth ? e.date_of_birth.toString() : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.district_of_birth ? e.district_of_birth : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.country_of_birth ? e.country_of_birth : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .number(e.nid ? e.nid : 0);
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .number(e.tin ? e.tin : 0);
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.permanent_street_name_and_number ? e.permanent_street_name_and_number : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .number(e.permanent_postal_code ? e.permanent_postal_code : 0);
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.permanent_district ? e.permanent_district : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.permanent_country ? e.permanent_country : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.present_street_name_and_number ? e.present_street_name_and_number : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .number(e.present_postal_code ? e.present_postal_code : 0);
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.present_district ? e.present_district : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.present_country ? e.present_country : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.telephone_number ? e.telephone_number : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.distributor_name ? e.distributor_name : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.sector_code ? e.sector_code : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.limit ? e.limit : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.created_at ? e.created_at.toString() : "");
-      col_add++;
-      worksheet
-        .cell(row, col + col_add)
-        .string(e.expiry_date ? e.expiry_date.toString() : "");
-      col_add++;
-      // worksheet.cell(row, col + col_add).number(0);
-      // col_add++;
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const limit_data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_kyc_information",
+          "cr_retailer_kyc_information.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_retailer_manu_scheme_mapping.distributor_id"
+        )
+        .whereRaw(`"cr_retailer"."created_at" >= TO_DATE('${previousMonthStartDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer"."created_at" <= TO_DATE('${previousMonthEndDate}', 'YYYY-MM-DD')`)
+        .select(
+          "cr_retailer_manu_scheme_mapping.retailer_code",
+          "cr_retailer.ac_number_1rn",
+          "cr_retailer.created_at",
+          "cr_retailer_kyc_information.title",
+          "cr_retailer_kyc_information.name",
+          "cr_retailer_kyc_information.father_title",
+          "cr_retailer_kyc_information.father_name",
+          "cr_retailer_kyc_information.mother_title",
+          "cr_retailer_kyc_information.mother_name",
+          "cr_retailer_kyc_information.spouse_title",
+          "cr_retailer_kyc_information.spouse_name",
+          "cr_retailer_kyc_information.gender",
+          "cr_retailer_kyc_information.date_of_birth",
+          "cr_retailer_kyc_information.district_of_birth",
+          "cr_retailer_kyc_information.country_of_birth",
+          "cr_retailer_kyc_information.nid",
+          "cr_retailer_kyc_information.tin",
+          "cr_retailer_kyc_information.permanent_street_name_and_number",
+          "cr_retailer_kyc_information.permanent_postal_code",
+          "cr_retailer_kyc_information.permanent_district",
+          "cr_retailer_kyc_information.permanent_country",
+          "cr_retailer_kyc_information.present_street_name_and_number",
+          "cr_retailer_kyc_information.present_postal_code",
+          "cr_retailer_kyc_information.present_district",
+          "cr_retailer_kyc_information.present_country",
+          "cr_retailer.phone",
+          "cr_retailer_kyc_information.sector_code",
+          "cr_distributor.distributor_name"
+        )
+        .distinct();
+      const headers = [
+        "Sr.",
+        "Retailer_Code",
+        "Master Loan Account Number",
+        "Client ID",
+        "Branch",
+        "Title",
+        "Name",
+        "Father_Title",
+        "Father_Name",
+        "Mother_Title",
+        "Mother_Name",
+        "Spouse_Title",
+        "Spouse_Name",
+        "Gender",
+        "Date_of_Birth",
+        "Birth_District",
+        "Birth_Country",
+        "NID",
+        "TIN_Number",
+        "Permanent_Address",
+        "Permanent_Address_Post_Code",
+        "Permanent_Address_District",
+        "Country_of_Permanent_Address",
+        "Business_Address",
+        "Business_Address_Code",
+        "Business_Address_District",
+        "Country_of_Business",
+        "Phone",
+        "Distributor Name",
+        "Point Name",
+        "Limit",
+        "Open Date",
+        "Expiry Date"
+      ];
+      const workbook = new excel.Workbook();
+      const worksheet = workbook.addWorksheet("Individual Report (Monthly)");
+      const headerStyle = workbook.createStyle({
+        fill: {
+          type: "pattern",
+          patternType: "solid",
+          bgColor: "#E1F0FF",
+          fgColor: "#E1F0FF",
+        },
+        font: {
+          color: "#000000",
+          size: "10",
+          bold: true,
+        },
+      });
+      const col = 1;
+      let row = 1;
+      let col_addH = 0;
+      headers.forEach((e) => {
+        worksheet
+          .cell(row, col + col_addH)
+          .string(e)
+          .style(headerStyle);
+        col_addH++;
+      });
       row++;
+      for (let i = 0; i < limit_data.length; i++) {
+        var col_add = 0;
+        let e = limit_data[i];
+        worksheet.cell(row, col + col_add).number(i + 1);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.retailer_code ? e.retailer_code : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.ac_number_1rn ? e.ac_number_1rn : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.client_id ? e.client_id : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.branch ? e.branch : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.title ? e.title : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.name ? e.name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.father_title ? e.father_title : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.father_name ? e.father_name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.mother_title ? e.mother_title : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.mother_name ? e.mother_name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.spouse_title ? e.spouse_title : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.spouse_name ? e.spouse_name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.gender ? e.gender : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.date_of_birth ? e.date_of_birth.toString() : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.district_of_birth ? e.district_of_birth : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.country_of_birth ? e.country_of_birth : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.nid ? e.nid : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.tin ? e.tin : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.permanent_street_name_and_number ? e.permanent_street_name_and_number : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.permanent_postal_code ? e.permanent_postal_code : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.permanent_district ? e.permanent_district : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.permanent_country ? e.permanent_country : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.present_street_name_and_number ? e.present_street_name_and_number : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.present_postal_code ? e.present_postal_code : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.present_district ? e.present_district : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.present_country ? e.present_country : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.phone ? e.phone : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.distributor_name ? e.distributor_name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.sector_code ? e.sector_code : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.limit ? e.limit : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.created_at ? e.created_at.toString() : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.expiry_date ? e.expiry_date.toString() : "");
+        col_add++;
+        // worksheet.cell(row, col + col_add).number(0);
+        // col_add++;
+        row++;
+      }
+      await workbook.write("public/reports_retailer/retailer_comprehensive_reports.xlsx");
+      const fileName = "./reports_retailer/retailer_comprehensive_reports.xlsx";
+      setTimeout(() => {
+        resolve(sendApiResult(true, "File Generated", fileName));
+      }, 1500);
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
     }
-    await workbook.write("public/reports_retailer/retailer_comprehensive_reports.xlsx");
-    const fileName = "./reports_retailer/retailer_comprehensive_reports.xlsx";
-    setTimeout(() => {
-      res.send(sendApiResult(true, "File Generated", fileName));
-    }, 1500);
-  } catch (error) {
-    res.send(sendApiResult(false, error.message));
-  }
-}
 
-Retailer.generateRetailersIndividualTotalReport = async (req, res) => {
+  });
+};
 
+Retailer.retailersMonthlyIndividualView = async (req, res) => {
+  const previousMonthStartDate = moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD');
+  const previousMonthEndDate = moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD');
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const retailer_data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_kyc_information",
+          "cr_retailer_kyc_information.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_retailer_manu_scheme_mapping.distributor_id"
+        )
+        .whereRaw(`"cr_retailer"."created_at" >= TO_DATE('${previousMonthStartDate}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer"."created_at" <= TO_DATE('${previousMonthEndDate}', 'YYYY-MM-DD')`)
+        .select(
+          "cr_retailer_manu_scheme_mapping.retailer_code",
+          "cr_retailer.ac_number_1rn",
+          "cr_retailer.created_at",
+          "cr_retailer_kyc_information.title",
+          "cr_retailer_kyc_information.name",
+          "cr_retailer_kyc_information.father_title",
+          "cr_retailer_kyc_information.father_name",
+          "cr_retailer_kyc_information.mother_title",
+          "cr_retailer_kyc_information.mother_name",
+          "cr_retailer_kyc_information.spouse_title",
+          "cr_retailer_kyc_information.spouse_name",
+          "cr_retailer_kyc_information.gender",
+          "cr_retailer_kyc_information.date_of_birth",
+          "cr_retailer_kyc_information.district_of_birth",
+          "cr_retailer_kyc_information.country_of_birth",
+          "cr_retailer_kyc_information.nid",
+          "cr_retailer_kyc_information.tin",
+          "cr_retailer_kyc_information.permanent_street_name_and_number",
+          "cr_retailer_kyc_information.permanent_postal_code",
+          "cr_retailer_kyc_information.permanent_district",
+          "cr_retailer_kyc_information.permanent_country",
+          "cr_retailer_kyc_information.present_street_name_and_number",
+          "cr_retailer_kyc_information.present_postal_code",
+          "cr_retailer_kyc_information.present_district",
+          "cr_retailer_kyc_information.present_country",
+          "cr_retailer.phone",
+          "cr_retailer_kyc_information.sector_code",
+          "cr_distributor.distributor_name"
+        )
+        .distinct();
+
+      if (retailer_data == 0) reject(sendApiResult(false, "Not found."));
+      
+      retailer_data.map(value => {
+        let modify_date = moment(value.created_at).format('YYYY-MM-DD');
+        let modify_date_of_birth = moment(value.date_of_birth).format('YYYY-MM-DD');
+        value.created_at = modify_date;
+        value.date_of_birth = modify_date_of_birth;
+        return value;
+      });
+
+      resolve(sendReportApiResult(true, "Retailers Monthly Individual filter successfully", retailer_data));
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+Retailer.generateRetailersTotalIndividualReport = async (req, res) => {
   const { startDate, endDate } = req.query;
-  const previousMonthStartDate = moment(startDate).format('YYYY-MM-DD');
-  const previousMonthEndDate = moment(endDate).format('YYYY-MM-DD');
-  try {
-    const limit_data = await knex("APSISIPDC.cr_retailer")
-      .leftJoin(
-        "APSISIPDC.cr_retailer_kyc_information",
-        "cr_retailer_kyc_information.retailer_id",
-        "cr_retailer.id"
-      )
-      .leftJoin(
-        "APSISIPDC.cr_retailer_manu_scheme_mapping",
-        "cr_retailer_manu_scheme_mapping.retailer_id",
-        "cr_retailer.id"
-      )
-      .leftJoin(
-        "APSISIPDC.cr_distributor",
-        "cr_distributor.id",
-        "cr_retailer_manu_scheme_mapping.distributor_id"
-      )
-      .whereRaw(`"cr_retailer"."master_loan_acc_active_date" >= TO_DATE('${previousMonthStartDate}', 'YYYY-MM-DD')`)
-      .whereRaw(`"cr_retailer"."master_loan_acc_active_date" <= TO_DATE('${previousMonthEndDate}', 'YYYY-MM-DD')`)
-      .select(
-        "cr_retailer.retailer_code",
-        "cr_retailer.ac_number_1rn",
-        "cr_retailer.created_at",
-        "cr_retailer_kyc_information.title",
-        "cr_retailer_kyc_information.name",
-        "cr_retailer_kyc_information.father_title",
-        "cr_retailer_kyc_information.father_name",
-        "cr_retailer_kyc_information.mother_title",
-        "cr_retailer_kyc_information.mother_name",
-        "cr_retailer_kyc_information.spouse_title",
-        "cr_retailer_kyc_information.spouse_name",
-        "cr_retailer_kyc_information.gender",
-        "cr_retailer_kyc_information.date_of_birth",
-        "cr_retailer_kyc_information.district_of_birth",
-        "cr_retailer_kyc_information.country_of_birth",
-        "cr_retailer_kyc_information.nid",
-        "cr_retailer_kyc_information.tin",
-        "cr_retailer_kyc_information.permanent_street_name_and_number",
-        "cr_retailer_kyc_information.permanent_postal_code",
-        "cr_retailer_kyc_information.permanent_district",
-        "cr_retailer_kyc_information.permanent_country",
-        "cr_retailer_kyc_information.present_street_name_and_number",
-        "cr_retailer_kyc_information.present_postal_code",
-        "cr_retailer_kyc_information.present_district",
-        "cr_retailer_kyc_information.present_country",
-        "cr_retailer_kyc_information.telephone_number",
-        "cr_retailer_kyc_information.sector_code",
-        "cr_distributor.distributor_name"
-
-      );
-    const headers = [
-      "Sr.",
-      "Retailer_Code",
-      "Master Loan Account Number",
-      "Client ID",
-      "Branch",
-      "Title",
-      "Name",
-      "Father_Title",
-      "Father_Name",
-      "Mother_Title",
-      "Mother_Name",
-      "Spouse_Title",
-      "Spouse_Name",
-      "Gender",
-      "Date_of_Birth",
-      "Birth_District",
-      "Birth_Country",
-      "NID",
-      "TIN_Number",
-      "Permanent_Address",
-      "Permanent_Address_Post_Code",
-      "Permanent_Address_District",
-      "Country_of_Permanent_Address",
-      "Business_Address",
-      "Business_Address_Code",
-      "Business_Address_District",
-      "Country_of_Business",
-      "Phone",
-      "Distributor Name",
-      "Point Name",
-      "Limit",
-      "Open Date",
-      "Expiry Date"
-    ];
-    const workbook = new excel.Workbook();
-    const worksheet = workbook.addWorksheet("Retailers Individual Total");
-    const headerStyle = workbook.createStyle({
-      fill: {
-        type: "pattern",
-        patternType: "solid",
-        bgColor: "#E1F0FF",
-        fgColor: "#E1F0FF",
-      },
-      font: {
-        color: "#000000",
-        size: "10",
-        bold: true,
-      },
-    });
-    const col = 1;
-    let row = 1;
-    let col_addH = 0;
-    headers.forEach((e) => {
-      worksheet
-        .cell(row, col + col_addH)
-        .string(e)
-        .style(headerStyle);
-      col_addH++;
-    });
-    row++;
-    for (let i = 0; i < limit_data.length; i++) {
-      var col_add = 0;
-      let e = limit_data[i];
-      worksheet.cell(row, col + col_add).number(i + 1);
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.retailer_code ? e.retailer_code : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.ac_number_1rn ? e.ac_number_1rn : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.client_id ? e.client_id : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.branch ? e.branch : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.title ? e.title : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.name ? e.name : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.father_title ? e.father_title : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.father_name ? e.father_name : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.mother_title ? e.mother_title : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.mother_name ? e.mother_name : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.spouse_title ? e.spouse_title : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.spouse_name ? e.spouse_name : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.gender ? e.gender : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.date_of_birth ? e.date_of_birth.toString() : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.district_of_birth ? e.district_of_birth : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.country_of_birth ? e.country_of_birth : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).number(e.nid ? e.nid : 0);
-      col_add++;
-      worksheet.cell(row, col + col_add).number(e.tin ? e.tin : 0);
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.permanent_street_name_and_number ? e.permanent_street_name_and_number : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).number(e.permanent_postal_code ? e.permanent_postal_code : 0);
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.permanent_district ? e.permanent_district : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.permanent_country ? e.permanent_country : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.present_street_name_and_number ? e.present_street_name_and_number : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).number(e.present_postal_code ? e.present_postal_code : 0);
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.present_district ? e.present_district : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.present_country ? e.present_country : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.telephone_number ? e.telephone_number : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.distributor_name ? e.distributor_name : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.sector_code ? e.sector_code : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.limit ? e.limit : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.created_at ? e.created_at.toString() : "");
-      col_add++;
-      worksheet.cell(row, col + col_add).string(e.expiry_date ? e.expiry_date.toString() : "");
-      col_add++;
+  const start_date = moment(startDate).format('YYYY-MM-DD');
+  const end_date = moment(endDate).format('YYYY-MM-DD');
+  return new Promise(async (resolve, reject) => {
+    try {
+      const limit_data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_kyc_information",
+          "cr_retailer_kyc_information.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_retailer_manu_scheme_mapping.distributor_id"
+        )
+        .whereRaw(`"cr_retailer"."master_loan_acc_active_date" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer"."master_loan_acc_active_date" <= TO_DATE('${end_date}', 'YYYY-MM-DD')`)
+        .select(
+          "cr_retailer_manu_scheme_mapping.retailer_code",
+          "cr_retailer.ac_number_1rn",
+          "cr_retailer.created_at",
+          "cr_retailer_kyc_information.title",
+          "cr_retailer_kyc_information.name",
+          "cr_retailer_kyc_information.father_title",
+          "cr_retailer_kyc_information.father_name",
+          "cr_retailer_kyc_information.mother_title",
+          "cr_retailer_kyc_information.mother_name",
+          "cr_retailer_kyc_information.spouse_title",
+          "cr_retailer_kyc_information.spouse_name",
+          "cr_retailer_kyc_information.gender",
+          "cr_retailer_kyc_information.date_of_birth",
+          "cr_retailer_kyc_information.district_of_birth",
+          "cr_retailer_kyc_information.country_of_birth",
+          "cr_retailer_kyc_information.nid",
+          "cr_retailer_kyc_information.tin",
+          "cr_retailer_kyc_information.permanent_street_name_and_number",
+          "cr_retailer_kyc_information.permanent_postal_code",
+          "cr_retailer_kyc_information.permanent_district",
+          "cr_retailer_kyc_information.permanent_country",
+          "cr_retailer_kyc_information.present_street_name_and_number",
+          "cr_retailer_kyc_information.present_postal_code",
+          "cr_retailer_kyc_information.present_district",
+          "cr_retailer_kyc_information.present_country",
+          "cr_retailer.phone",
+          "cr_retailer_kyc_information.sector_code",
+          "cr_distributor.distributor_name"
+        )
+        .distinct();
+      const headers = [
+        "Sr.",
+        "Retailer_Code",
+        "Master Loan Account Number",
+        "Client ID",
+        "Branch",
+        "Title",
+        "Name",
+        "Father_Title",
+        "Father_Name",
+        "Mother_Title",
+        "Mother_Name",
+        "Spouse_Title",
+        "Spouse_Name",
+        "Gender",
+        "Date_of_Birth",
+        "Birth_District",
+        "Birth_Country",
+        "NID",
+        "TIN_Number",
+        "Permanent_Address",
+        "Permanent_Address_Post_Code",
+        "Permanent_Address_District",
+        "Country_of_Permanent_Address",
+        "Business_Address",
+        "Business_Address_Code",
+        "Business_Address_District",
+        "Country_of_Business",
+        "Phone",
+        "Distributor Name",
+        "Point Name",
+        "Limit",
+        "Open Date",
+        "Expiry Date"
+      ];
+      const workbook = new excel.Workbook();
+      const worksheet = workbook.addWorksheet("Sheet 2");
+      const headerStyle = workbook.createStyle({
+        fill: {
+          type: "pattern",
+          patternType: "solid",
+          bgColor: "#E1F0FF",
+          fgColor: "#E1F0FF",
+        },
+        font: {
+          color: "#000000",
+          size: "10",
+          bold: true,
+        },
+      });
+      const col = 1;
+      let row = 1;
+      let col_addH = 0;
+      headers.forEach((e) => {
+        worksheet
+          .cell(row, col + col_addH)
+          .string(e)
+          .style(headerStyle);
+        col_addH++;
+      });
       row++;
+      for (let i = 0; i < limit_data.length; i++) {
+        var col_add = 0;
+        let e = limit_data[i];
+        worksheet.cell(row, col + col_add).number(i + 1);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.retailer_code ? e.retailer_code : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.ac_number_1rn ? e.ac_number_1rn : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.client_id ? e.client_id : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.branch ? e.branch : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.title ? e.title : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.name ? e.name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.father_title ? e.father_title : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.father_name ? e.father_name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.mother_title ? e.mother_title : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.mother_name ? e.mother_name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.spouse_title ? e.spouse_title : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.spouse_name ? e.spouse_name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.gender ? e.gender : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.date_of_birth ? e.date_of_birth.toString() : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.district_of_birth ? e.district_of_birth : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.country_of_birth ? e.country_of_birth : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.nid ? e.nid : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.tin ? e.tin : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.permanent_street_name_and_number ? e.permanent_street_name_and_number : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.permanent_postal_code ? e.permanent_postal_code : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.permanent_district ? e.permanent_district : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.permanent_country ? e.permanent_country : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.present_street_name_and_number ? e.present_street_name_and_number : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .number(e.present_postal_code ? e.present_postal_code : 0);
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.present_district ? e.present_district : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.present_country ? e.present_country : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.telephone_number ? e.telephone_number : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.distributor_name ? e.distributor_name : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.sector_code ? e.sector_code : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.limit ? e.limit : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.created_at ? e.created_at.toString() : "");
+        col_add++;
+        worksheet
+          .cell(row, col + col_add)
+          .string(e.expiry_date ? e.expiry_date.toString() : "");
+        col_add++;
+        // worksheet.cell(row, col + col_add).number(0);
+        // col_add++;
+        row++;
+      }
+      await workbook.write("public/reports_retailer/retailer_comprehensive_reports_total.xlsx");
+      const fileName = "./reports_retailer/retailer_comprehensive_reports_total.xlsx";
+      setTimeout(() => {
+        resolve(sendApiResult(true, "File Generated", fileName));
+      }, 1500);
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
     }
-    await workbook.write("public/reports_retailer/retailer_comprehensive_reports.xlsx");
-    const fileName = "./reports_retailer/retailer_comprehensive_reports.xlsx";
-    setTimeout(() => {
-      res.send(sendApiResult(true, "File Generated", fileName));
-    }, 1500);
-  } catch (error) {
-    res.send(sendApiResult(false, error.message));
-  }
+  });
 }
+
+Retailer.retailersTotalIndividualView = async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const start_date = moment(startDate).format('YYYY-MM-DD');
+  const end_date = moment(endDate).format('YYYY-MM-DD');
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const retailer_data = await knex("APSISIPDC.cr_retailer")
+        .leftJoin(
+          "APSISIPDC.cr_retailer_kyc_information",
+          "cr_retailer_kyc_information.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer_manu_scheme_mapping.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_distributor",
+          "cr_distributor.id",
+          "cr_retailer_manu_scheme_mapping.distributor_id"
+        )
+        .whereRaw(`"cr_retailer"."master_loan_acc_active_date" >= TO_DATE('${start_date}', 'YYYY-MM-DD')`)
+        .whereRaw(`"cr_retailer"."master_loan_acc_active_date" <= TO_DATE('${end_date}', 'YYYY-MM-DD')`)
+        .select(
+          "cr_retailer_manu_scheme_mapping.retailer_code",
+          "cr_retailer.ac_number_1rn",
+          "cr_retailer.created_at",
+          "cr_retailer_kyc_information.title",
+          "cr_retailer_kyc_information.name",
+          "cr_retailer_kyc_information.father_title",
+          "cr_retailer_kyc_information.father_name",
+          "cr_retailer_kyc_information.mother_title",
+          "cr_retailer_kyc_information.mother_name",
+          "cr_retailer_kyc_information.spouse_title",
+          "cr_retailer_kyc_information.spouse_name",
+          "cr_retailer_kyc_information.gender",
+          "cr_retailer_kyc_information.date_of_birth",
+          "cr_retailer_kyc_information.district_of_birth",
+          "cr_retailer_kyc_information.country_of_birth",
+          "cr_retailer_kyc_information.nid",
+          "cr_retailer_kyc_information.tin",
+          "cr_retailer_kyc_information.permanent_street_name_and_number",
+          "cr_retailer_kyc_information.permanent_postal_code",
+          "cr_retailer_kyc_information.permanent_district",
+          "cr_retailer_kyc_information.permanent_country",
+          "cr_retailer_kyc_information.present_street_name_and_number",
+          "cr_retailer_kyc_information.present_postal_code",
+          "cr_retailer_kyc_information.present_district",
+          "cr_retailer_kyc_information.present_country",
+          "cr_retailer.phone",
+          "cr_retailer_kyc_information.sector_code",
+          "cr_distributor.distributor_name"
+        )
+        .distinct();
+
+      if (retailer_data == 0) reject(sendApiResult(false, "Not found."));
+
+      retailer_data.map(value => {
+        let modify_date = moment(value.created_at).format('YYYY-MM-DD');
+        let modify_date_of_birth = moment(value.date_of_birth).format('YYYY-MM-DD');
+        value.created_at = modify_date;
+        value.date_of_birth = modify_date_of_birth;
+        return value;
+      });
+
+      resolve(sendReportApiResult(true, "Retailers Total Individual filter successfully", retailer_data));
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
 
 Retailer.downloadRejectionRetailerList = function (req) {
   return new Promise(async (resolve, reject) => {
