@@ -15,5 +15,6 @@ router.get("/notifications-count", user.getCountNotifications);
 router.get("/notifications", user.getNotificationsList);
 router.post("/sendotp", user.sendOtp);
 router.put("/compareotp", user.compareOtp);
+router.get("/smart-search-view/", user.getSearchResultView);
 
 module.exports = router;
