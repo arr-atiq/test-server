@@ -1328,7 +1328,8 @@ User.getSearchResultView = function (req) {
             "autho_rep_phone",
             "autho_rep_email"
           )
-          .orderBy("cr_manufacturer.id", "desc");
+          .orderBy("cr_manufacturer.id", "desc")
+          .distinct();
         if (data == 0) reject(sendApiResult(false, "Not found."));
         resolve(sendApiResult(true, "Data fetched successfully", data));
 
@@ -1339,9 +1340,9 @@ User.getSearchResultView = function (req) {
           .where(function () {
             if (filter_text) {
               var search_param = filter_text.replace(/\s/g, '');
-              this.orWhere("cr_manufacturer.id", 'like', `%${search_param.toString()}%`)
-                .orWhere("cr_manufacturer.manufacturer_name", 'like', `%${search_param.toString()}%`)
-                .orWhere("cr_manufacturer.registration_no", 'like', `%${search_param.toString()}%`)
+              this.orWhere("cr_distributor.id", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_distributor.distributor_name", 'like', `%${search_param.toString()}%`)
+              //.orWhere("cr_distributor.registration_no", 'like', `%${search_param.toString()}%`)
             }
           })
           .select(
@@ -1369,7 +1370,8 @@ User.getSearchResultView = function (req) {
             "cr_distributor.autho_rep_email",
             "cr_distributor.region_of_operation"
           )
-          .orderBy("cr_distributor.id", "desc");
+          .orderBy("cr_distributor.id", "desc")
+          .distinct();
         // .paginate({
         //   perPage: per_page,
         //   currentPage: page,
@@ -1379,7 +1381,96 @@ User.getSearchResultView = function (req) {
         resolve(sendApiResult(true, "Data fetched successfully", data));
 
       }
+      if (type == "supervisor") {
+        const data = await knex("APSISIPDC.cr_supervisor")
+          .leftJoin("APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_supervisor.distributor_id"
+          )
+          .where("cr_supervisor.activation_status", "Active")
+          .select(
+            "cr_supervisor.id",
+            "cr_supervisor.supervisor_name",
+            "cr_supervisor.supervisor_nid",
+            "cr_supervisor.phone",
+            "cr_supervisor.supervisor_email_id",
+            "cr_supervisor.distributor_id",
+            "cr_distributor.distributor_name",
+            "cr_supervisor.supervisor_employee_code",
+            "cr_supervisor.region_of_operation"
+          )
+          .orderBy("cr_supervisor.id", "desc")
+          .distinct();
+        // .paginate({
+        //   perPage: per_page,
+        //   currentPage: page,
+        //   isLengthAware: true,
+        // });
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+      }
+      if (type == "salesagent") {
+        const data = await knex("APSISIPDC.cr_sales_agent")
+          .where("cr_sales_agent.activation_status", "Active")
+          // .leftJoin("APSISIPDC.cr_manufacturer",
+          //   "cr_manufacturer.id",
+          //   "cr_sales_agent.manufacturer_id"
+          // )
+          .leftJoin("APSISIPDC.cr_distributor",
+            "cr_distributor.id",
+            "cr_sales_agent.distributor_id"
+          )
+          .leftJoin("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+            "cr_sales_agent.id"
+          )
+          .leftJoin("APSISIPDC.cr_supervisor",
+            "cr_supervisor.id",
+            "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id"
+          )
+          .select(
+            "cr_sales_agent.id",
+            "cr_sales_agent.agent_name",
+            "cr_sales_agent.agent_nid",
+            "cr_sales_agent.phone",
+            "cr_sales_agent.distributor_id",
+            "cr_distributor.distributor_name",
+            "cr_sales_agent.agent_employee_code",
+            "cr_supervisor.supervisor_employee_code",
+            "cr_supervisor.supervisor_name",
+            "cr_sales_agent.region_of_operation"
+          )
+          .orderBy("cr_sales_agent.id", "desc")
+          .distinct();
+        // .paginate({
+        //   perPage: per_page,
+        //   currentPage: page,
+        //   isLengthAware: true,
+        // });
+        if (data == 0) reject(sendApiResult(false, "Not found."));
 
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+      }
+
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+User.getDocumentsView = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const documents = await knex("APSISIPDC.cr_documents_add")
+        .select(
+          "cr_documents_add.id",
+          "cr_documents_add.name"
+        )
+        .orderBy("cr_documents_add.id", "desc")
+        .distinct();
+      if (documents == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Data fetched successfully", documents));
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
