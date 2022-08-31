@@ -1182,6 +1182,7 @@ FileUpload.getSupervisorList = function (req) {
           "cr_supervisor.supervisor_name",
           "cr_supervisor.supervisor_nid",
           "cr_supervisor.phone",
+          "cr_supervisor.supervisor_email_id",
           "cr_supervisor.distributor_id",
           "cr_distributor.distributor_name",
           "cr_supervisor.supervisor_employee_code",

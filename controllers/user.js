@@ -168,3 +168,11 @@ exports.getSearchResultView = async (req, res) => {
   }
 };
 
+exports.getDocumentsView = async (req, res) => {
+  try {
+    const result = await User.getDocumentsView(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
