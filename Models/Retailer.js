@@ -131,6 +131,21 @@ Retailer.getRetailerList = function (req) {
           "cr_retailer_manu_scheme_mapping.retailer_id",
           "cr_retailer.id"
         )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_details_info",
+          "cr_retailer_details_info.retailer_id",
+          "cr_retailer.id"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_type",
+          "cr_retailer_type.id",
+          "cr_retailer_details_info.retailer_type"
+        )
+        .leftJoin(
+          "APSISIPDC.cr_retailer_type_entity",
+          "cr_retailer_type_entity.id",
+          "cr_retailer_details_info.type_of_entity"
+        )
         // .leftJoin(
         //   "APSISIPDC.cr_retailer_details_info",
         //   "cr_retailer_details_info.manu_scheme_mapping_id",
@@ -139,11 +154,15 @@ Retailer.getRetailerList = function (req) {
         .where("cr_retailer.status", "Active")
         .select(
           "cr_retailer.id",
-          "cr_retailer.master_r_number",
           "cr_retailer.retailer_name",
           "cr_retailer.retailer_nid",
+          "cr_retailer.retailer_smart_nid",
           "cr_retailer.phone",
           "cr_retailer_manu_scheme_mapping.retailer_code",
+          "cr_retailer_details_info.email",
+          "cr_retailer_details_info.retailer_tin",
+          knex.raw('"cr_retailer_type"."name" as "retailer_type"'),
+          knex.raw('"cr_retailer_type_entity"."name" as "entity_type"'),
           // "cr_retailer_details_info.retailer_tin",
           // "cr_retailer_details_info.corporate_registration_no",
           // "cr_retailer_details_info.trade_license_no",
