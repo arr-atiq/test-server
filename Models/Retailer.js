@@ -6569,7 +6569,7 @@ Retailer.creditMemoList = function (req) {
         resolve(sendApiResult(true, "Credit Memo List Generated Successfully.", creditMemoList));
       } else {
         resolve(sendApiResult(true, "No Credit Memo Found.", credit_memo_list));
-      }downloadPendingEligibleRetailerList
+      }
     });
   });
 }
