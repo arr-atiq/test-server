@@ -1274,55 +1274,112 @@ User.getRetailersForUser = function (req) {
 };
 
 User.getSearchResultView = function (req) {
-  const { filter_text } = req.query;
+  const { type, filter_text, page, per_page } = req.query;
   return new Promise(async (resolve, reject) => {
     try {
-      const data = await knex("APSISIPDC.cr_manufacturer")
-        .leftJoin(
-          "APSISIPDC.cr_manufacturer_type_entity",
-          "cr_manufacturer_type_entity.id",
-          "cr_manufacturer.type_of_entity"
-        )
-        .where("activation_status", "Active")
-        .select(
-          "cr_manufacturer.id",
-          "manufacturer_name",
-          knex.raw('"cr_manufacturer_type_entity"."name" as "type_of_entity"'),
-          // "name_of_scheme",
-          "registration_no",
-          "manufacturer_tin",
-          "manufacturer_bin",
-          "website_link",
-          "corporate_ofc_address",
-          "corporate_ofc_address_1",
-          "corporate_ofc_address_2",
-          "corporate_ofc_postal_code",
-          "corporate_ofc_post_office",
-          "corporate_ofc_thana",
-          "corporate_ofc_district",
-          "corporate_ofc_division",
-          "nature_of_business",
-          "alternative_ofc_address",
-          "alternative_address_1",
-          "alternative_address_2",
-          "alternative_postal_code",
-          "alternative_post_office",
-          "alternative_thana",
-          "alternative_district",
-          "alternative_division",
-          "official_phone",
-          "official_email",
-          "name_of_authorized_representative",
-          "autho_rep_full_name",
-          "autho_rep_nid",
-          "autho_rep_designation",
-          "autho_rep_phone",
-          "autho_rep_email"
-        )
-        .orderBy("cr_manufacturer.id", "desc")
-      if (data == 0) reject(sendApiResult(false, "Not found."));
+      if (type == "manufacturer") {
+        const data = await knex("APSISIPDC.cr_manufacturer")
+          .leftJoin(
+            "APSISIPDC.cr_manufacturer_type_entity",
+            "cr_manufacturer_type_entity.id",
+            "cr_manufacturer.type_of_entity"
+          )
+          .where("activation_status", "Active")
+          .where(function () {
+            if (filter_text) {
+              var search_param = filter_text.replace(/\s/g, '');
+              this.orWhere("cr_manufacturer.id", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_manufacturer.manufacturer_name", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_manufacturer.registration_no", 'like', `%${search_param.toString()}%`)
+            }
+          })
+          .select(
+            "cr_manufacturer.id",
+            "manufacturer_name",
+            knex.raw('"cr_manufacturer_type_entity"."name" as "type_of_entity"'),
+            // "name_of_scheme",
+            "registration_no",
+            "manufacturer_tin",
+            "manufacturer_bin",
+            "website_link",
+            "corporate_ofc_address",
+            "corporate_ofc_address_1",
+            "corporate_ofc_address_2",
+            "corporate_ofc_postal_code",
+            "corporate_ofc_post_office",
+            "corporate_ofc_thana",
+            "corporate_ofc_district",
+            "corporate_ofc_division",
+            "nature_of_business",
+            "alternative_ofc_address",
+            "alternative_address_1",
+            "alternative_address_2",
+            "alternative_postal_code",
+            "alternative_post_office",
+            "alternative_thana",
+            "alternative_district",
+            "alternative_division",
+            "official_phone",
+            "official_email",
+            "name_of_authorized_representative",
+            "autho_rep_full_name",
+            "autho_rep_nid",
+            "autho_rep_designation",
+            "autho_rep_phone",
+            "autho_rep_email"
+          )
+          .orderBy("cr_manufacturer.id", "desc");
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+        resolve(sendApiResult(true, "Data fetched successfully", data));
 
-      resolve(sendApiResult(true, "Data fetched successfully", data));
+      }
+      if (type == "distributor") {
+        const data = await knex("APSISIPDC.cr_distributor")
+          .where("cr_distributor.activation_status", "Active")
+          .where(function () {
+            if (filter_text) {
+              var search_param = filter_text.replace(/\s/g, '');
+              this.orWhere("cr_manufacturer.id", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_manufacturer.manufacturer_name", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_manufacturer.registration_no", 'like', `%${search_param.toString()}%`)
+            }
+          })
+          .select(
+            "cr_distributor.id",
+            "cr_distributor.distributor_name",
+            "cr_distributor.distributor_tin",
+            "cr_distributor.official_email",
+            "cr_distributor.official_contact_number",
+            "cr_distributor.is_distributor_or_third_party_agency",
+            "cr_distributor.corporate_registration_no",
+            "cr_distributor.trade_license_no",
+            "cr_distributor.registered_office_bangladesh",
+            "cr_distributor.ofc_address1",
+            "cr_distributor.ofc_address2",
+            "cr_distributor.ofc_postal_code",
+            "cr_distributor.ofc_post_office",
+            "cr_distributor.ofc_thana",
+            "cr_distributor.ofc_district",
+            "cr_distributor.ofc_division",
+            "cr_distributor.name_of_authorized_representative",
+            "cr_distributor.autho_rep_full_name",
+            "cr_distributor.autho_rep_nid",
+            "cr_distributor.autho_rep_designation",
+            "cr_distributor.autho_rep_phone",
+            "cr_distributor.autho_rep_email",
+            "cr_distributor.region_of_operation"
+          )
+          .orderBy("cr_distributor.id", "desc");
+        // .paginate({
+        //   perPage: per_page,
+        //   currentPage: page,
+        //   isLengthAware: true,
+        // });
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+        resolve(sendApiResult(true, "Data fetched successfully", data));
+
+      }
+
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
