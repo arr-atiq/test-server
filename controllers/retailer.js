@@ -520,9 +520,9 @@ exports.activeRetailerDuplicateData = async (req, res) => {
   }
 };
 
-exports.downloadEligibleRetailerList = async (req, res) => {
+exports.downloadPendingEligibleRetailerList = async (req, res) => {
   try {
-    const result = await model.downloadEligibleRetailerList(req.body);
+    const result = await model.downloadPendingEligibleRetailerList(req.body);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
@@ -577,6 +577,33 @@ exports.countPendingCib = async (req, res) => {
 exports.countPendingLimitUpload = async (req, res) => {
   try {
     const result = await model.countPendingLimitUpload(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.downloadRejectionRetailerList = async (req, res) => {
+  try {
+    const result = await model.downloadRejectionRetailerList(req.body);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.bulkRetailerUploadLogList = async (req, res) => {
+  try {
+    const result = await model.bulkRetailerUploadLogList(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
+exports.downloadChunkUploadRetailerExcel = async (req, res) => {
+  try {
+    const result = await model.downloadChunkUploadRetailerExcel(req.body);
     res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
