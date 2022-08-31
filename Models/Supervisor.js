@@ -50,8 +50,11 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < rows.length; index++) {
               const nid = rows[index].Supervisor_NID;
               const phoneNumber = rows[index].Phone;
+              const supervisor_email_id = rows[index].Supervisor_Email_ID;
+
               const validNID = ValidateNID(nid);
               const validPhoneNumber = ValidatePhoneNumber(phoneNumber.toString());
+              const validEmail = ValidateEmail(supervisor_email_id);
 
               const distributor_id_check = rows[index].Distributor;
               const manufacturer_id_check = rows[index].Manufacturer;
@@ -84,13 +87,16 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 );
 
 
-              if (!validNID || !validPhoneNumber || check_exist_manu_dis.length == 0 || check_manu_exist.length == 0 || check_dis_exist.length == 0 || checkNidSalesAgent.length != 0) {
+              if (!validNID || !validPhoneNumber || !validEmail || check_exist_manu_dis.length == 0 || check_manu_exist.length == 0 || check_dis_exist.length == 0 || checkNidSalesAgent.length != 0) {
                 let invalidStr = "invalid columns - ";
                 if (!validNID) {
                   invalidStr = invalidStr + "Supervisor_NID " + ", ";
                 }
                 if (!validPhoneNumber) {
                   invalidStr = invalidStr + "Phone " + ", ";
+                }
+                if (!validEmail) {
+                  invalidStr = invalidStr + "Supervisor_Email_ID " + ", ";
                 }
 
                 if (check_exist_manu_dis.length == 0 || check_manu_exist.length == 0 || check_dis_exist.length == 0) {
@@ -105,6 +111,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Supervisor_Name: rows[index].Supervisor_Name,
                   Supervisor_NID: rows[index].Supervisor_NID,
                   Phone: rows[index].Phone,
+                  Supervisor_Email_ID: rows[index].Supervisor_Email_ID,
                   Manufacturer: rows[index].Manufacturer,
                   Supervisor_Employee_Code:
                     rows[index].Supervisor_Employee_Code,
@@ -121,7 +128,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (checkNidSalesAgent.length == 0) {
                 const supervisor_nid = rows[index].Supervisor_NID;
                 const supervisor_phone = rows[index].Phone;
+                const supervisor_email_id = rows[index].Supervisor_Email_ID;
                 const supervisor_emp_code = rows[index].Supervisor_Employee_Code;
+
                 const duplication_checkNID = await knex
                   .count("cr_supervisor.supervisor_nid as count")
                   .from("APSISIPDC.cr_supervisor")
@@ -153,26 +162,40 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   duplication_check_emp_code[0].count
                 );
 
-                const duplication_checkEmpCode_user_table = await knex
+                const duplication_supervisor_email_id = await knex
+                  .count("cr_supervisor.supervisor_email_id as count")
+                  .from("APSISIPDC.cr_supervisor")
+                  .where(
+                    "APSISIPDC.cr_supervisor.supervisor_email_id",
+                    supervisor_email_id.toString()
+                  );
+
+                const duplication_supervisor_email_id_check = parseInt(
+                  duplication_supervisor_email_id[0].count
+                );
+
+                const duplication_checkEmail_user_table = await knex
                   .count("cr_users.email as count")
                   .from("APSISIPDC.cr_users")
                   .where(
                     "APSISIPDC.cr_users.email",
-                    supervisor_emp_code.toString()
+                    supervisor_email_id.toString()
                   );
 
-                const duplication_check_val_empCode_user_table = parseInt(
-                  duplication_checkEmpCode_user_table[0].count
+                const duplication_check_val_email_user_table = parseInt(
+                  duplication_checkEmail_user_table[0].count
                 );
 
                 if (duplication_check_val_nid == 0
                   && duplication_check_val_phone == 0
                   && duplication_check_val_emp_code == 0
-                  && duplication_check_val_empCode_user_table == 0) {
+                  && duplication_supervisor_email_id_check == 0
+                  && duplication_check_val_email_user_table == 0) {
                   const temp_data = {
                     Supervisor_Name: rows[index].Supervisor_Name,
                     Supervisor_NID: rows[index].Supervisor_NID,
                     Phone: rows[index].Phone,
+                    Supervisor_Email_ID: rows[index].Supervisor_Email_ID,
                     Manufacturer: rows[index].Manufacturer,
                     Supervisor_Employee_Code:
                       rows[index].Supervisor_Employee_Code,
@@ -196,6 +219,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     .where(
                       "supervisor_employee_code",
                       supervisor_emp_code.toString()
+                    )
+                    .where(
+                      "supervisor_email_id",
+                      supervisor_email_id.toString()
                     )
                     .select(
                       "id",
@@ -229,7 +256,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                       if (duplicate_check_dis_manu_val == 0) {
                         const multiple_manu_mapping_supervisor = {
                           supervisor_id: supervisor_info[0].id,
-                          //supervisor_employee_code: supervisor_info[0].supervisor_employee_code,
                           distributor_id: supervisor_info[0].distributor_id,
                           manufacturer_id: rows[index].Manufacturer,
                           created_by: req.user_id,
@@ -259,14 +285,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   if (duplication_check_val_emp_code != 0) {
                     duplicateStr = duplicateStr + "Supervisor_Employee_Code " + ", ";
                   }
-                  if (duplication_check_val_empCode_user_table != 0) {
-                    duplicateStr = duplicateStr + "Supervisor_Employee_Code already used by another user " + ", ";
+                  if (duplication_supervisor_email_id_check != 0) {
+                    duplicateStr = duplicateStr + "Supervisor_Employee_Code " + ", ";
+                  }
+                  if (duplication_check_val_email_user_table != 0) {
+                    duplicateStr = duplicateStr + "Supervisor_Email_ID already used by another user " + ", ";
                   }
 
                   const temp_data = {
                     Supervisor_Name: rows[index].Supervisor_Name,
                     Supervisor_NID: rows[index].Supervisor_NID,
                     Phone: rows[index].Phone,
+                    Supervisor_Email_ID: rows[index].Supervisor_Email_ID,
                     Manufacturer: rows[index].Manufacturer,
                     Supervisor_Employee_Code:
                       rows[index].Supervisor_Employee_Code,
@@ -314,6 +344,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 supervisor_name: invalidate_data_array[index].Supervisor_Name,
                 supervisor_nid: invalidate_data_array[index].Supervisor_NID,
                 phone: invalidate_data_array[index].Phone,
+                supervisor_email_id: invalidate_data_array[index].Supervisor_Email_ID,
                 manufacturer_id: invalidate_data_array[index].Manufacturer,
                 distributor_id: invalidate_data_array[index].Distributor,
                 supervisor_employee_code:
@@ -334,6 +365,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 supervisor_name: unuploaded_data_array[index].Supervisor_Name,
                 supervisor_nid: unuploaded_data_array[index].Supervisor_NID,
                 phone: unuploaded_data_array[index].Phone,
+                supervisor_email_id: unuploaded_data_array[index].Supervisor_Email_ID,
                 manufacturer_id: unuploaded_data_array[index].Manufacturer,
                 distributor_id: unuploaded_data_array[index].Distributor,
                 supervisor_employee_code:
@@ -355,6 +387,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < data_array.length; index++) {
               const supervisor_nid_insert_data = data_array[index].Supervisor_NID;
               const supervisor_phone_insert_data = data_array[index].Phone;
+              const supervisor_email_id_insert_date = data_array[index].Supervisor_Email_ID;
               const supervisor_emp_code_insert_data = data_array[index].Supervisor_Employee_Code;
 
               const duplication_checkNID_insert_data = await knex
@@ -388,9 +421,21 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check_emp_code_insert_data[0].count
               );
 
+              const duplication_check_email_id_insert_data = await knex
+                .count("cr_supervisor.supervisor_email_id as count")
+                .from("APSISIPDC.cr_supervisor")
+                .where(
+                  "APSISIPDC.cr_supervisor.supervisor_email_id",
+                  supervisor_email_id_insert_date.toString()
+                );
+              const duplication_check_val_email_insert_data = parseInt(
+                duplication_check_email_id_insert_data[0].count
+              );
+
               if (duplication_check_val_nid_insert_data != 0
                 || duplication_check_val_phone_insert_data != 0
-                || duplication_check_val_emp_code_insert_data != 0) {
+                || duplication_check_val_emp_code_insert_data != 0
+                || duplication_check_val_email_insert_data != 0) {
 
                 //multiple distributor manufacturer with supervisor
 
@@ -409,6 +454,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   .where(
                     "supervisor_employee_code",
                     supervisor_emp_code_insert_data.toString()
+                  )
+                  .where(
+                    "supervisor_email_id",
+                    supervisor_email_id_insert_date.toString()
                   )
                   .select(
                     "id",
@@ -442,7 +491,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                     if (duplicate_check_dis_manu_val_insert_data == 0) {
                       const multiple_manu_mapping_supervisor_insert_data = {
                         supervisor_id: supervisor_info_insert_data[0].id,
-                        //supervisor_employee_code: supervisor_info_insert_data[0].supervisor_employee_code,
                         distributor_id: supervisor_info_insert_data[0].distributor_id,
                         manufacturer_id: data_array[index].Manufacturer,
                         created_by: req.user_id,
@@ -472,11 +520,15 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 if (duplication_check_val_emp_code_insert_data != 0) {
                   duplicateStr = duplicateStr + "Supervisor_Employee_Code " + ", ";
                 }
+                if (duplication_check_val_email_insert_data != 0) {
+                  duplicateStr = duplicateStr + "Supervisor_Email_ID " + ", ";
+                }
 
                 const duplicate_data_array = {
                   supervisor_name: data_array[index].Supervisor_Name,
                   supervisor_nid: data_array[index].Supervisor_NID,
                   phone: data_array[index].Phone,
+                  supervisor_email_id: data_array[index].Supervisor_Email_ID,
                   manufacturer_id: data_array[index].Manufacturer,
                   distributor_id: data_array[index].Distributor,
                   supervisor_employee_code:
@@ -495,6 +547,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 supervisor_name: data_array[index].Supervisor_Name,
                 supervisor_nid: data_array[index].Supervisor_NID,
                 phone: data_array[index].Phone,
+                supervisor_email_id: data_array[index].Supervisor_Email_ID,
                 distributor_id: data_array[index].Distributor,
                 supervisor_employee_code:
                   data_array[index].Supervisor_Employee_Code,
@@ -545,23 +598,31 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (insert_user) {
                 user_insert_ids.push(insert_user[0]);
 
-                let sms_body = `Greetings from IPDC DANA!.Congratulations! Your registration with IPDC DANA has been completed. Please enter the below
-                    mentioned user ID and password at www.ipdcDANA.com and login.
-                    User ID: ${user_Id}
-                    Your Temporary Password : ${password}
-                    For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}
-                    Regards,
-                    IPDC Finance`;
-
-                const { SMS_URL, MASKING, SMS_USERNAME, SMS_PASSWORD, MSGTYPE } = process.env;
-                const response = await axios.get(`${SMS_URL}?masking=${MASKING}&userName=${SMS_USERNAME}&password=${SMS_PASSWORD}&MsgType=${MSGTYPE}&receiver=${temp_user.phone}&message=${sms_body}`);
-                if (response) {
-                  console.log("print sent sms in mobile number");
+                try {
+                  const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
+                    "email": data_array[index].Supervisor_Email_ID,
+                    "mail_subject": "IPDC DANA | Registration Completed",
+                    "mail_body": `
+                      <p>Greetings from IPDC DANA!</p>
+                      <p>Congratulations! Your registration
+                      with IPDC DANA has been
+                      completed. Please enter the below
+                      mentioned user ID and password
+                      at www.ipdcDANA.com and login.</p>
+                      <p>User ID : ${user_Id}</p>
+                      <p>Your Temporary Password : ${password}</p>
+                      <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
+                      <p>Regards, </p>
+                      <p>IPDC Finance</p>
+                      `
+                  })
+                  console.log('sendMailsendMailsendMail', sendMail)
                 }
+                catch (err) {
+                  console.log('errorerrorerrorerrorerror', err)
+                }
+
               }
-
-
-
             }
 
             let is_user_wise_role_insert = 0;

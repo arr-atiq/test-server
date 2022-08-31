@@ -45,12 +45,14 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < rows.length; index++) {
               const agent_nid = rows[index].Sales_Agent_NID;
               const phoneNumber = rows[index].Phone;
+              const agent_email_id = rows[index].Agent_Email_ID;
               const autho_supervisor_code = rows[index].Authorized_supervisor_emp_code;
               const distributor_id_check = rows[index].Distributor;
               const manufacturer_id_check = rows[index].Manufacturer;
 
               const validNID = ValidateNID(agent_nid);
               const validPhoneNumber = ValidatePhoneNumber(phoneNumber.toString());
+              const validEmail = ValidateEmail(agent_email_id);
 
               const check_manu_exist = await knex("APSISIPDC.cr_manufacturer")
                 .where(
@@ -71,7 +73,6 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 .select("cr_supervisor.id");
 
               var supervisor_id = check_sup[0]?.id ?? null;
-              console.log(" supervisor ", supervisor_id);
 
               const check_mapping_manu_dis_sup = await knex("APSISIPDC.cr_supervisor_distributor_manufacturer_map")
                 .where(
@@ -91,7 +92,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   "id",
                 );
 
-              if (!validNID || !validPhoneNumber || check_manu_exist.length == 0 || check_dis_exist.length == 0 || check_sup.length == 0 || check_mapping_manu_dis_sup.length == 0 || checkNidInSupervisor.length != 0 || supervisor_id == null) {
+              if (!validNID || !validPhoneNumber || !validEmail || check_manu_exist.length == 0 || check_dis_exist.length == 0 || check_sup.length == 0 || check_mapping_manu_dis_sup.length == 0 || checkNidInSupervisor.length != 0 || supervisor_id == null) {
 
                 let invalidStr = "invalid columns - ";
                 if (!validNID) {
@@ -99,6 +100,9 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 }
                 if (!validPhoneNumber) {
                   invalidStr = invalidStr + "Phone " + ", ";
+                }
+                if (!validEmail) {
+                  invalidStr = invalidStr + "Agent_Email_ID " + ", ";
                 }
                 if (check_manu_exist.length == 0) {
                   invalidStr = invalidStr + "Manufacturer is not existed " + ", ";
@@ -121,6 +125,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   Sales_Agent_Name: rows[index].Sales_Agent_Name,
                   Sales_Agent_NID: rows[index].Sales_Agent_NID,
                   Phone: rows[index].Phone,
+                  Agent_Email_ID: rows[index].Agent_Email_ID,
                   Sales_Agent_Employee_Code:
                     rows[index].Sales_Agent_Employee_Code,
                   Authorized_supervisor_emp_code:
@@ -137,6 +142,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
               const salesagent_nid = rows[index].Sales_Agent_NID;
               const salesagent_phone = rows[index].Phone;
+              const salesagent_email_id = rows[index].Agent_Email_ID;
               const salesagent_emp_code = rows[index].Sales_Agent_Employee_Code;
 
               const duplication_checkNID = await knex
@@ -172,16 +178,28 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check_emp_code[0].count
               );
 
-              const duplication_checkEmpCode_user_table = await knex
+              const duplication_salesagent_email_id = await knex
+                .count("cr_sales_agent.agent_email_id as count")
+                .from("APSISIPDC.cr_sales_agent")
+                .where(
+                  "APSISIPDC.cr_sales_agent.agent_email_id",
+                  salesagent_email_id.toString()
+                );
+
+              const duplication_salesagent_email_id_check = parseInt(
+                duplication_salesagent_email_id[0].count
+              );
+
+              const duplication_checkEmail_user_table = await knex
                 .count("cr_users.email as count")
                 .from("APSISIPDC.cr_users")
                 .where(
                   "APSISIPDC.cr_users.email",
-                  salesagent_emp_code.toString()
+                  salesagent_email_id.toString()
                 );
 
-              const duplication_check_val_empCode_user_table = parseInt(
-                duplication_checkEmpCode_user_table[0].count
+              const duplication_check_val_email_user_table = parseInt(
+                duplication_checkEmail_user_table[0].count
               );
 
 
@@ -189,11 +207,13 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (duplication_check_val_nid == 0
                 && duplication_check_val_phone == 0
                 && duplication_check_val_emp_code == 0
-                && duplication_check_val_empCode_user_table == 0) {
+                && duplication_salesagent_email_id_check == 0
+                && duplication_check_val_email_user_table == 0) {
                 const temp_data = {
                   Sales_Agent_Name: rows[index].Sales_Agent_Name,
                   Sales_Agent_NID: rows[index].Sales_Agent_NID,
                   Phone: rows[index].Phone,
+                  Agent_Email_ID: rows[index].Agent_Email_ID,
                   Manufacturer: rows[index].Manufacturer,
                   Sales_Agent_Employee_Code:
                     rows[index].Sales_Agent_Employee_Code,
@@ -222,6 +242,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   .where(
                     "agent_employee_code",
                     salesagent_emp_code.toString()
+                  )
+                  .where(
+                    "agent_email_id",
+                    salesagent_email_id.toString()
                   )
                   .select(
                     "id",
@@ -312,14 +336,18 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 if (duplication_check_val_emp_code != 0) {
                   duplicateStr = duplicateStr + "Sales_Agent_Employee_Code " + ", ";
                 }
-                if (duplication_check_val_empCode_user_table != 0) {
-                  duplicateStr = duplicateStr + "Sales_Agent_Employee_Code is existed in system " + ", ";
+                if (duplication_salesagent_email_id_check != 0) {
+                  duplicateStr = duplicateStr + "Agent_Email_ID " + ", ";
+                }
+                if (duplication_check_val_email_user_table != 0) {
+                  duplicateStr = duplicateStr + "Agent_Email_ID is used by another user " + ", ";
                 }
 
                 const temp_data = {
                   Sales_Agent_Name: rows[index].Sales_Agent_Name,
                   Sales_Agent_NID: rows[index].Sales_Agent_NID,
                   Phone: rows[index].Phone,
+                  Agent_Email_ID: rows[index].Agent_Email_ID,
                   Sales_Agent_Employee_Code:
                     rows[index].Sales_Agent_Employee_Code,
                   Authorized_supervisor_emp_code:
@@ -367,6 +395,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 agent_name: invalidate_data_array[index].Sales_Agent_Name,
                 agent_nid: invalidate_data_array[index].Sales_Agent_NID,
                 phone: invalidate_data_array[index].Phone,
+                agent_email_id: invalidate_data_array[index].Agent_Email_ID,
                 agent_employee_code:
                   invalidate_data_array[index].Sales_Agent_Employee_Code,
                 autho_supervisor_employee_code:
@@ -389,6 +418,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 agent_name: unuploaded_data_array[index].Sales_Agent_Name,
                 agent_nid: unuploaded_data_array[index].Sales_Agent_NID,
                 phone: unuploaded_data_array[index].Phone,
+                agent_email_id: unuploaded_data_array[index].Agent_Email_ID,
                 agent_employee_code:
                   unuploaded_data_array[index].Sales_Agent_Employee_Code,
                 autho_supervisor_employee_code:
@@ -411,6 +441,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
             for (let index = 0; index < data_array.length; index++) {
               const agent_nid_insert_data = data_array[index].Sales_Agent_NID;
               const agent_phone_insert_data = data_array[index].Phone;
+              const agent_email_id_insert_data = data_array[index].Agent_Email_ID;
               const agent_emp_code_insert_data = data_array[index].Sales_Agent_Employee_Code;
 
               const duplication_checkNID_insert = await knex
@@ -446,9 +477,21 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 duplication_check_emp_code_insert[0].count
               );
 
+              const duplication_check_email_id_insert = await knex
+                .count("cr_sales_agent.agent_employee_code as count")
+                .from("APSISIPDC.cr_sales_agent")
+                .where(
+                  "APSISIPDC.cr_sales_agent.agent_email_id",
+                  agent_email_id_insert_data.toString()
+                );
+              const duplication_check_val_email_id_insert = parseInt(
+                duplication_check_email_id_insert[0].count
+              );
+
               if (duplication_check_val_nid_insert != 0
                 || duplication_check_val_phone_insert != 0
-                || duplication_check_val_emp_code_insert != 0) {
+                || duplication_check_val_emp_code_insert != 0
+                || duplication_check_val_email_id_insert != 0) {
 
                 //multiple manufacturer mapping with salesagent by supervisor and distributor
 
@@ -466,6 +509,10 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                   .where(
                     "agent_employee_code",
                     agent_emp_code_insert_data.toString()
+                  )
+                  .where(
+                    "agent_email_id",
+                    agent_email_id_insert_data.toString()
                   )
                   .select(
                     "id",
@@ -519,7 +566,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                           .select("cr_supervisor.id");
 
                         var supervisor_info_id = check_sup_insert_info_map_nested[0]?.id ?? null;
-                        console.log("supervisor 2 ", Number(supervisor_id));
+
                         const multiple_manu_mapping_salesagent_insert = {
                           salesagent_id: sales_agent_info_insert[0].id,
                           salesagent_employee_code: sales_agent_info_insert[0].agent_employee_code,
@@ -528,7 +575,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                           manufacturer_id: data_array[index].Manufacturer,
                           created_by: req.user_id,
                         }
-                        console.log("multiple_manu_mapping_salesagent..1", multiple_manu_mapping_salesagent_insert)
+
                         mapped_data_array.push(multiple_manu_mapping_salesagent_insert)
                         const multiple_manu_salesagent_mapping_insert = await knex(
                           "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
@@ -553,11 +600,15 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 if (duplication_check_val_emp_code_insert != 0) {
                   duplicateStr = duplicateStr + "Sales_Agent_Employee_Code " + ", ";
                 }
+                if (duplication_check_val_email_id_insert != 0) {
+                  duplicateStr = duplicateStr + "Agent_Email_ID " + ", ";
+                }
 
                 const duplicate_data_array = {
                   agent_name: data_array[index].Sales_Agent_Name,
                   agent_nid: data_array[index].Sales_Agent_NID,
                   phone: data_array[index].Phone,
+                  agent_email_id: data_array[index].Agent_Email_ID,
                   agent_employee_code:
                     data_array[index].Sales_Agent_Employee_Code,
                   autho_supervisor_employee_code:
@@ -578,6 +629,7 @@ FileUpload.insertExcelData = function (rows, filename, req) {
                 agent_name: data_array[index].Sales_Agent_Name,
                 agent_nid: data_array[index].Sales_Agent_NID,
                 phone: data_array[index].Phone,
+                agent_email_id: data_array[index].Agent_Email_ID,
                 //manufacturer_id: data_array[index].Manufacturer,
                 distributor_id: data_array[index].Distributor,
                 agent_employee_code:
@@ -665,18 +717,28 @@ FileUpload.insertExcelData = function (rows, filename, req) {
               if (insert_user) {
                 user_insert_ids.push(insert_user[0]);
 
-                let sms_body = `Greetings from IPDC DANA!.Congratulations! Your registration with IPDC DANA has been completed. Please enter the below
-                    mentioned user ID and password at www.ipdcDANA.com and login.
-                    User ID: ${user_Id}
-                    Your Temporary Password : ${password}
-                    For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}
-                    Regards,
-                    IPDC Finance`;
-
-                const { SMS_URL, MASKING, SMS_USERNAME, SMS_PASSWORD, MSGTYPE } = process.env;
-                const response = await axios.get(`${SMS_URL}?masking=${MASKING}&userName=${SMS_USERNAME}&password=${SMS_PASSWORD}&MsgType=${MSGTYPE}&receiver=${temp_user.phone}&message=${sms_body}`);
-                if (response) {
-                  console.log("print sent sms in mobile number");
+                try {
+                  const sendMail = await axios.post(`${process.env.HOSTIP}/mail/tempSendmail`, {
+                    "email": data_array[index].Supervisor_Email_ID,
+                    "mail_subject": "IPDC DANA | Registration Completed",
+                    "mail_body": `
+                      <p>Greetings from IPDC DANA!</p>
+                      <p>Congratulations! Your registration
+                      with IPDC DANA has been
+                      completed. Please enter the below
+                      mentioned user ID and password
+                      at www.ipdcDANA.com and login.</p>
+                      <p>User ID : ${user_Id}</p>
+                      <p>Your Temporary Password : ${password}</p>
+                      <p>For Password Reset Please Click this link : ${process.env.CLIENTIP}/reset_password/${link_code}  </p>
+                      <p>Regards, </p>
+                      <p>IPDC Finance</p>
+                      `
+                  })
+                  console.log('sendMailsendMailsendMail', sendMail)
+                }
+                catch (err) {
+                  console.log('errorerrorerrorerrorerror', err)
                 }
               }
             }
