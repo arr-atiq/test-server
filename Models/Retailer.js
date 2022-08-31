@@ -638,6 +638,10 @@ Retailer.checkRetailerEligibility = function (req) {
         const retailerList = await trx("APSISIPDC.cr_retailer_manu_scheme_mapping")
           .select(
             "id",
+            "retailer_upload_id",
+            "retailer_nid",
+            "retailer_smart_nid",
+            "phone",
             "retailer_id",
             "retailer_code",
             "manufacturer_id",
@@ -701,6 +705,36 @@ Retailer.checkRetailerEligibility = function (req) {
               retailerSalesVolume.push(tempSalesVolume);
             }
             await trx("APSISIPDC.cr_retailer_sales_volume").insert(retailerSalesVolume);
+
+            if(parseInt(systemLimit) == 0){
+              const retailerData = await trx("APSISIPDC.cr_retailer_details_info")
+                .select(
+                  "retailer_name",
+                  "district"
+                )
+                .where("retailer_upload_id", value.retailer_upload_id)
+                .where("manu_scheme_mapping_id", value.id)
+                .where("retailer_id", value.retailer_id)
+                .where("status", "Active")
+                .first();
+              
+              const rejectionData = {
+                retailer_upload_id : value.retailer_upload_id,
+                retailer_id : value.retailer_id,
+                retailer_name: retailerData.retailer_name,
+                retailer_code : value.retailer_code,
+                retailer_nid : value.retailer_nid,
+                retailer_smart_nid : value.retailer_smart_nid,
+                phone : value.phone,
+                manufacturer_id : value.manufacturer_id,
+                distributor_id : value.distributor_id,
+                district : retailerData.district,
+                rejection_stage : 'Check Eligibility',
+                status : "Active",
+                created_at : new Date()
+              };
+              await trx("APSISIPDC.cr_retailer_rejection_list").insert(rejectionData);
+            }
           }
           resolve(sendApiResult(true, "Retailer Check Eligibility & Scheme Wise Limit Configure Successful."));
         } else {
@@ -708,12 +742,12 @@ Retailer.checkRetailerEligibility = function (req) {
           reject(sendApiResult(false, msg));
         }
       })
-        .then((result) => {
-          //
-        })
-        .catch((error) => {
-          reject(sendApiResult(false, error.message));
-        });
+      .then((result) => {
+        //
+      })
+      .catch((error) => {
+        reject(sendApiResult(false, error.message));
+      });
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
@@ -2821,7 +2855,7 @@ Retailer.generateRetailersMonthlyReport = async (req, res) => {
         "One RMN Account"
       ];
       const workbook = new excel.Workbook();
-      const worksheet = workbook.addWorksheet("Sheet 1");
+      const worksheet = workbook.addWorksheet("Retailers Monthly Report");
       const headerStyle = workbook.createStyle({
         fill: {
           type: "pattern",
@@ -3011,7 +3045,7 @@ Retailer.generateRetailersLoanStatusReport = async (req, res) => {
         "Ending Balance"
       ];
       const workbook = new excel.Workbook();
-      const worksheet = workbook.addWorksheet("Sheet 1");
+      const worksheet = workbook.addWorksheet("Retailers Loan Status Report");
       const headerStyle = workbook.createStyle({
         fill: {
           type: "pattern",
@@ -3544,7 +3578,7 @@ Retailer.generateRetailersMonthlyPerformanceDistributor = async (req, res) => {
         // "Total_amount_of_disbursement"
       ];
       const workbook = new excel.Workbook();
-      const worksheet = workbook.addWorksheet("Sheet 1");
+      const worksheet = workbook.addWorksheet("Retailers Monthly Performance");
       const headerStyle = workbook.createStyle({
         fill: {
           type: "pattern",
@@ -3954,7 +3988,6 @@ Retailer.generateRetailersMonthlyPerformanceDistributorForAdmin = async (req, re
   const monthEndDate = moment(previousYearLastDate).add(monthNum, 'months').endOf('month').format('YYYY-MM-DD');
 
   return new Promise(async (resolve, reject) => {
-
     try {
       const filter_report_data = await knex("APSISIPDC.cr_retailer")
         .leftJoin(
@@ -4749,6 +4782,11 @@ Retailer.downloadEkycReport = function (req) {
       .whereRaw(`"cr_retailer"."kyc_id" IS NOT NULL`)
       .where("cr_retailer.activation_status", 'Inactive')
       .where("cr_retailer.status", 'Active')
+      .where(function() {
+        if (req.retailer_upload_id && req.retailer_upload_id.length > 0) {
+          this.whereIn("cr_retailer.retailer_upload_id", req.retailer_upload_id);
+        }
+      })
       .select(
         "cr_retailer_kyc_information.subject_role",
         "cr_retailer_kyc_information.type_of_financing",
@@ -4813,7 +4851,7 @@ Retailer.downloadEkycReport = function (req) {
     } else {
       const today = moment(new Date()).format('YYYY-MM-DD');
       var workbook = new excel.Workbook();
-      var worksheet = workbook.addWorksheet("Limit Upload Retailer List");
+      var worksheet = workbook.addWorksheet("Ekyc Retailer List");
       var headerStyle = workbook.createStyle({
         fill: {
           type: "pattern",
@@ -6531,12 +6569,12 @@ Retailer.creditMemoList = function (req) {
         resolve(sendApiResult(true, "Credit Memo List Generated Successfully.", creditMemoList));
       } else {
         resolve(sendApiResult(true, "No Credit Memo Found.", credit_memo_list));
-      }
+      }downloadPendingEligibleRetailerList
     });
   });
 }
 
-Retailer.downloadEligibleRetailerList = function (req) {
+Retailer.downloadPendingEligibleRetailerList = function (req) {
   return new Promise(async (resolve, reject) => {
     const result = await knex("APSISIPDC.cr_retailer_manu_scheme_mapping")
       .select(
@@ -6600,18 +6638,31 @@ Retailer.downloadEligibleRetailerList = function (req) {
       )
       .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
       .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
-      .where("cr_retailer_manu_scheme_mapping.is_eligible", 1)
-      .whereRaw('"cr_retailer_manu_scheme_mapping.cib_id" IS NULL')
-      .whereRaw('"cr_retailer_manu_scheme_mapping.cib_status" IS NULL')
-      .where("cr_retailer_manu_scheme_mapping.limit_status", 'Initiated')
-      .where("cr_retailer_manu_scheme_mapping.status", 'Inactive');
+      .where("cr_retailer_manu_scheme_mapping.is_eligible", 0)
+      .where("cr_retailer_manu_scheme_mapping.system_limit", 0)
+      .whereRaw('"cr_retailer_manu_scheme_mapping"."cib_id" IS NULL')
+      .whereRaw('"cr_retailer_manu_scheme_mapping"."cib_status" IS NULL')
+      .whereRaw('"cr_retailer_manu_scheme_mapping"."system_limit_date" IS NULL')
+      .where("cr_retailer_manu_scheme_mapping.limit_status", 'Unset')
+      .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
+      .where(function() {
+        if (req.manufacturer_id && req.manufacturer_id.length > 0) {
+            this.whereIn("cr_retailer_manu_scheme_mapping.manufacturer_id", req.manufacturer_id);
+        }
+        if (req.distributor_id && req.distributor_id.length > 0) {
+          this.whereIn("cr_retailer_manu_scheme_mapping.distributor_id", req.distributor_id);
+        }
+        if (req.retailer_upload_id && req.retailer_upload_id.length > 0) {
+          this.whereIn("cr_retailer_manu_scheme_mapping.retailer_upload_id", req.retailer_upload_id);
+        }
+      });
 
     if (result.length == 0) {
       reject(sendApiResult(false, "No Retailer list Found."));
     } else {
       const today = moment(new Date()).format('YYYY-MM-DD');
       var workbook = new excel.Workbook();
-      var worksheet = workbook.addWorksheet("Eligible Retailer List");
+      var worksheet = workbook.addWorksheet("Pending Eligible Retailer List");
       var headerStyle = workbook.createStyle({
         fill: {
           type: "pattern",
@@ -6820,14 +6871,14 @@ Retailer.downloadEligibleRetailerList = function (req) {
         col_add++;
         row++;
       }
-      const file_path = 'public/retailer/eligible_retailer/';
+      const file_path = 'public/retailer/pending_eligible_retailer/';
       if (!fs.existsSync(file_path)) {
         fs.mkdirSync(file_path, { recursive: true });
       }
-      workbook.write(file_path + "Eligible_Retailer_List_(" + today + ").xlsx");
-      const fileName = "retailer/eligible_retailer/" + "Eligible_Retailer_List_(" + today + ").xlsx";
+      workbook.write(file_path + "Pending_Eligible_Retailer_List_(" + today + ").xlsx");
+      const fileName = "retailer/pending_eligible_retailer/" + "Pending_Eligible_Retailer_List_(" + today + ").xlsx";
       await timeout(1500);
-      resolve(sendApiResult(true, "Limit Upload Retailer List", fileName));
+      resolve(sendApiResult(true, "Pending Eligible Retailer List", fileName));
     }
   })
 }
@@ -6846,6 +6897,17 @@ Retailer.downloadRetailerCrmLimitExcel = function (req) {
       .whereRaw(`"cr_retailer_manu_scheme_mapping"."crm_approve_date" IS NOT NULL`)
       .whereRaw(`"cr_retailer_manu_scheme_mapping"."credit_memo_id" IS NULL`)
       .whereRaw(`"cr_retailer_manu_scheme_mapping"."credit_memo_status" IS NULL`)
+      .where(function() {
+        if (req.manufacturer_id && req.manufacturer_id.length > 0) {
+            this.whereIn("cr_retailer_manu_scheme_mapping.manufacturer_id", req.manufacturer_id);
+        }
+        if (req.distributor_id && req.distributor_id.length > 0) {
+          this.whereIn("cr_retailer_manu_scheme_mapping.distributor_id", req.distributor_id);
+        }
+        if (req.retailer_upload_id && req.retailer_upload_id.length > 0) {
+          this.whereIn("cr_retailer_manu_scheme_mapping.retailer_upload_id", req.retailer_upload_id);
+        }
+      })
       .select(
         "cr_retailer.retailer_name",
         "cr_retailer_manu_scheme_mapping.retailer_nid",
@@ -6888,7 +6950,7 @@ Retailer.downloadRetailerCrmLimitExcel = function (req) {
     } else {
       const today = moment(new Date()).format('YYYY-MM-DD');
       var workbook = new excel.Workbook();
-      var worksheet = workbook.addWorksheet("Limit Upload Retailer List");
+      var worksheet = workbook.addWorksheet("Retailer Crm Limit");
       var headerStyle = workbook.createStyle({
         fill: {
           type: "pattern",
@@ -7031,20 +7093,24 @@ Retailer.countPendingEligibility = function (req) {
     try {
       knex.transaction(async (trx) => {
         const result = await knex("APSISIPDC.cr_retailer")
-          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NULL`)
-          .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_status" IS NULL`)
-          .where("cr_retailer_manu_scheme_mapping.is_eligible", 0)
-          .where("cr_retailer.activation_status", 'Inactive')
-          .where("cr_retailer.status", 'Active')
-          .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')
-          .select(
-            knex.raw(`COUNT("cr_retailer"."id") AS "check_pending_eligibility"`)
-          )
-          .innerJoin(
-            "APSISIPDC.cr_retailer_manu_scheme_mapping",
-            "cr_retailer.id",
-            "cr_retailer_manu_scheme_mapping.retailer_id"
-          );
+        .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_id" IS NULL`)
+        .whereRaw(`"cr_retailer_manu_scheme_mapping"."cib_status" IS NULL`)        
+        .where("cr_retailer_manu_scheme_mapping.is_valid", 1)
+        .where("cr_retailer_manu_scheme_mapping.is_duplicate", 0)
+        .where("cr_retailer_manu_scheme_mapping.is_eligible", 0)
+        .where("cr_retailer_manu_scheme_mapping.system_limit", 0)
+        .where("cr_retailer_manu_scheme_mapping.limit_status", 'Unset')
+        .where("cr_retailer.activation_status", 'Inactive')
+        .where("cr_retailer.status", 'Active')
+        .where("cr_retailer_manu_scheme_mapping.status", 'Inactive')        
+        .select(
+          knex.raw(`COUNT("cr_retailer"."id") AS "check_pending_eligibility"`)
+        )
+        .innerJoin(
+          "APSISIPDC.cr_retailer_manu_scheme_mapping",
+          "cr_retailer.id",
+          "cr_retailer_manu_scheme_mapping.retailer_id"
+        );
         resolve(sendApiResult(true, "Count Pending Eligibility Found Successfully.", result));
       });
     } catch (error) {
@@ -7078,6 +7144,11 @@ Retailer.downloadeKycEligibleRetailerList = function (req) {
     const result = await knex("APSISIPDC.cr_retailer")
       .whereRaw(`"cr_retailer"."kyc_id" IS NULL`)
       .whereRaw(`"cr_retailer"."kyc_status" IS NULL`)
+      .where(function() {        
+        if (req.retailer_upload_id && req.retailer_upload_id.length > 0) {
+          this.whereIn("cr_retailer.retailer_upload_id", req.retailer_upload_id);
+        }
+      })
       .where("cr_retailer.activation_status", 'Inactive')
       .where("cr_retailer.status", 'Active')
       .select(
@@ -7090,7 +7161,7 @@ Retailer.downloadeKycEligibleRetailerList = function (req) {
     } else {
       const today = moment(new Date()).format('YYYY-MM-DD');
       var workbook = new excel.Workbook();
-      var worksheet = workbook.addWorksheet("Limit Upload Retailer List");
+      var worksheet = workbook.addWorksheet("eKyc Eligible Retailer List");
       var headerStyle = workbook.createStyle({
         fill: {
           type: "pattern",
@@ -7694,11 +7765,9 @@ Retailer.retailersMonthlyIndividualView = async (req, res) => {
 };
 
 Retailer.generateRetailersTotalIndividualReport = async (req, res) => {
-
   const { startDate, endDate } = req.query;
   const start_date = moment(startDate).format('YYYY-MM-DD');
   const end_date = moment(endDate).format('YYYY-MM-DD');
-
   return new Promise(async (resolve, reject) => {
     try {
       const limit_data = await knex("APSISIPDC.cr_retailer")
@@ -7956,9 +8025,8 @@ Retailer.generateRetailersTotalIndividualReport = async (req, res) => {
     } catch (error) {
       reject(sendApiResult(false, error.message));
     }
-
   });
-};
+}
 
 Retailer.retailersTotalIndividualView = async (req, res) => {
   const { startDate, endDate } = req.query;
@@ -8034,6 +8102,258 @@ Retailer.retailersTotalIndividualView = async (req, res) => {
     }
   });
 };
+
+Retailer.downloadRejectionRetailerList = function (req) {
+  return new Promise(async (resolve, reject) => {
+    const result = await knex("APSISIPDC.cr_retailer_rejection_list")
+      .where("cr_retailer_rejection_list.status", 'Active')
+      .select(
+        "cr_retailer_rejection_list.retailer_name",
+        "cr_retailer_rejection_list.retailer_code",
+        "cr_retailer_rejection_list.manufacturer_id",
+        "cr_manufacturer.manufacturer_name",
+        "cr_retailer_rejection_list.distributor_id",
+        "cr_distributor.distributor_name",
+        "cr_retailer_rejection_list.retailer_nid",
+        "cr_retailer_rejection_list.retailer_smart_nid",
+        "cr_retailer_rejection_list.phone",
+        "cr_retailer_rejection_list.district",
+        "cr_retailer_rejection_list.rejection_stage",
+        knex.raw(`TO_CHAR("cr_retailer_rejection_list"."created_at", 'YYYY-MM-DD') AS "rejection_date"`),
+      )
+      .innerJoin(
+        "APSISIPDC.cr_manufacturer",
+        "cr_retailer_rejection_list.manufacturer_id",
+        "cr_manufacturer.id"
+      )
+      .innerJoin(
+        "APSISIPDC.cr_distributor",
+        "cr_retailer_rejection_list.distributor_id",
+        "cr_distributor.id"
+      );
+
+    if (result.length == 0) {
+      reject(sendApiResult(false, "No Retailer list Found."));
+    } else {
+      const today = moment(new Date()).format('YYYY-MM-DD');
+      var workbook = new excel.Workbook();
+      var worksheet = workbook.addWorksheet("Rejection Retailer List");
+      var headerStyle = workbook.createStyle({
+        fill: {
+          type: "pattern",
+          patternType: "solid",
+          bgColor: "#E1F0FF",
+          fgColor: "#E1F0FF"
+        },
+        font: {
+          color: "#000000",
+          size: "10",
+          bold: true
+        }
+      });
+
+      var headers = [
+        "Sr.",
+        "Retailer Name",
+        "Retailer NID",
+        "Retailer Smart NID",
+        "Retailer Code",
+        "Retailer Mobile",
+        "Manufacturer Name",
+        "Distributor Name",
+        "District",
+        "Rejection Stage",
+        "Rejection Date"
+      ];
+
+      var col = 1;
+      var row = 1;
+      var col_add = 0;
+
+      headers.forEach((e) => {
+        worksheet
+          .cell(row, col + col_add)
+          .string(e)
+          .style(headerStyle);
+        col_add++;
+      });
+
+      row = 2;
+      for (let i = 0; i < result.length; i++) {
+        var col_add = 0;
+        let e = result[i];
+        worksheet.cell(row, col + col_add).number((i + 1));
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_nid ? e.retailer_nid : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_smart_nid ? e.retailer_smart_nid : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_code ? e.retailer_code : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.manufacturer_name ? e.manufacturer_name : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.distributor_name ? e.distributor_name : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.district ? e.district : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.rejection_stage ? e.rejection_stage : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.rejection_date ? e.rejection_date : " ");
+        col_add++;
+        row++;        
+      }
+      const file_path = 'public/retailer/rejection_list/';
+      if (!fs.existsSync(file_path)) {
+        fs.mkdirSync(file_path, { recursive: true });
+      }
+      workbook.write(file_path + "Rejection_Retailer_List_(" + today + ").xlsx");
+      const fileName = "retailer/rejection_list/" + "Rejection_Retailer_List_(" + today + ").xlsx";
+      await timeout(1500);
+      resolve(sendApiResult(true, "Rejection Retailer List", fileName));
+    }
+  })
+}
+
+Retailer.bulkRetailerUploadLogList = function (req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      knex.transaction(async (trx) => {
+        const result = await knex("APSISIPDC.cr_retailer_upload_log")
+        .where("cr_retailer_upload_log.file_for", 'retailer_onboarding')
+        .select(
+          "retailer_upload_id",
+          "file_upload_rows",
+          knex.raw(`TO_CHAR("cr_retailer_upload_log"."bulk_upload_date", 'YYYY-MM-DD') AS "upload_date"`),
+        )
+        .orderBy("cr_retailer_upload_log.id", "desc");
+
+        resolve(sendApiResult(true, "Bulk Retailer Upload Log List Found Successfully.", result));
+      });
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
+
+Retailer.downloadChunkUploadRetailerExcel = function (req) {
+  return new Promise(async (resolve, reject) => {
+    const result = await knex("APSISIPDC.cr_retailer_rejection_list")
+      .where("cr_retailer_rejection_list.status", 'Active')
+      .select(
+        "cr_retailer_rejection_list.retailer_name",
+        "cr_retailer_rejection_list.retailer_code",
+        "cr_retailer_rejection_list.manufacturer_id",
+        "cr_manufacturer.manufacturer_name",
+        "cr_retailer_rejection_list.distributor_id",
+        "cr_distributor.distributor_name",
+        "cr_retailer_rejection_list.retailer_nid",
+        "cr_retailer_rejection_list.retailer_smart_nid",
+        "cr_retailer_rejection_list.phone",
+        "cr_retailer_rejection_list.district",
+        "cr_retailer_rejection_list.rejection_stage",
+        knex.raw(`TO_CHAR("cr_retailer_rejection_list"."created_at", 'YYYY-MM-DD') AS "rejection_date"`),
+      )
+      .innerJoin(
+        "APSISIPDC.cr_manufacturer",
+        "cr_retailer_rejection_list.manufacturer_id",
+        "cr_manufacturer.id"
+      )
+      .innerJoin(
+        "APSISIPDC.cr_distributor",
+        "cr_retailer_rejection_list.distributor_id",
+        "cr_distributor.id"
+      );
+
+    if (result.length == 0) {
+      reject(sendApiResult(false, "No Retailer list Found."));
+    } else {
+      const today = moment(new Date()).format('YYYY-MM-DD');
+      var workbook = new excel.Workbook();
+      var worksheet = workbook.addWorksheet("Rejection Retailer List");
+      var headerStyle = workbook.createStyle({
+        fill: {
+          type: "pattern",
+          patternType: "solid",
+          bgColor: "#E1F0FF",
+          fgColor: "#E1F0FF"
+        },
+        font: {
+          color: "#000000",
+          size: "10",
+          bold: true
+        }
+      });
+
+      var headers = [
+        "Sr.",
+        "Retailer Name",
+        "Retailer NID",
+        "Retailer Smart NID",
+        "Retailer Code",
+        "Retailer Mobile",
+        "Manufacturer Name",
+        "Distributor Name",
+        "District",
+        "Rejection Stage",
+        "Rejection Date"
+      ];
+
+      var col = 1;
+      var row = 1;
+      var col_add = 0;
+
+      headers.forEach((e) => {
+        worksheet
+          .cell(row, col + col_add)
+          .string(e)
+          .style(headerStyle);
+        col_add++;
+      });
+
+      row = 2;
+      for (let i = 0; i < result.length; i++) {
+        var col_add = 0;
+        let e = result[i];
+        worksheet.cell(row, col + col_add).number((i + 1));
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_name ? e.retailer_name : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_nid ? e.retailer_nid : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_smart_nid ? e.retailer_smart_nid : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.retailer_code ? e.retailer_code : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.phone ? e.phone : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.manufacturer_name ? e.manufacturer_name : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.distributor_name ? e.distributor_name : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.district ? e.district : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.rejection_stage ? e.rejection_stage : " ");
+        col_add++;
+        worksheet.cell(row, col + col_add).string(e.rejection_date ? e.rejection_date : " ");
+        col_add++;
+        row++;        
+      }
+      const file_path = 'public/retailer/rejection_list/';
+      if (!fs.existsSync(file_path)) {
+        fs.mkdirSync(file_path, { recursive: true });
+      }
+      workbook.write(file_path + "Rejection_Retailer_List_(" + today + ").xlsx");
+      const fileName = "retailer/rejection_list/" + "Rejection_Retailer_List_(" + today + ").xlsx";
+      await timeout(1500);
+      resolve(sendApiResult(true, "Rejection Retailer List", fileName));
+    }
+  })
+}
 
 const amount_in_words = async function (numericValue) {
   numericValue = parseFloat(numericValue).toFixed(2);

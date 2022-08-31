@@ -94,14 +94,18 @@ router.post("/credit-memo-action", retailer.creditMemoAction);
 router.post("/active-retailer-duplicate-data", retailer.activeRetailerDuplicateData);
 router.get("/credit-memo-list/", retailer.creditMemoList);
 
-router.post("/download-eligible-retailer-list", retailer.downloadEligibleRetailerList);
+router.post("/download-pending-eligible-retailer-list", retailer.downloadPendingEligibleRetailerList);
 router.post("/download-ekyc-eligible-retailer-list", retailer.downloadeKycEligibleRetailerList);
 router.post("/download-retailer-crm-limit-excel", retailer.downloadRetailerCrmLimitExcel);
+router.post("/download-rejection-retailer-list", retailer.downloadRejectionRetailerList);
 
 router.get("/count-pending-eligibility/", retailer.countPendingEligibility);
 router.get("/count-pending-ekyc/", retailer.countPendingEkyc);
 router.get("/count-pending-cib/", retailer.countPendingCib);
 router.get("/count-pending-limit-upload/", retailer.countPendingLimitUpload);
-// router.get("/count-pending-cib/", retailer.countPendingCib);
+router.get("/count-pending-cib/", retailer.countPendingCib);
+
+router.get("/bulk-retailer-upload-log-list/", retailer.bulkRetailerUploadLogList);
+router.post("/download-chunk-upload-retailer-excel/", retailer.downloadChunkUploadRetailerExcel);
 
 module.exports = router;
