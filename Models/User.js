@@ -1388,6 +1388,14 @@ User.getSearchResultView = function (req) {
             "cr_supervisor.distributor_id"
           )
           .where("cr_supervisor.activation_status", "Active")
+          .where(function () {
+            if (filter_text) {
+              var search_param = filter_text.replace(/\s/g, '');
+              this.orWhere("cr_supervisor.id", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_supervisor.supervisor_name", 'like', `%${search_param.toString()}%`)
+              //.orWhere("cr_distributor.registration_no", 'like', `%${search_param.toString()}%`)
+            }
+          })
           .select(
             "cr_supervisor.id",
             "cr_supervisor.supervisor_name",
@@ -1428,6 +1436,14 @@ User.getSearchResultView = function (req) {
             "cr_supervisor.id",
             "cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id"
           )
+          .where(function () {
+            if (filter_text) {
+              var search_param = filter_text.replace(/\s/g, '');
+              this.orWhere("cr_sales_agent.id", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_sales_agent.agent_name", 'like', `%${search_param.toString()}%`)
+              //.orWhere("cr_distributor.registration_no", 'like', `%${search_param.toString()}%`)
+            }
+          })
           .select(
             "cr_sales_agent.id",
             "cr_sales_agent.agent_name",
