@@ -162,6 +162,7 @@ exports.sendOtp = async (req, res) => {
 exports.getSearchResultView = async (req, res) => {
   try {
     const result = await User.getSearchResultView(req);
+    res.status(200).send(result);
   } catch (error) {
     res.send(sendApiResult(false, error.message));
   }
