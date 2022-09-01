@@ -1,7 +1,10 @@
 const express = require("express");
 
 const router = express.Router();
+const multer = require("multer");
 const user = require("../controllers/user");
+const { uploadDocuments } = require("../controllers/helper");
+const uploadFileTag = multer({ storage: uploadDocuments("file") });
 
 router.get("/user-list/", user.userList);
 router.get("/user-details", user.userDetails);
@@ -18,4 +21,10 @@ router.put("/compareotp", user.compareOtp);
 router.get("/smart-search-view/", user.getSearchResultView);
 router.get("/documents-view/", user.getDocumentsView);
 
+
+router.post(
+    "/upload-documents",
+    uploadFileTag.single("file"),
+    user.uploadDocumentsTag
+);
 module.exports = router;

@@ -1492,4 +1492,34 @@ User.getDocumentsView = function (req) {
     }
   });
 };
+
+User.uploadDocumentsTag = (filename, req) => {
+  const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+  const folder_name = req.file_for;
+  const upload_insert_log = {
+    sys_date: new Date(date),
+    file_for: folder_name,
+    file_path: `public/tag_documents/${folder_name}`,
+    file_name: filename,
+    created_by: parseInt(req.user_id),
+    type: req.user_type,
+    document_tag_user_id: req.document_tag_user_id
+  };
+
+  return new Promise(async (resolve, reject) => {
+    try {
+      const file_upload = await knex("APSISIPDC.cr_feedback_file_upload").insert(
+        upload_insert_log
+      ).returning("id");
+
+      if (file_upload == 0) reject(sendApiResult(false, "Not Upload"));
+      resolve(sendApiResult(true, "file Upload successfully", file_upload));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+
+
+}
+
 module.exports = User;

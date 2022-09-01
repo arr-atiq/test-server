@@ -967,6 +967,62 @@ FileUpload.getManufacturerList = function (req) {
   });
 };
 
+FileUpload.getManufacturer = function (req) {
+  const { manufacturer_id } = req.params;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const data = await knex("APSISIPDC.cr_manufacturer")
+        .leftJoin(
+          "APSISIPDC.cr_manufacturer_type_entity",
+          "cr_manufacturer_type_entity.id",
+          "cr_manufacturer.type_of_entity"
+        )
+        .where("cr_manufacturer.activation_status", "Active")
+        .where("cr_manufacturer.id", manufacturer_id)
+        .select(
+          "cr_manufacturer.id",
+          "manufacturer_name",
+          knex.raw('"cr_manufacturer_type_entity"."name" as "type_of_entity"'),
+          // "name_of_scheme",
+          "registration_no",
+          "manufacturer_tin",
+          "manufacturer_bin",
+          "website_link",
+          "corporate_ofc_address",
+          "corporate_ofc_address_1",
+          "corporate_ofc_address_2",
+          "corporate_ofc_postal_code",
+          "corporate_ofc_post_office",
+          "corporate_ofc_thana",
+          "corporate_ofc_district",
+          "corporate_ofc_division",
+          "nature_of_business",
+          "alternative_ofc_address",
+          "alternative_address_1",
+          "alternative_address_2",
+          "alternative_postal_code",
+          "alternative_post_office",
+          "alternative_thana",
+          "alternative_district",
+          "alternative_division",
+          "official_phone",
+          "official_email",
+          "name_of_authorized_representative",
+          "autho_rep_full_name",
+          "autho_rep_nid",
+          "autho_rep_designation",
+          "autho_rep_phone",
+          "autho_rep_email"
+        );
+      if (data == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Data fetched successfully", data));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 FileUpload.deleteManufacturer = function ({ id }) {
   return new Promise(async (resolve, reject) => {
     try {

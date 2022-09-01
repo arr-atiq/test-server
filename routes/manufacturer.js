@@ -5,6 +5,7 @@ const manufacturer = require("../controllers/manufacturer");
 
 router.get("/manufacturers", manufacturer.getManufacturerList);
 router.get("/manufacturers-list-for-drop-down", manufacturer.getManufacturerListDropDown);
+router.get("/manufacturer/:id", manufacturer.getManufacturer);
 router.put("/manufacturer/:id", manufacturer.editManufacturer);
 router.delete("/manufacturer/:id", manufacturer.deleteManufacturer);
 router.put("/schemas", manufacturer.updateAllSchemasByManufacturer);
