@@ -182,3 +182,12 @@ exports.uploadDocumentsTag = async (req, res) => {
   const upload = await User.uploadDocumentsTag(req.file.filename, req.body);
   res.status(200).send(upload);
 };
+
+exports.deleteVerifyDocument = async (req, res) => {
+  try {
+    const result = await User.deleteVerifyDocument(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
