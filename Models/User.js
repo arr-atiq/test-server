@@ -1291,7 +1291,11 @@ User.getSearchResultView = function (req) {
               var search_param = filter_text.replace(/\s/g, '');
               this.orWhere("cr_manufacturer.id", 'like', `%${search_param.toString()}%`)
                 .orWhere("cr_manufacturer.manufacturer_name", 'like', `%${search_param.toString()}%`)
-                .orWhere("cr_manufacturer.registration_no", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_manufacturer.official_email", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_manufacturer.official_phone", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_manufacturer.autho_rep_full_name", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_manufacturer.autho_rep_email", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_manufacturer.autho_rep_phone", 'like', `%${search_param.toString()}%`)
             }
           })
           .select(
@@ -1343,7 +1347,7 @@ User.getSearchResultView = function (req) {
               var search_param = filter_text.replace(/\s/g, '');
               this.orWhere("cr_distributor.id", 'like', `%${search_param.toString()}%`)
                 .orWhere("cr_distributor.distributor_name", 'like', `%${search_param.toString()}%`)
-              //.orWhere("cr_distributor.registration_no", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_distributor.distributor_tin", 'like', `%${search_param.toString()}%`)
             }
           })
           .select(
