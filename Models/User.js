@@ -1494,9 +1494,30 @@ User.getDocumentsView = function (req) {
   });
 };
 
+User.getVerifyDocumentByUser = function (req) {
+  const { user_type, document_tag_user_id, file_for } = req.query;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const documents = await knex("APSISIPDC.cr_verify_document")
+        .select(
+          "id",
+          "file_path",
+          "file_name"
+        )
+        .orderBy("id", "desc")
+        .first();
+      if (documents == 0) reject(sendApiResult(false, "Not found."));
+
+      resolve(sendApiResult(true, "Data fetched successfully", documents));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 User.uploadDocumentsTag = (filename, req) => {
   // const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
-  const folder_name = req.file_for;
+  const folder_name = req.file_for.trim();
   const upload_insert_log = {
     file_for: folder_name,
     file_path: `public/tag_documents/${folder_name}`,
