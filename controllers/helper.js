@@ -671,7 +671,7 @@ exports.uploadDocuments = function (name) {
   const max = 100;
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      const folder_name = req.body.file_for;
+      const folder_name = req.body.file_for.trim();
       const path = `./public/tag_documents/${folder_name}`;
       fs.mkdirSync(path, { recursive: true });
       cb(null, path);

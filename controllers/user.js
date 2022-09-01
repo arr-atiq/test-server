@@ -186,6 +186,15 @@ exports.getVerifyDocumentByUser = async (req, res) => {
   }
 };
 
+exports.downloadDocumentByID = async (req, res) => {
+  try {
+    const result = await User.downloadDocumentByID(req);
+    res.status(200).send(result);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
+
 exports.uploadDocumentsTag = async (req, res) => {
   req.body.user_id = req.user_id;
   const upload = await User.uploadDocumentsTag(req.file.filename, req.body);

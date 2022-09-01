@@ -1515,6 +1515,29 @@ User.getVerifyDocumentByUser = function (req) {
   });
 };
 
+User.downloadDocumentByID = function (req) {
+  const { id } = req.query;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const documents = await knex("APSISIPDC.cr_verify_document")
+        .where("id", id)
+        .select(
+          "id",
+          "file_path",
+          "file_name"
+        )
+        .orderBy("id", "desc")
+        .first();
+      if (documents == 0) reject(sendApiResult(false, "Not found."));
+      const file_view_path = documents.file_path + "/" + documents.file_name;
+
+      resolve(sendApiResult(true, "document view fetched successfully", file_view_path));
+    } catch (error) {
+      reject(sendApiResult(false, error.message));
+    }
+  });
+};
+
 User.uploadDocumentsTag = (filename, req) => {
   // const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
   const folder_name = req.file_for.trim();
