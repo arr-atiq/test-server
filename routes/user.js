@@ -27,4 +27,5 @@ router.post(
     uploadFileTag.single("file"),
     user.uploadDocumentsTag
 );
+router.delete("/verify-document/:id", user.deleteVerifyDocument);
 module.exports = router;
