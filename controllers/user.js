@@ -176,3 +176,9 @@ exports.getDocumentsView = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+
+exports.uploadDocumentsTag = async (req, res) => {
+  req.body.user_id = req.user_id;
+  const upload = await User.uploadDocumentsTag(req.file.filename, req.body);
+  res.status(200).send(upload);
+};

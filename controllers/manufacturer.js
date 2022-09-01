@@ -192,6 +192,14 @@ exports.deleteManufacturer = async (req, res) => {
     res.send(sendApiResult(false, error.message));
   }
 };
+exports.getManufacturer = async (req, res) => {
+  try {
+    const manufacturer = await manuFacModel.getManufacturer(req);
+    res.status(200).send(manufacturer);
+  } catch (error) {
+    res.send(sendApiResult(false, error.message));
+  }
+};
 
 exports.editManufacturer = async (req, res) => {
   try {
