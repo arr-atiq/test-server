@@ -1339,7 +1339,7 @@ User.getSearchResultView = function (req) {
         resolve(sendApiResult(true, "Data fetched successfully", data));
 
       }
-      if (type == "distributor") {
+      else if (type == "distributor") {
         const data = await knex("APSISIPDC.cr_distributor")
           .where("cr_distributor.activation_status", "Active")
           .where(function () {
@@ -1348,6 +1348,7 @@ User.getSearchResultView = function (req) {
               this.orWhere("cr_distributor.id", 'like', `%${search_param.toString()}%`)
                 .orWhere("cr_distributor.distributor_name", 'like', `%${search_param.toString()}%`)
                 .orWhere("cr_distributor.distributor_tin", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_distributor.official_email", 'like', `%${search_param.toString()}%`)
             }
           })
           .select(
@@ -1376,17 +1377,17 @@ User.getSearchResultView = function (req) {
             "cr_distributor.region_of_operation"
           )
           .orderBy("cr_distributor.id", "desc")
-          .distinct();
-        // .paginate({
-        //   perPage: per_page,
-        //   currentPage: page,
-        //   isLengthAware: true,
-        // });
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
         if (data == 0) reject(sendApiResult(false, "Not found."));
         resolve(sendApiResult(true, "Data fetched successfully", data));
 
       }
-      if (type == "supervisor") {
+      else if (type == "supervisor") {
         const data = await knex("APSISIPDC.cr_supervisor")
           .leftJoin("APSISIPDC.cr_distributor",
             "cr_distributor.id",
@@ -1398,7 +1399,10 @@ User.getSearchResultView = function (req) {
               var search_param = filter_text.replace(/\s/g, '');
               this.orWhere("cr_supervisor.id", 'like', `%${search_param.toString()}%`)
                 .orWhere("cr_supervisor.supervisor_name", 'like', `%${search_param.toString()}%`)
-              //.orWhere("cr_distributor.registration_no", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_supervisor.supervisor_nid", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_supervisor.supervisor_email_id", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_supervisor.distributor_id", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_distributor.distributor_name", 'like', `%${search_param.toString()}%`)
             }
           })
           .select(
@@ -1413,22 +1417,18 @@ User.getSearchResultView = function (req) {
             "cr_supervisor.region_of_operation"
           )
           .orderBy("cr_supervisor.id", "desc")
-          .distinct();
-        // .paginate({
-        //   perPage: per_page,
-        //   currentPage: page,
-        //   isLengthAware: true,
-        // });
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
         if (data == 0) reject(sendApiResult(false, "Not found."));
         resolve(sendApiResult(true, "Data fetched successfully", data));
       }
-      if (type == "salesagent") {
+      else if (type == "salesagent") {
         const data = await knex("APSISIPDC.cr_sales_agent")
           .where("cr_sales_agent.activation_status", "Active")
-          // .leftJoin("APSISIPDC.cr_manufacturer",
-          //   "cr_manufacturer.id",
-          //   "cr_sales_agent.manufacturer_id"
-          // )
           .leftJoin("APSISIPDC.cr_distributor",
             "cr_distributor.id",
             "cr_sales_agent.distributor_id"
@@ -1446,7 +1446,10 @@ User.getSearchResultView = function (req) {
               var search_param = filter_text.replace(/\s/g, '');
               this.orWhere("cr_sales_agent.id", 'like', `%${search_param.toString()}%`)
                 .orWhere("cr_sales_agent.agent_name", 'like', `%${search_param.toString()}%`)
-              //.orWhere("cr_distributor.registration_no", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_sales_agent.agent_nid", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_sales_agent.phone", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_sales_agent.distributor_id", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_distributor.distributor_name", 'like', `%${search_param.toString()}%`)
             }
           })
           .select(
@@ -1462,15 +1465,93 @@ User.getSearchResultView = function (req) {
             "cr_sales_agent.region_of_operation"
           )
           .orderBy("cr_sales_agent.id", "desc")
-          .distinct();
-        // .paginate({
-        //   perPage: per_page,
-        //   currentPage: page,
-        //   isLengthAware: true,
-        // });
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
         if (data == 0) reject(sendApiResult(false, "Not found."));
 
         resolve(sendApiResult(true, "Data fetched successfully", data));
+      }
+      else if (type == "retailer") {
+        const data = await knex("APSISIPDC.cr_retailer")
+          .leftJoin(
+            "APSISIPDC.cr_retailer_manu_scheme_mapping",
+            "cr_retailer_manu_scheme_mapping.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_details_info",
+            "cr_retailer_details_info.retailer_id",
+            "cr_retailer.id"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_type",
+            "cr_retailer_type.id",
+            "cr_retailer_details_info.retailer_type"
+          )
+          .leftJoin(
+            "APSISIPDC.cr_retailer_type_entity",
+            "cr_retailer_type_entity.id",
+            "cr_retailer_details_info.type_of_entity"
+          )
+          .where("cr_retailer.status", "Active")
+          .where(function () {
+            if (filter_text) {
+              var search_param = filter_text.replace(/\s/g, '');
+              this.orWhere("cr_retailer.id", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_retailer.retailer_name", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_retailer.retailer_nid", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_retailer.retailer_smart_nid", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_retailer.phone", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_retailer_details_info.email", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_retailer_type.name", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_retailer_type_entity.name", 'like', `%${search_param.toString()}%`)
+                .orWhere("cr_retailer_details_info.retailer_tin", 'like', `%${search_param.toString()}%`)
+              //.orWhere("cr_distributor.registration_no", 'like', `%${search_param.toString()}%`)
+            }
+          })
+          .select(
+            "cr_retailer.id",
+            "cr_retailer.retailer_name",
+            "cr_retailer.retailer_nid",
+            "cr_retailer.retailer_smart_nid",
+            "cr_retailer.phone",
+            "cr_retailer_manu_scheme_mapping.retailer_code",
+            "cr_retailer_details_info.email",
+            "cr_retailer_details_info.retailer_tin",
+            knex.raw('"cr_retailer_type"."name" as "retailer_type"'),
+            knex.raw('"cr_retailer_type_entity"."name" as "entity_type"'),
+            // "cr_retailer_details_info.retailer_tin",
+            // "cr_retailer_details_info.corporate_registration_no",
+            // "cr_retailer_details_info.trade_license_no",
+            // "cr_retailer_details_info.outlet_address",
+            // "cr_retailer_details_info.postal_code",
+            // "cr_retailer_details_info.post_office",
+            // "cr_retailer_details_info.thana",
+            // "cr_retailer_details_info.district",
+            // "cr_retailer_details_info.division",
+            // "cr_retailer_details_info.autho_rep_full_name",
+            // "cr_retailer_details_info.autho_rep_phone",
+            // "cr_retailer_details_info.region_operation",
+            knex.raw(`CASE "cr_retailer"."kyc_status" WHEN 1 THEN 'True' ELSE 'False' END AS "kyc_status"`),
+            knex.raw(`CASE "cr_retailer_manu_scheme_mapping"."cib_status" WHEN 1 THEN 'True' ELSE 'False' END AS "cib_status"`),
+          )
+          .orderBy("cr_retailer.id", "desc")
+          .distinct()
+          .paginate({
+            perPage: per_page,
+            currentPage: page,
+            isLengthAware: true,
+          });
+        if (data == 0) reject(sendApiResult(false, "Not found."));
+
+        resolve(sendApiResult(true, "Retailer List fetched successfully", data));
+      }
+      else {
+        reject(sendApiResult(false, "type is not  matched"));
       }
 
     } catch (error) {
