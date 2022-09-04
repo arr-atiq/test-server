@@ -1,7 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail, generateUserIDMidDigitForLogin } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, randomPasswordGenerator, generateUserIDMidDigitForLogin } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 const { check } = require("prettier");
@@ -265,59 +265,56 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
                 if (sales_agent_info.length != 0) {
                   if (sales_agent_info[0].distributor_id == rows[index].Distributor) {
-                    if (supervisor_info[0].supervisor_employee_code == rows[index].Authorized_supervisor_emp_code) {
-                      const duplicate_check_sup_dis_manu = await knex
-                        .count("cr_salesagent_supervisor_distributor_manufacturer_map.id as count")
-                        .from("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
-                        .where(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
-                          sales_agent_info[0].id
-                        )
-                        .where(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
-                          Number(supervisor_id)
-                        )
-                        .where(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id",
-                          sales_agent_info[0].distributor_id
-                        )
-                        .where(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id",
-                          salesAgent_manufacturer_id
-                        );
-
-                      const duplicate_check_sup_dis_manu_val = parseInt(
-                        duplicate_check_sup_dis_manu[0].count
+                    const duplicate_check_sup_dis_manu = await knex
+                      .count("cr_salesagent_supervisor_distributor_manufacturer_map.id as count")
+                      .from("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
+                      .where(
+                        "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+                        sales_agent_info[0].id
+                      )
+                      // .where(
+                      //   "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
+                      //   Number(supervisor_id)
+                      // )
+                      .where(
+                        "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id",
+                        sales_agent_info[0].distributor_id
+                      )
+                      .where(
+                        "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id",
+                        salesAgent_manufacturer_id
                       );
 
-                      if (duplicate_check_sup_dis_manu_val == 0) {
+                    const duplicate_check_sup_dis_manu_val = parseInt(
+                      duplicate_check_sup_dis_manu[0].count
+                    );
 
-                        const check_sup_insert_info_map = await knex("APSISIPDC.cr_supervisor")
-                          .where(
-                            "cr_supervisor.supervisor_employee_code", supervisor_info[0].supervisor_employee_code.toString()
-                          )
-                          .select("cr_supervisor.id");
+                    if (duplicate_check_sup_dis_manu_val == 0) {
 
-                        var supervisor_info_id = check_sup_insert_info_map[0]?.id ?? null;
-                        console.log(" supervisor ", supervisor_info_id);
-                        const multiple_manu_mapping_salesagent = {
-                          salesagent_id: sales_agent_info[0].id,
-                          salesagent_employee_code: sales_agent_info[0].agent_employee_code,
-                          supervisor_id: Number(supervisor_info_id),
-                          distributor_id: sales_agent_info[0].distributor_id,
-                          manufacturer_id: rows[index].Manufacturer,
-                          created_by: req.user_id,
-                        }
-                        console.log("multiple_manu_mapping_salesagent..3", multiple_manu_mapping_salesagent)
-                        mapped_data_array.push(multiple_manu_mapping_salesagent)
-                        const multiple_manu_salesagent_mapping = await knex(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
-                        ).insert(multiple_manu_mapping_salesagent).returning("id");
+                      const check_sup_insert_info_map = await knex("APSISIPDC.cr_supervisor")
+                        .where(
+                          "cr_supervisor.supervisor_employee_code", supervisor_info[0].supervisor_employee_code.toString()
+                        )
+                        .select("cr_supervisor.id");
 
-                        //total_mapping_dis_manu.push(mapping_dis_manu[0])
-                        continue;
+                      var supervisor_info_id = check_sup_insert_info_map[0]?.id ?? null;
+                      console.log(" supervisor ", supervisor_info_id);
+                      const multiple_manu_mapping_salesagent = {
+                        salesagent_id: sales_agent_info[0].id,
+                        salesagent_employee_code: sales_agent_info[0].agent_employee_code,
+                        supervisor_id: Number(supervisor_info_id),
+                        distributor_id: sales_agent_info[0].distributor_id,
+                        manufacturer_id: rows[index].Manufacturer,
+                        created_by: req.user_id,
                       }
+                      console.log("multiple_manu_mapping_salesagent..3", multiple_manu_mapping_salesagent)
+                      mapped_data_array.push(multiple_manu_mapping_salesagent)
+                      const multiple_manu_salesagent_mapping = await knex(
+                        "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
+                      ).insert(multiple_manu_mapping_salesagent).returning("id");
 
+                      //total_mapping_dis_manu.push(mapping_dis_manu[0])
+                      continue;
                     }
 
                   }
@@ -532,59 +529,56 @@ FileUpload.insertExcelData = function (rows, filename, req) {
 
                 if (sales_agent_info_insert.length != 0) {
                   if (sales_agent_info_insert[0].distributor_id == data_array[index].Distributor) {
-                    if (supervisor_info_insert[0].supervisor_employee_code == data_array[index].Authorized_supervisor_emp_code) {
-                      const duplicate_check_sup_dis_manu_insert = await knex
-                        .count("cr_salesagent_supervisor_distributor_manufacturer_map.id as count")
-                        .from("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
-                        .where(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
-                          sales_agent_info_insert[0].id
-                        )
-                        .where(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
-                          Number(supervisor_id),
-                        )
-                        .where(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id",
-                          sales_agent_info_insert[0].distributor_id
-                        )
-                        .where(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id",
-                          salesAgent_manufacturer_id_insert
-                        );
-
-                      const duplicate_check_sup_dis_manu_val_insert = parseInt(
-                        duplicate_check_sup_dis_manu_insert[0].count
+                    const duplicate_check_sup_dis_manu_insert = await knex
+                      .count("cr_salesagent_supervisor_distributor_manufacturer_map.id as count")
+                      .from("APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map")
+                      .where(
+                        "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.salesagent_id",
+                        sales_agent_info_insert[0].id
+                      )
+                      // .where(
+                      //   "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.supervisor_id",
+                      //   Number(supervisor_id),
+                      // )
+                      .where(
+                        "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.distributor_id",
+                        sales_agent_info_insert[0].distributor_id
+                      )
+                      .where(
+                        "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map.manufacturer_id",
+                        salesAgent_manufacturer_id_insert
                       );
 
-                      if (duplicate_check_sup_dis_manu_val_insert == 0) {
+                    const duplicate_check_sup_dis_manu_val_insert = parseInt(
+                      duplicate_check_sup_dis_manu_insert[0].count
+                    );
 
-                        const check_sup_insert_info_map_nested = await knex("APSISIPDC.cr_supervisor")
-                          .where(
-                            "cr_supervisor.supervisor_employee_code", supervisor_info_insert[0].supervisor_employee_code.toString()
-                          )
-                          .select("cr_supervisor.id");
+                    if (duplicate_check_sup_dis_manu_val_insert == 0) {
 
-                        var supervisor_info_id = check_sup_insert_info_map_nested[0]?.id ?? null;
+                      const check_sup_insert_info_map_nested = await knex("APSISIPDC.cr_supervisor")
+                        .where(
+                          "cr_supervisor.supervisor_employee_code", supervisor_info_insert[0].supervisor_employee_code.toString()
+                        )
+                        .select("cr_supervisor.id");
 
-                        const multiple_manu_mapping_salesagent_insert = {
-                          salesagent_id: sales_agent_info_insert[0].id,
-                          salesagent_employee_code: sales_agent_info_insert[0].agent_employee_code,
-                          supervisor_id: Number(supervisor_id),
-                          distributor_id: sales_agent_info_insert[0].distributor_id,
-                          manufacturer_id: data_array[index].Manufacturer,
-                          created_by: req.user_id,
-                        }
+                      var supervisor_info_id = check_sup_insert_info_map_nested[0]?.id ?? null;
 
-                        mapped_data_array.push(multiple_manu_mapping_salesagent_insert)
-                        const multiple_manu_salesagent_mapping_insert = await knex(
-                          "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
-                        ).insert(multiple_manu_mapping_salesagent_insert).returning("id");
-
-                        //total_mapping_dis_manu.push(mapping_dis_manu[0])
-                        continue;
+                      const multiple_manu_mapping_salesagent_insert = {
+                        salesagent_id: sales_agent_info_insert[0].id,
+                        salesagent_employee_code: sales_agent_info_insert[0].agent_employee_code,
+                        supervisor_id: Number(supervisor_id),
+                        distributor_id: sales_agent_info_insert[0].distributor_id,
+                        manufacturer_id: data_array[index].Manufacturer,
+                        created_by: req.user_id,
                       }
 
+                      mapped_data_array.push(multiple_manu_mapping_salesagent_insert)
+                      const multiple_manu_salesagent_mapping_insert = await knex(
+                        "APSISIPDC.cr_salesagent_supervisor_distributor_manufacturer_map"
+                      ).insert(multiple_manu_mapping_salesagent_insert).returning("id");
+
+                      //total_mapping_dis_manu.push(mapping_dis_manu[0])
+                      continue;
                     }
 
                   }

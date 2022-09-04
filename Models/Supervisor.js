@@ -1,7 +1,7 @@
 const moment = require("moment");
 const express = require("express");
 const { sendApiResult, getSettingsValue } = require("../controllers/helper");
-const { ValidateNID, ValidatePhoneNumber, ValidateEmail, generateUserIDMidDigitForLogin, randomPasswordGenerator, r } = require("../controllers/helperController");
+const { ValidateNID, ValidatePhoneNumber, ValidateEmail, generateUserIDMidDigitForLogin, randomPasswordGenerator } = require("../controllers/helperController");
 const knex = require("../config/database");
 const { default: axios } = require("axios");
 const { resolve } = require("path");
