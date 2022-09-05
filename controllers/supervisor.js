@@ -15,7 +15,7 @@ exports.uploadSupervisorOnboardingFile = async (req, res) => {
     const upload = await importExcelData2DB(req.file.filename, req.body);
     res.status(200).send(upload);
   } else {
-    res.status(200).send("File is Missing!");
+    res.status(404).send("File not Found!");
   }
 
 };
