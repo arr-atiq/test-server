@@ -11,7 +11,7 @@ const knexfile = require("../knexfile");
 
 exports.uploadManufacturerOnboardingFile = async (req, res) => {
   req.body.user_id = req.user_id;
-  if (req.file != "undefined") {
+  if (req.file) {
     const upload = await importExcelData2DB(req.file.filename, req.body);
     res.status(200).send(upload);
   } else {

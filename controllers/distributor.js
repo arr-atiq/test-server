@@ -10,8 +10,13 @@ const excel = require("excel4node");
 
 exports.uploadDistributorOnboardingFile = async (req, res) => {
   req.body.user_id = req.user_id;
-  const upload = await importExcelData2DB(req.file.filename, req.body);
-  res.status(200).send(upload);
+  if (req.file) {
+    const upload = await importExcelData2DB(req.file.filename, req.body);
+    res.status(200).send(upload);
+  } else{
+    res.status(200).send("File is Missing!");
+  }
+
 };
 
 const importExcelData2DB = async function (filename, req) {
