@@ -197,8 +197,13 @@ exports.downloadDocumentByID = async (req, res) => {
 
 exports.uploadDocumentsTag = async (req, res) => {
   req.body.user_id = req.user_id;
-  const upload = await User.uploadDocumentsTag(req.file.filename, req.body);
-  res.status(200).send(upload);
+  if (req.file) {
+    const upload = await User.uploadDocumentsTag(req.file.filename, req.body);
+    res.status(200).send(upload);
+  } else {
+    res.status(200).send("File is Missing!");
+  }
+
 };
 
 exports.deleteVerifyDocument = async (req, res) => {
