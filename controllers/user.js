@@ -198,12 +198,19 @@ exports.downloadDocumentByID = async (req, res) => {
 exports.uploadDocumentsTag = async (req, res) => {
   req.body.user_id = req.user_id;
   if (req.file) {
-    const upload = await User.uploadDocumentsTag(req.file.filename, req.body);
-    res.status(200).send(upload);
+    if (req.body.file_for) {
+      if (req.body.file_for.trim() != "") {
+        const upload = await User.uploadDocumentsTag(req.file.filename, req.body);
+        res.status(200).send(upload);
+      } else {
+        res.status(404).send("file_for is Missing!");
+      }
+    } else {
+      res.status(404).send("file_for is Missing!");
+    }
   } else {
     res.status(404).send("File not Found!");
   }
-
 };
 
 exports.deleteVerifyDocument = async (req, res) => {

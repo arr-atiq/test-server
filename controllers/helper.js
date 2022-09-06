@@ -14,7 +14,7 @@ exports.sendApiResult = function (success, message, data = {}) {
     message,
     data,
   };
-  console.log('success',data)
+  console.log('success', data)
 
   return data;
 };
@@ -460,11 +460,11 @@ exports.OutletCreditInfo = async function (retailer_id) {
       Number(e.due_amount) +
       Number(e.total_sys_interest_amount) +
       (Number(e.due_amount) + Number(e.total_sys_interest_amount)) *
-        howManyDays *
-        ((Number(e.interest_rate_percentage) +
-          Number(e.service_charge_rate_percentage) +
-          Number(e.penalty_rate_percentage) * Number(e.is_penalty_interest)) /
-          100);
+      howManyDays *
+      ((Number(e.interest_rate_percentage) +
+        Number(e.service_charge_rate_percentage) +
+        Number(e.penalty_rate_percentage) * Number(e.is_penalty_interest)) /
+        100);
   }
 
   let outlet_credit = {};
@@ -671,10 +671,16 @@ exports.uploadDocuments = function (name) {
   const max = 100;
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      const folder_name = req.body.file_for.trim();
-      const path = `./public/tag_documents/${folder_name}`;
-      fs.mkdirSync(path, { recursive: true });
-      cb(null, path);
+      if (req.body.file_for) {
+        if (req.body.file_for.trim() != "") {
+          const folder_name = req.body.file_for.trim();
+          const path = `./public/tag_documents/${folder_name}`;
+          fs.mkdirSync(path, { recursive: true });
+          cb(null, path);
+        }
+        cb(null, "");
+      }
+      cb(null, "");
     },
     filename: (req, file, cb) => {
       if (typeof file !== undefined) {
