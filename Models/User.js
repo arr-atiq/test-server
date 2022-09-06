@@ -1625,7 +1625,7 @@ User.downloadDocumentByID = function (req) {
 
 User.uploadDocumentsTag = (filename, req) => {
   // const date = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
-  const folder_name = req.file_for.trim();
+  const folder_name = req?.file_for?.trim();
   const upload_insert_log = {
     file_for: folder_name,
     file_path: `public/tag_documents/${folder_name}`,
