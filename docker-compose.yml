@@ -1,12 +1,40 @@
 version: "3"
 services:
-  app:
+  app1:
     build: .
     volumes:
       - .:/usr/src/app
-    container_name: ipdc-dana-platform
+    container_name: ipdc-dana-platform-1
     restart: always
     ports:
-      - 5000:5000
+      - 81:5000
     command: bash -c /usr/src/app/start.sh
     env_file: .env
+  app2:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    container_name: ipdc-dana-platform-2
+    restart: always
+    ports:
+      - 82:5000
+    command: bash -c /usr/src/app/start.sh
+    env_file: .env
+  app3:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    container_name: ipdc-dana-platform-3
+    restart: always
+    ports:
+      - 83:5000
+    command: bash -c /usr/src/app/start.sh
+    env_file: .env                                
+  nginx:
+    build: ./nginx
+    ports:
+      - '8080:8080'
+    depends_on:
+      - app1
+      - app2
+      - app3 

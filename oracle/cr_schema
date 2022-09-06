@@ -1,0 +1,71 @@
+Table SQl : 
+CREATE TABLE "cr_schema" ( "id" NUMBER generated AS identity, "scheme_name"  VARCHAR ( 100 ) NOT NULL, 
+"rate_of_interest" NUMBER NOT NULL, "loan_tenor_in_days" NUMBER NULL, "expiry_date" VARCHAR ( 24 ) NULL, 
+"grace_periods_in_days" INTEGER NULL, "penalty_periods" INTEGER NULL, "daily_penalty" NUMBER NULL,
+"processing_cost" NUMBER NULL,"transaction_fee" NUMBER NULL,"collection_fee_sharing_with_agency" NUMBER NULL,
+"active" char(1) DEFAULT '1',
+"created_by" INTEGER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+Table SQl : 
+CREATE TABLE "cr_disbursement" ( "id" NUMBER generated AS identity, "retailer_id"  NUMBER NOT NULL, "sales_agent_id"  NUMBER NOT NULL, 
+"disbursement_amount"  NUMBER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+Table SQl : 
+CREATE TABLE "cr_slab" ( "id" NUMBER generated AS identity, "lower_limit"  NUMBER NOT NULL, "upper_limit"  NUMBER NOT NULL, "transaction_fee"  NUMBER NOT NULL, 
+"day_dis_lower_limit"  NUMBER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+Table SQl :
+CREATE TABLE "cr_retailer_loan_calculation" ( "id" NUMBER generated AS identity, "reatiler_id"  NUMBER   DEFAULT 0, 
+"1rmn_acc" NUMBER   DEFAULT 0, "principal_outstanding" NUMBER   DEFAULT 0,"transaction_cost" NUMBER   DEFAULT 0,
+"disburshment" NUMBER   DEFAULT 0,"repayment" NUMBER   DEFAULT 0,"repaid_principal" NUMBER   DEFAULT 0,"daily_principal_interest" NUMBER   DEFAULT 0,
+"other_charge" NUMBER   DEFAULT 0,"charge" NUMBER   DEFAULT 0,"total_outstanding" NUMBER   DEFAULT 0,"overdue_amount" NUMBER   DEFAULT 0,"transaction_type" VARCHAR ( 100 ) ,
+"processing_fee" NUMBER   DEFAULT 0,
+"interest_reimbursment" NUMBER   DEFAULT 0,"created_by" INTEGER   DEFAULT 0, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+
+Table SQl :
+CREATE TABLE "cr_retailer_loan_interest_calculation" ( "id" NUMBER generated AS identity, "reatiler_id"  NUMBER   DEFAULT 0, 
+"1rmn_acc" NUMBER   DEFAULT 0, "daily_principal_interest" NUMBER   DEFAULT 0,"overdue_amount" NUMBER   DEFAULT 0,
+"penal_interest" NUMBER   DEFAULT 0,"penal_charge" NUMBER   DEFAULT 0,"charge" NUMBER   DEFAULT 0,"other_charge" NUMBER   DEFAULT 0,
+"interest_reimbursment" NUMBER   DEFAULT 0,"created_by" INTEGER   DEFAULT 0, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+Table SQl :
+CREATE TABLE "cr_loan_record" ( "id" NUMBER generated AS identity, "reatiler_id"  NUMBER NOT NULL, 
+"distributor_id" NUMBER NOT NULL, "manufacture_id" NUMBER NOT NULL,"sales_agent_id" NUMBER NOT NULL,
+"transaction_type" VARCHAR ( 100 ) NOT NULL,"created_by" INTEGER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+To add updated_at column:
+ALTER TABLE "cr_schema"
+ADD (
+  "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+create trigger set_updated_at
+  before update on cr_schema
+  for each row
+begin
+  :new.updated_at := current_timestamp();
+end;
+
+
+CREATE TABLE "cr_push_notification" ( "id" NUMBER generated AS identity, "reatiler_id"  NUMBER NOT NULL, 
+"sales_agent_id" NUMBER NOT NULL, "receiver_token" VARCHAR ( 2000 ) NOT NULL, "action" VARCHAR ( 250 ) NOT NULL,
+"title" VARCHAR ( 250 ) NOT NULL, "body" VARCHAR ( 250 ) NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+CREATE TABLE "cr_repayment_sequence" ( "id" NUMBER generated AS identity, "name"  VARCHAR ( 250 ) NOT NULL, 
+"sequence" NUMBER NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+CREATE TABLE "cr_loan_principal_repayment_sequence" ( "id" NUMBER generated AS identity, "disbursement_id"  NUMBER NOT NULL, 
+"repayent_amount" NUMBER NOT NULL, "rest_of_principal_amount" NUMBER NOT NULL, "one_rmn_account" VARCHAR ( 250 ) NOT NULL, "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP );
+
+
+
+
+
+

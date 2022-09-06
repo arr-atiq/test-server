@@ -1,7 +1,7 @@
-const xlsx = require('xlsx');
-const moment = require('moment');
-const { sendApiResult } = require('./helperController');
-const FileModel = require('../Models/FileModel');
+const xlsx = require("xlsx");
+const moment = require("moment");
+const { sendApiResult } = require("./helperController");
+const FileModel = require("../Models/File");
 
 exports.uploadScopOutletsFile = async (req, res) => {
   const upload = await importScopeOutlets2DB(req.file.filename, req.body);
@@ -9,20 +9,20 @@ exports.uploadScopOutletsFile = async (req, res) => {
 };
 
 exports.uploadXlFile = async (req, res) => {
-  const start = moment(req.body.effective_date, 'YYYY-MM-DD');
+  const start = moment(req.body.effective_date, "YYYY-MM-DD");
   const end = moment(
     new Date(
-      req.body.duration.split('-')[0],
-      parseInt(req.body.duration.split('-')[1]),
-      0,
+      req.body.duration.split("-")[0],
+      parseInt(req.body.duration.split("-")[1]),
+      0
     ),
-    'YYYY-MM-DD',
+    "YYYY-MM-DD"
   );
   const duration = moment.duration(end.diff(start)).asDays();
   if (duration < 0) {
     res.json({
       success: false,
-      msg: 'Duration cannot be shorter than Effective date.',
+      msg: "Duration cannot be shorter than Effective date.",
     });
   } else {
     const upload = await importExcelData2DB(req.file.filename, req.body);
@@ -37,7 +37,7 @@ exports.uploadXlFile = async (req, res) => {
 exports.uploadInterestSettingsFile = async (req, res) => {
   const upload = await importInterestSettingsData2DB(
     req.file.filename,
-    req.body,
+    req.body
   );
   res.status(200).send(upload);
 };
@@ -46,7 +46,7 @@ const importScopeOutlets2DB = async function (filePath, req) {
   try {
     let resData = [];
     const workbook = xlsx.readFile(`./public/scope_outlets/${filePath}`, {
-      type: 'array',
+      type: "array",
     });
     const sheetnames = Object.keys(workbook.Sheets);
     let i = sheetnames.length;
@@ -57,12 +57,12 @@ const importScopeOutlets2DB = async function (filePath, req) {
       var insert = await FileModel.insertScopeOutletBulk(
         resData,
         filePath,
-        req,
+        req
       );
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, 'File not uploaded');
+    return sendApiResult(false, "File not uploaded");
   }
 };
 
@@ -70,7 +70,7 @@ const importExcelData2DB = async function (filePath, req) {
   try {
     let resData = [];
     const workbook = xlsx.readFile(`./public/uploads/${filePath}`, {
-      type: 'array',
+      type: "array",
     });
     const sheetnames = Object.keys(workbook.Sheets);
     let i = sheetnames.length;
@@ -82,7 +82,7 @@ const importExcelData2DB = async function (filePath, req) {
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, 'File not uploaded');
+    return sendApiResult(false, "File not uploaded");
   }
 };
 
@@ -95,7 +95,7 @@ const importBulkKYCApprove2DB = async function (filePath, req) {
   try {
     let resData = [];
     const workbook = xlsx.readFile(`./public/kyc_bulk_upload/${filePath}`, {
-      type: 'array',
+      type: "array",
     });
     const sheetnames = Object.keys(workbook.Sheets);
     let i = sheetnames.length;
@@ -107,7 +107,7 @@ const importBulkKYCApprove2DB = async function (filePath, req) {
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, 'File not uploaded');
+    return sendApiResult(false, "File not uploaded");
   }
 };
 
@@ -121,7 +121,7 @@ const importOutletDetailsInfo2DB = async function (filePath, req) {
     let resData = [];
     const workbook = xlsx.readFile(
       `./public/outlet_documents/outlet_nid_info/${filePath}`,
-      { type: 'array' },
+      { type: "array" }
     );
     const sheetnames = Object.keys(workbook.Sheets);
     let i = sheetnames.length;
@@ -132,12 +132,12 @@ const importOutletDetailsInfo2DB = async function (filePath, req) {
       var insert = await FileModel.insertOutletDetailsInfo(
         resData,
         filePath,
-        req,
+        req
       );
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, 'File not uploaded');
+    return sendApiResult(false, "File not uploaded");
   }
 };
 
@@ -151,7 +151,7 @@ const importUserDetailsInfo2DB = async function (filePath, req) {
   try {
     let resData = [];
     const workbook = xlsx.readFile(`./public/user_details/${filePath}`, {
-      type: 'array',
+      type: "array",
     });
     const sheetnames = Object.keys(workbook.Sheets);
     let i = sheetnames.length;
@@ -162,12 +162,12 @@ const importUserDetailsInfo2DB = async function (filePath, req) {
       var insert = await FileModel.insertUserDetailsInfo(
         resData,
         filePath,
-        req,
+        req
       );
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, 'File not uploaded');
+    return sendApiResult(false, "File not uploaded");
   }
 };
 
@@ -175,7 +175,7 @@ const importInterestSettingsData2DB = async function (filePath, req) {
   try {
     let resData = [];
     const workbook = xlsx.readFile(`./public/interest_settings/${filePath}`, {
-      type: 'array',
+      type: "array",
     });
     const sheetnames = Object.keys(workbook.Sheets);
     let i = sheetnames.length;
@@ -188,11 +188,11 @@ const importInterestSettingsData2DB = async function (filePath, req) {
       var insert = await FileModel.insertInterestSettingsBulk(
         resData,
         filePath,
-        req,
+        req
       );
     }
     return insert;
   } catch (error) {
-    return sendApiResult(false, 'File not uploaded');
+    return sendApiResult(false, "File not uploaded");
   }
 };

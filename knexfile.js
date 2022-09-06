@@ -1,49 +1,24 @@
-// ref: https://devhints.io/knex
-// TODO: implement more dynamic env var settings loader
-require('dotenv').config();
-require('oracledb');
-
+require("dotenv").config();
+require("oracledb");
+const {DB_CLIENT_ORACLE,DB_HOST_ORACLE,DB_USER_ORACLE,DB_PASSWORD_ORACLE,DB_NAME_ORACLE,DB_PORT} = process.env;
 module.exports = {
   development: {
-    client: process.env.DB_CLIENT_ORACLE,
+    client: DB_CLIENT_ORACLE,
     connection: {
-      host: process.env.DB_HOST_ORACLE,
-      user: process.env.DB_USER_ORACLE,
-      password: process.env.DB_PASSWORD_ORACLE,
-      database: process.env.DB_NAME_ORACLE,
-      port: process.env.DB_PORT,
+      host: DB_HOST_ORACLE,
+      user: DB_USER_ORACLE,
+      password: DB_PASSWORD_ORACLE,
+      database: DB_NAME_ORACLE,
+      port: DB_PORT,
       connectString:
-        '(DESCRIPTION= (ADDRESS_LIST=  (ADDRESS=(PROTOCOL=TCP) (HOST=192.168.20.38)(PORT=1521) ) ) (CONNECT_DATA=(SID=orcl) ) )',
+        "(DESCRIPTION= (ADDRESS_LIST=  (ADDRESS=(PROTOCOL=TCP) (HOST=192.168.20.38)(PORT=1521) ) ) (CONNECT_DATA=(SID=orcl) ) )",
     },
-  },
-  staging: {
-    client: 'postgresql',
-    connection: {
-      database: 'my_db',
-      user: 'username',
-      password: 'password',
-    },
+    acquireConnectionTimeout: 843600000,
     pool: {
-      min: 2,
-      max: 10,
+        min: 2,
+        max: 150,
+        acquireTimeoutMillis: 100000,
+        idleTimeoutMillis: 100000
     },
-    migrations: {
-      tableName: 'knex_migrations',
-    },
-  },
-  production: {
-    client: 'postgresql',
-    connection: {
-      database: 'my_db',
-      user: 'username',
-      password: 'password',
-    },
-    pool: {
-      min: 2,
-      max: 10,
-    },
-    migrations: {
-      tableName: 'knex_migrations',
-    },
-  },
+  }
 };

@@ -1,16 +1,15 @@
-require('dotenv').config();
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const jwt = require('jsonwebtoken');
-const logger = require('pino')();
-const YAML = require('yamljs');
-const swaggerUi = require('swagger-ui-express');
-
-
-const { informationLog, errorLog } = require('./log/log');
-
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const cron = require('node-cron');
+const bodyParser = require("body-parser");
+const logger = require("pino")();
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
+const { keepAliveDb,cleanFile } = require("./controllers/auth");
+const { informationLog, errorLog } = require("./log/log");
 const { PORT, NODE_ENV } = process.env;
+
 
 // process.on('uncaughtException', (ex) => {
 //   errorLog.error({
@@ -32,22 +31,23 @@ const { PORT, NODE_ENV } = process.env;
 
 const app = express();
 app.use(express.static(`${__dirname}/public`));
+app.use(express.static(__dirname + '/' + 'retailer'));
 app.use(cors());
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:4000');
+  res.setHeader("Access-Control-Allow-Origin","*"); 
   res.setHeader(
-    'Access-Control-Allow-Methods',
-    'GET, POST, OPTIONS, PUT, PATCH, DELETE',
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS, PUT, PATCH, DELETE"
   );
   res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-Requested-With,content-type',
+    "Access-Control-Allow-Headers",
+    "X-Requested-With,content-type"
   );
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.header('Access-Control-Allow-Origin', '*');
+  res.setHeader("Access-Control-Allow-Credentials", true);
+  res.header("Access-Control-Allow-Origin", "*");
   res.header(
-    'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept',
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
   );
   next();
 });
@@ -55,38 +55,34 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 app.use(
   bodyParser.urlencoded({
-    limit: '10mb',
+    limit: "10mb",
     extended: true,
-  }),
+  })
 );
 
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
-  if (token == null) return res.sendStatus(401);
 
-  jwt.verify(token, process.env.JWT_SECRET, (err) => {
-    if (err) {
-      return res.sendStatus(403);
-    }
-    next();
-  });
-}
 
-app.get('/', (req, res) => res.json({ message: 'Apsis Dana platform is up and running' }));
-app.use('/login', require('./routes/login'));
-app.use('/bulk', authenticateToken, require('./routes/bulk'));
-app.use('/menu', authenticateToken, require('./routes/menu'));
-app.use('/manufacturer', authenticateToken, require('./routes/manufacturer'));
-app.use('/distributor', authenticateToken, require('./routes/distributor'));
-app.use('/supervisor', authenticateToken, require('./routes/supervisor'));
-app.use('/salesagent', authenticateToken, require('./routes/salesagent'));
+cron.schedule('*/2 * * * *', async() =>  {
+  const data = await keepAliveDb();
+  if(data) console.log('Keeping DB connection alive..');
+});
 
-const swaggerDocument = YAML.load('./swagger.yaml');
-swaggerDocument.host = process.env.HOSTIP.split('//')[1];
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+cron.schedule('00 30 02 * * *', async() =>  {
+  await cleanFile();
+  console.log('Cleaning done!');
+  /* Keep backup of deleted file in Phase-2 */
+});
+
+app.get("/", (req, res) =>
+  res.json({ message: "Apsis Dana platform is up and running" })
+);
+require('./routes')(app);
+
+const swaggerDocument = YAML.load("./swagger.yaml");
+swaggerDocument.host = process.env.HOSTIP.split("//")[1];
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.listen(PORT, () => {
   logger.info(`App on ${NODE_ENV} is running on port ${PORT}`);
-  informationLog.info({ message: 'Application restarted', time: Date.now() });
+  informationLog.info({ message: "Application restarted", time: Date.now() });
 });
