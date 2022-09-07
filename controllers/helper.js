@@ -669,6 +669,7 @@ exports.uploadConfig = function (name) {
 };
 exports.uploadDocuments = function (name) {
   const max = 100;
+  const unverified_documents = `./public/tag_documents/unverified_documents`;
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       if (req.body.file_for) {
@@ -677,10 +678,13 @@ exports.uploadDocuments = function (name) {
           const path = `./public/tag_documents/${folder_name}`;
           fs.mkdirSync(path, { recursive: true });
           cb(null, path);
+        } else {
+          cb(null, unverified_documents);
         }
-        cb(null, "");
+      } else {
+        cb(null, unverified_documents);
       }
-      cb(null, "");
+
     },
     filename: (req, file, cb) => {
       if (typeof file !== undefined) {
