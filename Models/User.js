@@ -1561,6 +1561,7 @@ User.getSearchResultView = function (req) {
 };
 
 User.getDocumentsView = function (req) {
+  const { type } = req.query;
   return new Promise(async (resolve, reject) => {
     try {
       const documents = await knex("APSISIPDC.cr_documents_add")
@@ -1568,6 +1569,7 @@ User.getDocumentsView = function (req) {
           "cr_documents_add.id",
           "cr_documents_add.name"
         )
+        .where("cr_documents_add.user_type", type)
         .orderBy("cr_documents_add.id", "desc")
         .distinct();
       if (documents == 0) reject(sendApiResult(false, "Not found."));
