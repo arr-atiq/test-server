@@ -4,7 +4,7 @@
   "description": "IPDC DANA PLATFORM",
   "main": "index.js",
   "engines": {
-    "node": "v16.14.0"
+    "node": "16.14.0"
   },
   "scripts": {
     "start": "node index.js",
